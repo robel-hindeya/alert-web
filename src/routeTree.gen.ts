@@ -14,6 +14,7 @@ import { Route as CoordinatorsRouteImport } from './routes/coordinators'
 import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as DepartmentsIndexRouteImport } from './routes/departments.index'
 import { Route as DepartmentsSlugRouteImport } from './routes/departments.$slug'
 import { Route as FormsFormIdRouteImport } from './routes/forms.$formId'
@@ -43,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepartmentsIndexRoute = DepartmentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments/': typeof DepartmentsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/coordinators': typeof CoordinatorsRoute
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments': typeof DepartmentsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments/': typeof DepartmentsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/departments'
     | '/doctors'
     | '/login'
+    | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/coordinators'
     | '/doctors'
     | '/login'
+    | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/departments'
     | '/doctors'
     | '/login'
+    | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments/'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   DepartmentsRoute: typeof DepartmentsRouteWithChildren
   DoctorsRoute: typeof DoctorsRoute
   LoginRoute: typeof LoginRoute
+  ReportsRoute: typeof ReportsRoute
   FormsFormIdRoute: typeof FormsFormIdRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/departments/': {
@@ -211,6 +231,7 @@ const rootRouteChildren: RootRouteChildren = {
   DepartmentsRoute: DepartmentsRouteWithChildren,
   DoctorsRoute: DoctorsRoute,
   LoginRoute: LoginRoute,
+  ReportsRoute: ReportsRoute,
   FormsFormIdRoute: FormsFormIdRoute,
 }
 export const routeTree = rootRouteImport

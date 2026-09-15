@@ -18,7 +18,7 @@ const items = [
   { label: "Doctors", icon: Stethoscope, to: "/doctors" as const },
   { label: "Departments", icon: Building2, to: "/departments" as const },
   { label: "Coordinators", icon: Users, to: "/coordinators" as const },
-  { label: "Reports", icon: BarChart3 },
+  { label: "Reports", icon: BarChart3, to: "/reports" as const },
   { label: "Settings", icon: Settings },
 ];
 
