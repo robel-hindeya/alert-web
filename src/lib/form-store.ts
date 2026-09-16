@@ -702,4 +702,49 @@ export function useForm(formId: string, deptSlug?: string) {
   return { form, ready, refresh: () => setForm(getFormById(formId, deptSlug)) };
 }
 
+export function useFormResponses(formId: string) {
+  const [responses, setResponses] = useState<FormResponse[]>(() => getFormResponses(formId));
+  const [loading, setLoading] = useState(true);
+
+  const syncResponses = async () => {
+    try {
+      const res = await fetch(`/api/forms/${encodeURIComponent(formId)}/responses`);
+      if (res.ok) {
+        const data = (await res.json()) as FormResponse[];
+        if (Array.isArray(data)) {
+          setResponses(data);
+          if (typeof window !== "undefined") {
+            const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
+            const existing: FormResponse[] = raw ? JSON.parse(raw) : [];
+            const other = existing.filter((r) => r.formId !== formId);
+            window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify([...data, ...other]));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch responses from DB:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    syncResponses();
+    const handleUpdated = () => syncResponses();
+    window.addEventListener("alert-form-responses-updated", handleUpdated);
+    window.addEventListener("storage", handleUpdated);
+    return () => {
+      window.removeEventListener("alert-form-responses-updated", handleUpdated);
+      window.removeEventListener("storage", handleUpdated);
+    };
+  }, [formId]);
+
+  return {
+    responses,
+    loading,
+    refresh: syncResponses,
+  };
+}
+
+
 

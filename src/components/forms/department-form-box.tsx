@@ -11,6 +11,8 @@ import {
   ClipboardCheck,
   ArrowRight,
   Sparkles,
+  BarChart3,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +21,7 @@ import {
   deleteForm,
 } from "@/lib/form-store";
 import { FormBuilderDialog } from "./form-builder-dialog";
+import { FormResponsesDialog } from "./form-responses-dialog";
 import { toast } from "sonner";
 
 interface DepartmentFormBoxProps {
@@ -34,6 +37,8 @@ export function DepartmentFormBox({
 
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
+  const [responsesForm, setResponsesForm] = useState<CustomForm | null>(null);
+  const [responsesOpen, setResponsesOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleOpenCreate = () => {
@@ -44,6 +49,12 @@ export function DepartmentFormBox({
   const handleOpenEdit = (form: CustomForm) => {
     setEditingForm(form);
     setBuilderOpen(true);
+  };
+
+  const handleOpenResponses = (form: CustomForm, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setResponsesForm(form);
+    setResponsesOpen(true);
   };
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
@@ -77,7 +88,7 @@ export function DepartmentFormBox({
               <h2 className="text-base font-bold text-foreground">
                 Department Forms & Checklists
               </h2>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary inline-flex items-center gap-1">
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary inline-flex items-center gap-1">
                 <Sparkles className="size-3" /> Google Form Style
               </span>
             </div>
@@ -87,7 +98,7 @@ export function DepartmentFormBox({
           </div>
         </div>
 
-        {/* Change form to "Add Form" button */}
+        {/* "Add Form" button */}
         <Button
           type="button"
           onClick={handleOpenCreate}
@@ -155,13 +166,24 @@ export function DepartmentFormBox({
                       </span>
                     </div>
 
-                    {/* Action buttons (View Icon, Edit, Share, Delete) */}
-                    <div className="flex items-center gap-1">
+                    {/* Action buttons (Responses Button, View Icon, Edit, Share, Delete) */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* RESPONSES BUTTON (Google Forms Style) */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenResponses(form, e)}
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-150 shadow-xs"
+                        title="View Google Forms responses dashboard"
+                      >
+                        <BarChart3 className="size-3.5" />
+                        <span>Responses</span>
+                      </button>
+
                       {/* VIEW ICON (Navigates to dedicated page showing ONLY form) */}
                       <Link
                         to="/forms/$formId"
                         params={{ formId: form.id }}
-                        className="flex size-8 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-150"
+                        className="flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all duration-150"
                         title="View public form"
                       >
                         <Eye className="size-4" />
@@ -219,13 +241,22 @@ export function DepartmentFormBox({
                   </div>
                 </div>
 
-                {/* Bottom metadata + View Form link */}
+                {/* Bottom metadata + Action links */}
                 <div className="px-4 py-3 bg-muted/20 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
                   <span className="truncate text-[11px]">
                     Updated {new Date(form.updatedAt).toLocaleDateString()}
                   </span>
 
                   <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenResponses(form)}
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline transition-colors"
+                    >
+                      <BarChart3 className="size-3" />
+                      Responses
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(form)}
@@ -261,6 +292,18 @@ export function DepartmentFormBox({
         initialForm={editingForm}
         onSaved={() => refresh()}
       />
+
+      {/* Form Responses Dashboard Dialog */}
+      {responsesForm && (
+        <FormResponsesDialog
+          open={responsesOpen}
+          onOpenChange={(open) => {
+            setResponsesOpen(open);
+            if (!open) setResponsesForm(null);
+          }}
+          form={responsesForm}
+        />
+      )}
     </section>
   );
 }
