@@ -8,11 +8,9 @@ import {
   Trash2,
   Share2,
   Check,
-  Calendar,
-  Layers,
-  Sparkles,
   ClipboardCheck,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +19,7 @@ import {
   deleteForm,
 } from "@/lib/form-store";
 import { FormBuilderDialog } from "./form-builder-dialog";
+import { toast } from "sonner";
 
 interface DepartmentFormBoxProps {
   departmentSlug: string;
@@ -49,9 +48,10 @@ export function DepartmentFormBox({
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this form?")) {
+    if (confirm("Are you sure you want to delete this form and all its responses?")) {
       deleteForm(id);
       refresh();
+      toast.success("Form deleted");
     }
   };
 
@@ -60,6 +60,7 @@ export function DepartmentFormBox({
     const url = `${window.location.origin}/forms/${formId}`;
     navigator.clipboard.writeText(url);
     setCopiedId(formId);
+    toast.success("Public form link copied to clipboard!");
     setTimeout(() => setCopiedId(null), 2500);
   };
 
@@ -76,24 +77,25 @@ export function DepartmentFormBox({
               <h2 className="text-base font-bold text-foreground">
                 Department Forms & Checklists
               </h2>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                Google Form Style
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary inline-flex items-center gap-1">
+                <Sparkles className="size-3" /> Google Form Style
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Build custom intake forms, triage surveys, and audit sheets with custom datatypes
+              Build custom intake forms, triage surveys, and audit sheets with custom questions and datatypes
             </p>
           </div>
         </div>
 
+        {/* Change form to "Add Form" button */}
         <Button
           type="button"
           onClick={handleOpenCreate}
           size="sm"
-          className="gap-1.5 font-semibold shadow-sm"
+          className="gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="size-4" />
-          Create Form
+          Add Form
         </Button>
       </div>
 
@@ -102,37 +104,53 @@ export function DepartmentFormBox({
         <div className="rounded-xl border border-dashed border-border py-10 px-4 text-center">
           <p className="text-sm font-medium text-foreground">No forms created yet</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            Click &quot;Create Form&quot; to build your first Google Forms-style questionnaire with custom questions and datatypes.
+            Click &quot;Add Form&quot; to design your first Google Forms-style questionnaire with custom questions and datatypes.
           </p>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleOpenCreate}
-            className="mt-4 gap-1.5"
+            className="mt-4 gap-1.5 font-medium"
           >
             <Plus className="size-4" />
-            Add First Form
+            Add Form
           </Button>
         </div>
       ) : (
-        <div className="grid gap-3.5 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {forms.map((form) => {
             const isCopied = copiedId === form.id;
 
             return (
               <div
                 key={form.id}
-                className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                className="group relative flex flex-col justify-between rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:border-primary/50 hover:shadow-md"
               >
-                {/* Top card banner */}
-                <div className="space-y-2">
+                {/* Banner accent line / image */}
+                {form.bannerUrl ? (
+                  <div
+                    className="h-14 w-full bg-cover bg-center border-b border-border/40 relative"
+                    style={{
+                      background: form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
+                        ? `url("${form.bannerUrl}") center/cover no-repeat`
+                        : form.bannerUrl,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/15" />
+                  </div>
+                ) : (
+                  <div className="h-1.5 w-full bg-gradient-to-r from-primary to-teal-500" />
+                )}
+
+                {/* Card content */}
+                <div className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
                         <FileText className="size-4" />
                       </span>
-                      <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+                      <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
                         {form.questions.length} {form.questions.length === 1 ? "question" : "questions"}
                       </span>
                     </div>
@@ -144,7 +162,7 @@ export function DepartmentFormBox({
                         to="/forms/$formId"
                         params={{ formId: form.id }}
                         className="flex size-8 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-150"
-                        title="View standalone form (opens page with only the form)"
+                        title="View public form"
                       >
                         <Eye className="size-4" />
                       </Link>
@@ -154,7 +172,7 @@ export function DepartmentFormBox({
                         type="button"
                         onClick={() => handleOpenEdit(form)}
                         className="grid size-8 place-items-center rounded-lg border border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-                        title="Edit form questions"
+                        title="Edit questions in Google Forms builder"
                       >
                         <Pencil className="size-3.5" />
                       </button>
@@ -189,29 +207,44 @@ export function DepartmentFormBox({
                     <h3 className="font-semibold text-foreground text-sm line-clamp-1 group-hover:text-primary transition-colors">
                       {form.title}
                     </h3>
-                    {form.description && (
+                    {form.description ? (
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                         {form.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/60 italic mt-1">
+                        No description provided
                       </p>
                     )}
                   </div>
                 </div>
 
                 {/* Bottom metadata + View Form link */}
-                <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="truncate">
+                <div className="px-4 py-3 bg-muted/20 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="truncate text-[11px]">
                     Updated {new Date(form.updatedAt).toLocaleDateString()}
                   </span>
 
-                  <Link
-                    to="/forms/$formId"
-                    params={{ formId: form.id }}
-                    className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-                  >
-                    <Eye className="size-3.5" />
-                    Open Form
-                    <ArrowRight className="size-3" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(form)}
+                      className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                      <Pencil className="size-3" />
+                      Edit Questions
+                    </button>
+
+                    <Link
+                      to="/forms/$formId"
+                      params={{ formId: form.id }}
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                    >
+                      <Eye className="size-3.5" />
+                      Open Form
+                      <ArrowRight className="size-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

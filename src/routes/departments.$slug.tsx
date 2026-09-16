@@ -2,7 +2,8 @@ import { useState } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { LogOut, UserPlus, FilePlus2, Eye, Mail, Phone } from "lucide-react";
 import { useDeptSession, clearDeptSession } from "@/lib/dept-session";
-import { saveCustomDepartmentForm } from "@/lib/form-store";
+import { DepartmentFormBox } from "@/components/forms/department-form-box";
+import { FormBuilderDialog } from "@/components/forms/form-builder-dialog";
 import {
   Dialog,
   DialogContent,
@@ -108,15 +109,6 @@ export type Coordinator = {
   certified: boolean;
   duties: string[];
 };
-
-export type DeptForm = {
-  id: string;
-  title: string;
-  type: string;
-  notes?: string | undefined;
-  departmentSlug?: string | undefined;
-};
-
 export const DUTIES = [
   "Daily audit rounds",
   "Chart verification",
@@ -144,57 +136,6 @@ function initialCoordinators(slug: string, base: number): Coordinator[] {
     duties: DUTIES.slice(0, (i % 3) + 1),
   }));
 }
-
-function initialForms(base: number, slug?: string): DeptForm[] {
-  const list: DeptForm[] = [
-    { id: `FRM-${base}1`, title: "Daily audit checklist", type: "Checklist", departmentSlug: slug },
-    { id: `FRM-${base}2`, title: "Incident report", type: "Report", departmentSlug: slug },
-    { id: `FRM-${base}3`, title: "Patient consent", type: "Consent", departmentSlug: slug },
-  ];
-  if (slug === "emergency-corridor") {
-    list.push(
-      {
-        id: "emergency-triage-assessment",
-        title: "Emergency Corridor Triage & Assessment Form",
-        type: "Assessment",
-        departmentSlug: slug,
-      },
-      {
-        id: "corridor-handover-checklist",
-        title: "Corridor Bed Handover & Safety Checklist",
-        type: "Checklist",
-        departmentSlug: slug,
-      },
-    );
-  }
-  return list;
-}
-
-function getStoredDepartmentForms(slug: string, base: number): DeptForm[] {
-  const defaults = initialForms(base, slug);
-  if (typeof window === "undefined") return defaults;
-  try {
-    const raw = window.localStorage.getItem(`alert_dept_forms_${slug}`);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const ids = new Set(parsed.map((p: DeptForm) => p.id));
-        const merged = [...parsed];
-        for (const item of defaults) {
-          if (!ids.has(item.id)) {
-            merged.push(item);
-          }
-        }
-        return merged;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return defaults;
-}
-
-// Deterministic mock data per department
 function seed(slug: string, salt: number) {
   let h = salt;
   for (const c of slug) h = (h * 31 + c.charCodeAt(0)) % 997;
@@ -241,15 +182,11 @@ function DepartmentDashboard() {
   const [coordinators, setCoordinators] = useState<Coordinator[]>(() =>
     initialCoordinators(slug, base),
   );
-  const [forms, setForms] = useState<DeptForm[]>(() =>
-    getStoredDepartmentForms(slug, base),
-  );
   const [addCoordOpen, setAddCoordOpen] = useState(false);
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [viewing, setViewing] = useState<Coordinator | null>(null);
 
   const [coordDraft, setCoordDraft] = useState({ name: "", role: "", email: "", phone: "" });
-  const [formDraft, setFormDraft] = useState({ title: "", type: "Checklist", notes: "" });
 
   const saveCoordinator = () => {
     if (!coordDraft.name.trim()) return;
@@ -268,41 +205,6 @@ function DepartmentDashboard() {
     ]);
     setCoordDraft({ name: "", role: "", email: "", phone: "" });
     setAddCoordOpen(false);
-  };
-
-  const saveForm = () => {
-    if (!formDraft.title.trim()) return;
-    const newFormId = `FRM-${base}${forms.length + 1}`;
-    const newForm: DeptForm = {
-      id: newFormId,
-      title: formDraft.title.trim(),
-      type: formDraft.type,
-      notes: formDraft.notes.trim(),
-      departmentSlug: slug,
-    };
-    const updated = [...forms, newForm];
-    setForms(updated);
-
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(`alert_dept_forms_${slug}`, JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-    }
-
-    saveCustomDepartmentForm({
-      id: newFormId,
-      departmentSlug: slug,
-      departmentLabel: label,
-      title: newForm.title,
-      type: newForm.type,
-      notes: formDraft.notes.trim(),
-      description: formDraft.notes.trim() || `${newForm.type} form for ${label} department.`,
-    });
-
-    setFormDraft({ title: "", type: "Checklist", notes: "" });
-    setAddFormOpen(false);
   };
 
   const toggleDuty = (duty: string) => {
@@ -515,58 +417,11 @@ function DepartmentDashboard() {
             </div>
           </section>
 
-          {/* Forms */}
-          <section className="card-soft p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Department forms</h2>
-                <p className="text-xs text-muted-foreground">Forms used by this department</p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAddFormOpen(true)}
-                className="gap-1.5 font-medium"
-              >
-                <FilePlus2 className="size-4" /> Add Form
-              </Button>
-            </div>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {forms.map((f) => (
-                <li
-                  key={f.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs hover:border-primary/40 transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">{f.title}</p>
-                    <p className="text-xs text-muted-foreground">{f.id}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="rounded-full bg-primary/12 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                      {f.type}
-                    </span>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1.5 px-3 text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-colors"
-                    >
-                      <Link
-                        to="/forms/$formId"
-                        params={{ formId: f.id }}
-                        search={{ dept: slug }}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Eye className="size-3.5 text-primary" />
-                        See
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {/* Department Forms & Checklists (Google Forms Style) */}
+          <DepartmentFormBox
+            departmentSlug={slug}
+            departmentLabel={label}
+          />
 
           {/* Add coordinator dialog */}
           <Dialog open={addCoordOpen} onOpenChange={setAddCoordOpen}>
@@ -620,56 +475,13 @@ function DepartmentDashboard() {
             </DialogContent>
           </Dialog>
 
-          {/* Add form dialog */}
-          <Dialog open={addFormOpen} onOpenChange={setAddFormOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add form</DialogTitle>
-                <DialogDescription>Create a new form for {label}.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="f-title">Form title</Label>
-                  <Input
-                    id="f-title"
-                    value={formDraft.title}
-                    onChange={(e) => setFormDraft({ ...formDraft, title: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Type</Label>
-                  <Select
-                    value={formDraft.type}
-                    onValueChange={(v) => setFormDraft({ ...formDraft, type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Checklist">Checklist</SelectItem>
-                      <SelectItem value="Report">Report</SelectItem>
-                      <SelectItem value="Consent">Consent</SelectItem>
-                      <SelectItem value="Survey">Survey</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="f-notes">Notes</Label>
-                  <Textarea
-                    id="f-notes"
-                    value={formDraft.notes}
-                    onChange={(e) => setFormDraft({ ...formDraft, notes: e.target.value })}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setAddFormOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={saveForm}>Save form</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* Add Form Dialog (Google Forms Builder) */}
+          <FormBuilderDialog
+            open={addFormOpen}
+            onOpenChange={setAddFormOpen}
+            departmentSlug={slug}
+            departmentLabel={label}
+          />
 
           {/* View / edit coordinator */}
           <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>

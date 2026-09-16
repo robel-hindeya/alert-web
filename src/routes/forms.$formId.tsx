@@ -285,7 +285,18 @@ function StandaloneFormView() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Form Title Card (Google Forms Style) */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <div className="h-3 w-full bg-gradient-to-r from-primary via-primary/80 to-primary/60" />
+              {form.bannerUrl ? (
+                <div
+                  className="h-32 sm:h-44 w-full bg-cover bg-center"
+                  style={{
+                    background: form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
+                      ? `url("${form.bannerUrl}") center/cover no-repeat`
+                      : form.bannerUrl,
+                  }}
+                />
+              ) : (
+                <div className="h-3 w-full bg-gradient-to-r from-primary via-primary/80 to-primary/60" />
+              )}
 
               <div className="p-6 sm:p-7 space-y-3">
                 <div className="flex items-center gap-2">
