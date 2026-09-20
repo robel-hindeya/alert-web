@@ -14,6 +14,8 @@ import { Route as CoordinatorsRouteImport } from './routes/coordinators'
 import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as QmtOfficerRouteImport } from './routes/qmt-officer'
+import { Route as QmtOfficersRouteImport } from './routes/qmt-officers'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as DepartmentsIndexRouteImport } from './routes/departments.index'
 import { Route as DepartmentsSlugRouteImport } from './routes/departments.$slug'
@@ -44,6 +46,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QmtOfficerRoute = QmtOfficerRouteImport.update({
+  id: '/qmt-officer',
+  path: '/qmt-officer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QmtOfficersRoute = QmtOfficersRouteImport.update({
+  id: '/qmt-officers',
+  path: '/qmt-officers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/qmt-officer': typeof QmtOfficerRoute
+  '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
@@ -81,6 +95,8 @@ export interface FileRoutesByTo {
   '/coordinators': typeof CoordinatorsRoute
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/qmt-officer': typeof QmtOfficerRoute
+  '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
@@ -93,6 +109,8 @@ export interface FileRoutesById {
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
+  '/qmt-officer': typeof QmtOfficerRoute
+  '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
@@ -106,6 +124,8 @@ export interface FileRouteTypes {
     | '/departments'
     | '/doctors'
     | '/login'
+    | '/qmt-officer'
+    | '/qmt-officers'
     | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
@@ -116,6 +136,8 @@ export interface FileRouteTypes {
     | '/coordinators'
     | '/doctors'
     | '/login'
+    | '/qmt-officer'
+    | '/qmt-officers'
     | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
@@ -127,6 +149,8 @@ export interface FileRouteTypes {
     | '/departments'
     | '/doctors'
     | '/login'
+    | '/qmt-officer'
+    | '/qmt-officers'
     | '/reports'
     | '/departments/$slug'
     | '/forms/$formId'
@@ -139,6 +163,8 @@ export interface RootRouteChildren {
   DepartmentsRoute: typeof DepartmentsRouteWithChildren
   DoctorsRoute: typeof DoctorsRoute
   LoginRoute: typeof LoginRoute
+  QmtOfficerRoute: typeof QmtOfficerRoute
+  QmtOfficersRoute: typeof QmtOfficersRoute
   ReportsRoute: typeof ReportsRoute
   FormsFormIdRoute: typeof FormsFormIdRoute
 }
@@ -178,6 +204,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qmt-officer': {
+      id: '/qmt-officer'
+      path: '/qmt-officer'
+      fullPath: '/qmt-officer'
+      preLoaderRoute: typeof QmtOfficerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qmt-officers': {
+      id: '/qmt-officers'
+      path: '/qmt-officers'
+      fullPath: '/qmt-officers'
+      preLoaderRoute: typeof QmtOfficersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -231,6 +271,8 @@ const rootRouteChildren: RootRouteChildren = {
   DepartmentsRoute: DepartmentsRouteWithChildren,
   DoctorsRoute: DoctorsRoute,
   LoginRoute: LoginRoute,
+  QmtOfficerRoute: QmtOfficerRoute,
+  QmtOfficersRoute: QmtOfficersRoute,
   ReportsRoute: ReportsRoute,
   FormsFormIdRoute: FormsFormIdRoute,
 }

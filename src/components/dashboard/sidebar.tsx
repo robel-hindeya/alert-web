@@ -2,22 +2,19 @@ import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
-  Stethoscope,
+  UserCheck,
   Building2,
   BarChart3,
   Settings,
   HeartPulse,
-  Menu,
   X,
-  Users,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 
 const items = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/" as const },
-  { label: "Doctors", icon: Stethoscope, to: "/doctors" as const },
+  { label: "QMT Officer", icon: UserCheck, to: "/qmt-officer" as const },
   { label: "Departments", icon: Building2, to: "/departments" as const },
-  { label: "Coordinators", icon: Users, to: "/coordinators" as const },
   { label: "Reports", icon: BarChart3, to: "/reports" as const },
   { label: "Settings", icon: Settings },
 ];
@@ -38,10 +35,13 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
   const nav = (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
       {items.map(({ label, icon: Icon, to }) => {
-        const base = "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors";
+        const base =
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors";
         const activeCls = "bg-sidebar-primary/90 font-semibold text-sidebar-primary-foreground";
         const idleCls = "text-sidebar-foreground/85 hover:bg-sidebar-accent/50";
-        const isActive = to ? pathname === to || (to !== "/" && pathname.startsWith(to)) : active === label;
+        const isActive = to
+          ? pathname === to || (to !== "/" && pathname.startsWith(to))
+          : active === label;
 
         if (to) {
           return (
@@ -122,7 +122,9 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
               <HeartPulse className="size-6 shrink-0 text-sidebar-primary" />
               <div className="min-w-0 text-xs leading-tight">
                 <p className="font-semibold text-sidebar-foreground truncate">ALERT Hospital</p>
-                <p className="text-[11px] text-sidebar-foreground/70 truncate">Better Care · Healthier Tomorrow</p>
+                <p className="text-[11px] text-sidebar-foreground/70 truncate">
+                  Better Care · Healthier Tomorrow
+                </p>
               </div>
             </div>
           </aside>
