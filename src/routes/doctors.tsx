@@ -79,39 +79,39 @@ const statusStyles: Record<string, string> = {
 function DoctorsPage() {
   return (
     <DashboardShell>
-      <main className="flex-1 space-y-5 p-5 pt-20 lg:pt-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Doctors</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                26 specialist profiles across all hospital departments.
-              </p>
-            </div>
-            <Link
-              to="/"
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              <ArrowLeft className="size-4 text-primary" />
-              Back to Dashboard
-            </Link>
+      <main className="flex-1 space-y-4 sm:space-y-5 p-3.5 sm:p-5 lg:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Doctors</h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+              26 specialist profiles across all hospital departments.
+            </p>
           </div>
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
+            Back to Dashboard
+          </Link>
+        </div>
 
-          <section className="card-soft flex flex-wrap items-center gap-3 p-4">
-            <div className="relative flex-1 basis-full sm:basis-auto">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                placeholder="Search doctors by name or specialty..."
-                className="w-full rounded-full bg-muted py-2.5 pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 sm:w-80"
-              />
-            </div>
-            <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="size-4 text-success" />
-              <span>{doctors.filter((d) => d.status === "Active").length} active now</span>
-            </div>
-          </section>
+        <section className="card-soft flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4">
+          <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search doctors by name or specialty..."
+              className="w-full rounded-full bg-muted py-2 pl-9 pr-3 sm:py-2.5 sm:pl-10 sm:pr-4 text-xs sm:text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <ShieldCheck className="size-4 text-success" />
+            <span>{doctors.filter((d) => d.status === "Active").length} active now</span>
+          </div>
+        </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <section className="grid gap-3.5 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {doctors.map((doctor) => {
               const initials = doctor.name
                 .split(" ")

@@ -228,61 +228,61 @@ function DepartmentDashboard() {
 
   return (
     <DashboardShell bare={deptOnly}>
-      <main className={`flex-1 space-y-6 p-5 ${deptOnly ? "lg:p-6" : "pt-20 lg:pt-5"}`}>
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span
-                className="grid size-12 place-items-center rounded-2xl text-primary-foreground shadow-lg"
-                style={{ backgroundImage: "var(--gradient-sidebar)" }}
-              >
-                <Icon className="size-6" />
-              </span>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{label}</h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Department overview — ALERT Comprehensive Specialized Hospital
-                </p>
-              </div>
+      <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid size-11 sm:size-12 shrink-0 place-items-center rounded-2xl text-primary-foreground shadow-lg"
+              style={{ backgroundImage: "var(--gradient-sidebar)" }}
+            >
+              <Icon className="size-5 sm:size-6" />
+            </span>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">{label}</h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+                Department overview — ALERT Comprehensive Specialized Hospital
+              </p>
             </div>
-            {deptOnly ? (
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <LogOut className="size-4 text-primary" />
-                Sign out to login
-              </button>
-            ) : (
-              <Link
-                to="/departments"
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                <ArrowLeft className="size-4 text-primary" />
-                All Departments
-              </Link>
-            )}
           </div>
+          {deptOnly ? (
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <LogOut className="size-3.5 sm:size-4 text-primary" />
+              Sign out
+            </button>
+          ) : (
+            <Link
+              to="/departments"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
+              All Departments
+            </Link>
+          )}
+        </div>
 
-          {/* Stats */}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map(({ label, value, icon: SIcon }) => (
-              <article key={label} className="card-soft flex items-center gap-3 p-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-                  <SIcon className="size-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="text-xl font-bold text-foreground">{value}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+        {/* Stats */}
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map(({ label, value, icon: SIcon }) => (
+            <article key={label} className="card-soft flex items-center gap-3 p-3.5 sm:p-4">
+              <span className="grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
+                <SIcon className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-lg sm:text-xl font-bold text-foreground">{value}</p>
+              </div>
+            </article>
+          ))}
+        </div>
 
-          <div className="grid gap-5 xl:grid-cols-5">
-            {/* Weekly chart */}
-            <section className="card-soft min-w-0 p-5 xl:col-span-3">
+        <div className="grid gap-4 sm:gap-5 xl:grid-cols-5">
+          {/* Weekly chart */}
+          <section className="card-soft min-w-0 p-4 sm:p-5 xl:col-span-3">
               <h2 className="text-sm font-semibold text-foreground">Cases this week</h2>
               <p className="text-xs text-muted-foreground">Daily case volume for {label}</p>
               <div className="mt-4 h-64">
@@ -571,14 +571,14 @@ function DepartmentDashboard() {
 function DepartmentNotFound() {
   return (
     <DashboardShell>
-      <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 p-6 pt-20 text-center lg:pt-6">
+      <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
         <h1 className="text-2xl font-bold text-foreground">Department not found</h1>
         <p className="text-sm text-muted-foreground">
           The department you are looking for does not exist.
         </p>
         <Link
           to="/departments"
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Back to Departments
         </Link>

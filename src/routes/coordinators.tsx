@@ -149,23 +149,23 @@ function CoordinatorsPage() {
 
   return (
     <DashboardShell>
-      <main className="flex-1 space-y-6 p-5 pt-20 lg:pt-5">
+      <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span
-              className="grid size-12 place-items-center rounded-2xl text-primary-foreground shadow-lg"
+              className="grid size-11 sm:size-12 shrink-0 place-items-center rounded-2xl text-primary-foreground shadow-lg"
               style={{ backgroundImage: "var(--gradient-sidebar)" }}
             >
-              <Users className="size-6" />
+              <Users className="size-5 sm:size-6" />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Coordinators</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Coordinators</h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
                 {list.length} coordinators across all audit modules
               </p>
             </div>
           </div>
-          <Button onClick={() => setOpen((o) => !o)}>
+          <Button onClick={() => setOpen((o) => !o)} size="sm" className="gap-1.5 font-semibold">
             {open ? <X className="size-4" /> : <Plus className="size-4" />}
             {open ? "Close form" : "Add Data"}
           </Button>

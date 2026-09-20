@@ -287,16 +287,16 @@ function ReportsPage() {
 
   return (
     <DashboardShell>
-      <main className="flex-1 space-y-6 p-4 sm:p-6 pt-20 lg:pt-6">
+      <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
         {/* Page Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary">
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-9 sm:size-10 place-items-center rounded-xl bg-primary/12 text-primary shrink-0">
                 <BarChart3 className="size-5" />
               </span>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                   Clinical & Operational Reports
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
@@ -316,7 +316,7 @@ function ReportsPage() {
               className="gap-1.5 shadow-xs"
             >
               <Printer className="size-4" />
-              Print / Export
+              <span className="hidden sm:inline">Print /</span> Export
             </Button>
 
             <Button
@@ -588,17 +588,20 @@ function ReportsPage() {
 
         {/* Reports Table / List */}
         <section className="card-soft overflow-hidden">
-          <div className="p-4 border-b border-border/80 flex items-center justify-between">
+          <div className="p-3.5 sm:p-4 border-b border-border/80 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-foreground">Hospital Reports Log</h2>
+              <h2 className="text-sm sm:text-base font-bold text-foreground">Hospital Reports Log</h2>
               <p className="text-xs text-muted-foreground">
                 Showing {filteredReports.length} of {reports.length} total reports
               </p>
             </div>
+            <span className="text-[11px] text-primary/80 font-medium sm:hidden">
+              Scroll table horizontally →
+            </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[720px]">
               <thead className="border-b border-border/70 bg-secondary/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3">Report ID & Title</th>

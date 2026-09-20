@@ -76,15 +76,15 @@ export function DepartmentFormBox({
   };
 
   return (
-    <section className="card-soft min-w-0 p-5 space-y-4">
+    <section className="card-soft min-w-0 p-3.5 sm:p-5 space-y-4">
       {/* Box Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary">
+        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+          <span className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary shrink-0">
             <ClipboardCheck className="size-5" />
           </span>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-bold text-foreground">
                 Department Forms & Checklists
               </h2>
@@ -103,7 +103,7 @@ export function DepartmentFormBox({
           type="button"
           onClick={handleOpenCreate}
           size="sm"
-          className="gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+          className="gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
         >
           <Plus className="size-4" />
           Add Form
@@ -155,8 +155,8 @@ export function DepartmentFormBox({
                 )}
 
                 {/* Card content */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
+                <div className="p-3.5 sm:p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
                         <FileText className="size-4" />
@@ -242,16 +242,16 @@ export function DepartmentFormBox({
                 </div>
 
                 {/* Bottom metadata + Action links */}
-                <div className="px-4 py-3 bg-muted/20 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 bg-muted/20 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span className="truncate text-[11px]">
                     Updated {new Date(form.updatedAt).toLocaleDateString()}
                   </span>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                     <button
                       type="button"
                       onClick={() => handleOpenResponses(form)}
-                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline transition-colors"
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline transition-colors text-xs"
                     >
                       <BarChart3 className="size-3" />
                       Responses
@@ -260,7 +260,7 @@ export function DepartmentFormBox({
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(form)}
-                      className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
+                      className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors text-xs"
                     >
                       <Pencil className="size-3" />
                       Edit Questions
@@ -269,7 +269,7 @@ export function DepartmentFormBox({
                     <Link
                       to="/forms/$formId"
                       params={{ formId: form.id }}
-                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline text-xs"
                     >
                       <Eye className="size-3.5" />
                       Open Form

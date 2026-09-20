@@ -196,45 +196,48 @@ function AdminMenu() {
 function Dashboard() {
   return (
     <DashboardShell>
-      <header className="flex items-center gap-4 border-b border-border bg-card px-5 py-3.5 lg:px-5 lg:py-3.5 pt-16 lg:pt-3.5">
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search patients, doctors, departments..."
-              className="w-full rounded-full bg-muted py-2.5 pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40"
-            />
-          </div>
-          <div className="ml-auto flex items-center gap-3 sm:gap-4">
-            <button className="relative rounded-full p-2 text-muted-foreground hover:bg-muted">
-              <Bell className="size-5" />
-              <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
-            </button>
-            <AdminMenu />
-          </div>
+      <header className="flex items-center gap-2.5 sm:gap-4 border-b border-border bg-card px-3.5 py-2.5 sm:px-5 sm:py-3.5">
+        <div className="relative flex-1 min-w-0 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder="Search patients, doctors..."
+            className="w-full rounded-full bg-muted py-2 pl-9 pr-3 sm:py-2.5 sm:pl-10 sm:pr-4 text-xs sm:text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40"
+          />
+        </div>
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 shrink-0">
+          <button
+            type="button"
+            className="relative rounded-full p-2 text-muted-foreground hover:bg-muted"
+            aria-label="View notifications"
+          >
+            <Bell className="size-5" />
+            <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
+          </button>
+          <AdminMenu />
+        </div>
+      </header>
 
-        </header>
-
-        <main className="flex-1 space-y-5 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Good Afternoon, Admin</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Here's what's happening at Alert Comprehensive Specialized Hospital today.
-              </p>
+      <main className="flex-1 space-y-4 sm:space-y-5 p-3.5 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Good Afternoon, Admin</h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+              Here&apos;s what&apos;s happening at Alert Comprehensive Specialized Hospital today.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs sm:text-sm">
+            <CalendarDays className="size-4 sm:size-5 text-primary" />
+            <div className="leading-tight">
+              <p className="font-medium text-foreground">Thu, Apr 24, 2025</p>
+              <p className="text-xs text-muted-foreground">14:33</p>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarDays className="size-5 text-primary" />
-              <div className="leading-tight">
-                <p className="font-medium text-foreground">Thu, Apr 24, 2025</p>
-                <p className="text-xs text-muted-foreground">14:33</p>
-              </div>
-            </div>
           </div>
+        </div>
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map(({ label, value, delta, up, note, icon: Icon }) => (
-              <article key={label} className="card-soft flex items-center gap-4 p-5">
+        <section className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map(({ label, value, delta, up, note, icon: Icon }) => (
+            <article key={label} className="card-soft flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
                 <span className="grid size-12 shrink-0 place-items-center rounded-full bg-secondary text-primary">
                   <Icon className="size-6" />
                 </span>
@@ -302,7 +305,7 @@ function Dashboard() {
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[13px] min-w-[520px]">
                   <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-foreground">
                       <th className="py-2 pr-3 font-medium">Patient</th>

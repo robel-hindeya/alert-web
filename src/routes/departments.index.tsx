@@ -26,49 +26,49 @@ export const Route = createFileRoute("/departments/")({
 function DepartmentsPage() {
   return (
     <DashboardShell>
-      <main className="flex-1 space-y-6 p-5 pt-20 lg:pt-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Audit Modules</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                All 10 audit modules organised under the Super Admin.
-              </p>
-            </div>
-            <Link
-              to="/"
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted"
+      <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Audit Modules</h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+              All 10 audit modules organised under the Super Admin.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
+            Back to Dashboard
+          </Link>
+        </div>
+
+        <section className="card-soft overflow-hidden p-4 sm:p-6">
+          {/* Root node */}
+          <div className="flex flex-col items-center">
+            <div
+              className="flex items-center gap-3 rounded-2xl px-5 py-3.5 sm:px-6 sm:py-4 text-primary-foreground shadow-lg max-w-full"
+              style={{ backgroundImage: "var(--gradient-sidebar)" }}
             >
-              <ArrowLeft className="size-4 text-primary" />
-              Back to Dashboard
-            </Link>
+              <span className="grid size-10 sm:size-11 shrink-0 place-items-center rounded-full bg-white/15">
+                <ShieldCheck className="size-5 sm:size-6" />
+              </span>
+              <span className="text-left leading-tight min-w-0">
+                <span className="block text-sm sm:text-base font-semibold truncate">Super Admin</span>
+                <span className="block text-[11px] sm:text-xs opacity-80 truncate">Quality &amp; Audit Oversight</span>
+              </span>
+            </div>
+
+            {/* Trunk */}
+            <span className="h-6 sm:h-8 w-px bg-border" aria-hidden />
+            <span className="hidden sm:block h-px w-[85%] bg-border" aria-hidden />
           </div>
 
-          <section className="card-soft overflow-hidden p-6">
-            {/* Root node */}
-            <div className="flex flex-col items-center">
-              <div
-                className="flex items-center gap-3 rounded-2xl px-6 py-4 text-primary-foreground shadow-lg"
-                style={{ backgroundImage: "var(--gradient-sidebar)" }}
-              >
-                <span className="grid size-11 place-items-center rounded-full bg-white/15">
-                  <ShieldCheck className="size-6" />
-                </span>
-                <span className="text-left leading-tight">
-                  <span className="block text-base font-semibold">Super Admin</span>
-                  <span className="block text-xs opacity-80">Quality &amp; Audit Oversight</span>
-                </span>
-              </div>
-
-              {/* Trunk */}
-              <span className="h-8 w-px bg-border" aria-hidden />
-              <span className="h-px w-[85%] bg-border" aria-hidden />
-            </div>
-
-            {/* Branches */}
-            <ul className="grid gap-4 pt-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {departments.map(({ slug, label, icon: Icon }, i) => (
-                <li key={slug} className="flex flex-col items-center">
-                  <span className="h-6 w-px bg-border" aria-hidden />
+          {/* Branches */}
+          <ul className="grid gap-3 sm:gap-4 pt-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {departments.map(({ slug, label, icon: Icon }, i) => (
+              <li key={slug} className="flex flex-col items-center">
+                <span className="hidden sm:block h-6 w-px bg-border" aria-hidden />
                   <Link
                     to="/departments/$slug"
                     params={{ slug }}

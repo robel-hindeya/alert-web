@@ -350,53 +350,55 @@ export function FormBuilderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94vh] max-w-4xl overflow-hidden p-0 flex flex-col sm:rounded-2xl border-border bg-background shadow-2xl">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] sm:w-full max-w-4xl overflow-hidden p-0 flex flex-col sm:rounded-2xl border-border bg-background shadow-2xl">
         {/* Top Google Forms Decorative Accent Line */}
         <div className="h-2 w-full bg-gradient-to-r from-primary via-emerald-600 to-teal-500 shrink-0" />
 
         {/* Builder Top Bar */}
-        <div className="border-b border-border px-6 py-3.5 flex items-center justify-between gap-4 shrink-0 bg-card/80 backdrop-blur-sm">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+        <div className="border-b border-border px-3.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4 shrink-0 bg-card/80 backdrop-blur-sm pr-12 sm:pr-14">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] sm:text-xs font-semibold text-primary truncate max-w-[120px] sm:max-w-none">
                 {departmentLabel}
               </span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:flex items-center gap-1">
                 <Sparkles className="size-3 text-primary" /> Google Forms Builder
               </span>
             </div>
-            <h2 className="text-lg font-bold text-foreground truncate mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-foreground truncate mt-0.5">
               {initialForm ? `Edit: ${initialForm.title}` : `Create ${departmentLabel} Form`}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleSaveAndView}
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-medium"
+              className="gap-1 sm:gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-medium px-2 sm:px-3 text-xs"
               title="Save changes and open public form view"
             >
-              <Eye className="size-4" />
+              <Eye className="size-3.5 sm:size-4" />
               <span className="hidden sm:inline">Save & View</span>
+              <span className="sm:hidden">View</span>
             </Button>
 
             <Button
               type="button"
               size="sm"
               onClick={handleSave}
-              className="gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-1 sm:gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 px-2.5 sm:px-3 text-xs"
             >
-              <FileCheck2 className="size-4" />
-              Save Form
+              <FileCheck2 className="size-3.5 sm:size-4" />
+              <span className="hidden sm:inline">Save Form</span>
+              <span className="sm:hidden">Save</span>
             </Button>
           </div>
         </div>
 
         {/* Scrollable Form Body */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6 bg-muted/25">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-muted/25">
           {/* ============================================================ */}
           {/* 1. FORM HEADER: BANNER + ONE FORM TITLE BOX */}
           {/* ============================================================ */}
@@ -817,8 +819,8 @@ export function FormBuilderDialog({
                       </div>
 
                       {/* Required toggle, Duplicate, Delete */}
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                           <Label
                             htmlFor={`req-${q.id}`}
                             className="text-xs font-semibold text-foreground cursor-pointer"
@@ -832,7 +834,7 @@ export function FormBuilderDialog({
                           />
                         </div>
 
-                        <div className="h-4 w-px bg-border" />
+                        <div className="h-4 w-px bg-border hidden sm:block" />
 
                         <Button
                           type="button"
@@ -877,10 +879,10 @@ export function FormBuilderDialog({
               type="button"
               size="lg"
               onClick={() => setShowTypeSelector(true)}
-              className="gap-2.5 px-8 py-6 rounded-2xl border-2 border-dashed border-primary/50 bg-card hover:bg-primary/5 hover:border-primary text-primary font-bold shadow-sm transition-all text-base"
+              className="gap-2.5 px-6 sm:px-8 py-5 sm:py-6 w-full max-w-xs sm:w-auto rounded-2xl border-2 border-dashed border-primary/50 bg-card hover:bg-primary/5 hover:border-primary text-primary font-bold shadow-sm transition-all text-sm sm:text-base"
             >
-              <div className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Plus className="size-5" />
+              <div className="grid size-6 sm:size-7 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Plus className="size-4 sm:size-5" />
               </div>
               Add Question
             </Button>
@@ -894,17 +896,18 @@ export function FormBuilderDialog({
         </div>
 
         {/* Modal Footer */}
-        <div className="border-t border-border px-6 py-3.5 flex items-center justify-between gap-3 shrink-0 bg-card">
+        <div className="border-t border-border px-3.5 sm:px-6 py-3 sm:py-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0 bg-card">
           <p className="text-xs text-muted-foreground">
             {questions.length} {questions.length === 1 ? "question" : "questions"} configured
           </p>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               type="button"
               variant="ghost"
+              size="sm"
               onClick={() => onOpenChange(false)}
-              className="text-muted-foreground"
+              className="text-muted-foreground text-xs"
             >
               Cancel
             </Button>
@@ -912,20 +915,23 @@ export function FormBuilderDialog({
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={handleSaveAndView}
-              className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10 font-medium"
+              className="gap-1 sm:gap-1.5 text-primary border-primary/30 hover:bg-primary/10 font-medium text-xs"
             >
-              <Eye className="size-4" />
-              Save & View
+              <Eye className="size-3.5 sm:size-4" />
+              <span className="hidden sm:inline">Save & View</span>
+              <span className="sm:hidden">View</span>
             </Button>
 
             <Button
               type="button"
+              size="sm"
               onClick={handleSave}
-              className="gap-1.5 font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-1 sm:gap-1.5 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
             >
-              <FileCheck2 className="size-4" />
-              Save Form
+              <FileCheck2 className="size-3.5 sm:size-4" />
+              Save
             </Button>
           </div>
         </div>
@@ -935,7 +941,7 @@ export function FormBuilderDialog({
       {/* QUESTION-TYPE SELECTOR DIALOG (Opens when user clicks "+") */}
       {/* ============================================================ */}
       <Dialog open={showTypeSelector} onOpenChange={setShowTypeSelector}>
-        <DialogContent className="sm:max-w-lg p-0 overflow-hidden sm:rounded-2xl border-border bg-card">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-lg p-0 overflow-hidden sm:rounded-2xl border-border bg-card">
           <div className="p-5 border-b border-border bg-muted/30">
             <h3 className="text-base font-bold text-foreground">Select Question Type</h3>
             <p className="text-xs text-muted-foreground mt-0.5">

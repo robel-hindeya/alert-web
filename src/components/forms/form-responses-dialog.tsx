@@ -207,28 +207,28 @@ export function FormResponsesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94vh] max-w-5xl overflow-hidden p-0 flex flex-col sm:rounded-2xl border-border bg-background shadow-2xl">
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] sm:w-full max-w-5xl overflow-hidden p-0 flex flex-col sm:rounded-2xl border-border bg-background shadow-2xl">
         {/* Google Forms Top Color Accent Bar */}
         <div className="h-2.5 w-full bg-gradient-to-r from-primary via-teal-600 to-emerald-500 shrink-0" />
 
         {/* Header Bar */}
-        <div className="border-b border-border px-6 py-4 flex flex-wrap items-center justify-between gap-4 shrink-0 bg-card">
-          <div className="min-w-0">
+        <div className="border-b border-border px-3.5 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 shrink-0 bg-card pr-12 sm:pr-14">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary truncate max-w-[120px] sm:max-w-none">
                 {form.departmentLabel}
               </span>
-              <span className="text-xs text-muted-foreground">Responses Dashboard</span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">Responses Dashboard</span>
             </div>
-            <h2 className="text-lg font-bold text-foreground truncate mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-foreground truncate mt-0.5">
               {form.title}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold text-secondary-foreground flex items-center gap-1.5">
               <Inbox className="size-3.5 text-primary" />
-              {responses.length} {responses.length === 1 ? "response" : "responses"}
+              <span>{responses.length}</span>
             </span>
 
             <Button
@@ -237,7 +237,7 @@ export function FormResponsesDialog({
               size="sm"
               onClick={refresh}
               disabled={loading}
-              className="gap-1.5 text-xs h-8"
+              className="gap-1.5 text-xs h-8 px-2 sm:px-3"
               title="Refresh database responses"
             >
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -249,56 +249,57 @@ export function FormResponsesDialog({
               variant="outline"
               size="sm"
               onClick={handleExportCSV}
-              className="gap-1.5 text-xs h-8 border-primary/30 text-primary hover:bg-primary/10"
+              className="gap-1.5 text-xs h-8 border-primary/30 text-primary hover:bg-primary/10 px-2.5 sm:px-3"
               title="Download CSV spreadsheet"
             >
               <Download className="size-3.5" />
-              <span>Export CSV</span>
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">CSV</span>
             </Button>
           </div>
         </div>
 
         {/* Sub-Header: Google Forms Style Tabs & Search */}
-        <div className="px-6 py-2.5 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="px-3.5 sm:px-6 py-2 sm:py-2.5 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-2.5 shrink-0">
           {/* Tabs */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-xl overflow-x-auto max-w-full">
             <button
               type="button"
               onClick={() => setActiveTab("summary")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 ${
                 activeTab === "summary"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <BarChart3 className="size-3.5" />
-              Summary & Analytics
+              <span>Summary <span className="hidden sm:inline">&amp; Analytics</span></span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("individual")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 ${
                 activeTab === "individual"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <User className="size-3.5" />
-              Individual ({responses.length})
+              <span>Individual ({responses.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("table")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 ${
                 activeTab === "table"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <TableIcon className="size-3.5" />
-              Table View
+              <span>Table <span className="hidden sm:inline">View</span></span>
             </button>
           </div>
 
@@ -312,7 +313,7 @@ export function FormResponsesDialog({
                 setIndividualIndex(0);
               }}
               placeholder="Search answers, dates, names..."
-              className="h-8 pl-8 text-xs bg-card border-border"
+              className="h-8 pl-8 text-xs bg-card border-border w-full"
             />
           </div>
         </div>
@@ -667,8 +668,11 @@ export function FormResponsesDialog({
               {/* ============================================================ */}
               {activeTab === "table" && (
                 <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                  <div className="p-3 border-b border-border/80 flex items-center justify-between sm:hidden text-[11px] text-primary/80 font-medium">
+                    <span>Scroll table horizontally →</span>
+                  </div>
                   <div className="overflow-x-auto max-h-[60vh]">
-                    <table className="w-full text-left text-xs">
+                    <table className="w-full text-left text-xs min-w-[550px]">
                       <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm border-b border-border z-10">
                         <tr>
                           <th className="p-3 font-bold text-foreground shrink-0">#</th>
@@ -721,7 +725,7 @@ export function FormResponsesDialog({
         </div>
 
         {/* Modal Footer */}
-        <div className="border-t border-border px-6 py-3.5 flex items-center justify-between gap-3 shrink-0 bg-card">
+        <div className="border-t border-border px-3.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 shrink-0 bg-card">
           <p className="text-xs text-muted-foreground">
             {responses.length} total database records
           </p>

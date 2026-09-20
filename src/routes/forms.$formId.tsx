@@ -298,7 +298,7 @@ function StandaloneFormView() {
                 <div className="h-3 w-full bg-gradient-to-r from-primary via-primary/80 to-primary/60" />
               )}
 
-              <div className="p-6 sm:p-7 space-y-3">
+              <div className="p-4 sm:p-7 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                     {form.departmentLabel}
@@ -306,7 +306,7 @@ function StandaloneFormView() {
                   <span className="text-xs text-muted-foreground">ALERT Hospital</span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                   {form.title}
                 </h1>
 
@@ -334,7 +334,7 @@ function StandaloneFormView() {
                 <div
                   key={q.id}
                   id={`q-box-${q.id}`}
-                  className={`rounded-2xl border bg-card p-6 sm:p-7 transition-all duration-200 shadow-sm ${
+                  className={`rounded-2xl border bg-card p-4 sm:p-7 transition-all duration-200 shadow-sm ${
                     hasError
                       ? "border-destructive ring-1 ring-destructive/30"
                       : "border-border hover:border-border/80"
