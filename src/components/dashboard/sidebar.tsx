@@ -16,7 +16,7 @@ const items = [
   { label: "QMT Officer", icon: UserCheck, to: "/qmt-officer" as const },
   { label: "Departments", icon: Building2, to: "/departments" as const },
   { label: "Reports", icon: BarChart3, to: "/reports" as const },
-  { label: "Settings", icon: Settings },
+  { label: "Settings", icon: Settings, to: "/settings" as const },
 ];
 
 interface SidebarProps {
