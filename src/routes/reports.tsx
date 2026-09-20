@@ -110,7 +110,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 15, 2026",
     score: "Severity 2/5",
     status: "Reviewed",
-    summary: "Near-miss dose discrepancy identified during shift handover; corrected prior to administration.",
+    summary:
+      "Near-miss dose discrepancy identified during shift handover; corrected prior to administration.",
   },
   {
     id: "REP-2026-079",
@@ -122,7 +123,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 14, 2026",
     score: "100%",
     status: "Completed",
-    summary: "All 18 surgical patients verified with fasting times, cross-match, and anesthesia clearance.",
+    summary:
+      "All 18 surgical patients verified with fasting times, cross-match, and anesthesia clearance.",
   },
   {
     id: "REP-2026-078",
@@ -134,7 +136,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 14, 2026",
     score: "96%",
     status: "Completed",
-    summary: "Audit of 24 operating consent forms; legal guardian authorization verified for pediatric cases.",
+    summary:
+      "Audit of 24 operating consent forms; legal guardian authorization verified for pediatric cases.",
   },
   {
     id: "REP-2026-077",
@@ -146,7 +149,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 13, 2026",
     score: "92%",
     status: "Completed",
-    summary: "2 cancellations documented due to acute medical instability; rescheduled within 48 hours.",
+    summary:
+      "2 cancellations documented due to acute medical instability; rescheduled within 48 hours.",
   },
   {
     id: "REP-2026-076",
@@ -158,7 +162,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 13, 2026",
     score: "4.8/5.0",
     status: "Completed",
-    summary: "50 postnatal patient responses compiled with 96% overall satisfaction with nurse care.",
+    summary:
+      "50 postnatal patient responses compiled with 96% overall satisfaction with nurse care.",
   },
   {
     id: "REP-2026-075",
@@ -194,7 +199,8 @@ const INITIAL_REPORTS: ReportRecord[] = [
     date: "Sep 11, 2026",
     score: "94%",
     status: "Completed",
-    summary: "Average consultation wait time monitored across dermatology, ENT, and ophthalmology clinics.",
+    summary:
+      "Average consultation wait time monitored across dermatology, ENT, and ophthalmology clinics.",
   },
 ];
 
@@ -232,6 +238,8 @@ function ReportsPage() {
   const [selectedDept, setSelectedDept] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [filterCustomDays, setFilterCustomDays] = useState("");
   const [activeReport, setActiveReport] = useState<ReportRecord | null>(null);
 
   // New Report Generation Dialog State
@@ -239,8 +247,28 @@ function ReportsPage() {
   const [genDept, setGenDept] = useState(departments[0]?.label || "Emergency Corridor");
   const [genType, setGenType] = useState("Audit");
   const [genPeriod, setGenPeriod] = useState("Last 7 Days");
+  const [customDays, setCustomDays] = useState("4");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [genNotes, setGenNotes] = useState("");
   const [isGenerated, setIsGenerated] = useState(false);
+
+  const getEffectivePeriod = () => {
+    if (genPeriod === "Custom Days") {
+      const days = customDays.trim() ? customDays.trim() : "4";
+      return `Last ${days} ${Number(days) === 1 ? "Day" : "Days"}`;
+    }
+    if (genPeriod === "Custom Date Range") {
+      if (customStartDate && customEndDate) {
+        return `${customStartDate} to ${customEndDate}`;
+      }
+      if (customStartDate) {
+        return `Since ${customStartDate}`;
+      }
+      return "Custom Date Range";
+    }
+    return genPeriod;
+  };
 
   const filteredReports = useMemo(() => {
     return reports.filter((r) => {
@@ -254,26 +282,51 @@ function ReportsPage() {
       const matchCat = selectedCategory === "all" || r.category === selectedCategory;
       const matchStatus = selectedStatus === "all" || r.status === selectedStatus;
 
-      return matchSearch && matchDept && matchCat && matchStatus;
+      let matchPeriod = true;
+      if (selectedPeriod !== "all") {
+        const days =
+          selectedPeriod === "custom" ? Number(filterCustomDays) : Number(selectedPeriod);
+        if (days && !isNaN(days)) {
+          const reportDate = new Date(r.date);
+          if (!isNaN(reportDate.getTime())) {
+            const now = new Date();
+            const diffDays = Math.floor(
+              (now.getTime() - reportDate.getTime()) / (1000 * 60 * 60 * 24),
+            );
+            matchPeriod = diffDays >= 0 && diffDays <= days;
+          }
+        }
+      }
+
+      return matchSearch && matchDept && matchCat && matchStatus && matchPeriod;
     });
-  }, [reports, search, selectedDept, selectedCategory, selectedStatus]);
+  }, [
+    reports,
+    search,
+    selectedDept,
+    selectedCategory,
+    selectedStatus,
+    selectedPeriod,
+    filterCustomDays,
+  ]);
 
   const handleGenerateReport = (e: React.FormEvent) => {
     e.preventDefault();
     const deptObj = departments.find((d) => d.label === genDept) || departments[0]!;
+    const periodLabel = getEffectivePeriod();
     const newRecord: ReportRecord = {
       id: `REP-2026-${String(reports.length + 82).padStart(3, "0")}`,
-      title: `${genDept} ${genType} Summary Report`,
+      title: `${genDept} ${genType} Summary Report (${periodLabel})`,
       category: genType as any,
       department: genDept,
       departmentSlug: deptObj.slug,
       author: "Quality & Clinical Audit Directorate",
-      date: "Sep 15, 2026",
+      date: "Sep 20, 2026",
       score: genType === "Incident" ? "Severity 1/5" : "97%",
       status: "Completed",
       summary:
         genNotes.trim() ||
-        `Automated ${genPeriod} clinical and operational performance report compiled for ${genDept}.`,
+        `Automated ${periodLabel} clinical and operational performance report compiled for ${genDept}.`,
     };
 
     setReports([newRecord, ...reports]);
@@ -300,7 +353,8 @@ function ReportsPage() {
                   Clinical & Operational Reports
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  ALERT Comprehensive Specialized Hospital · Continuous Quality Improvement & Clinical Audits
+                  ALERT Comprehensive Specialized Hospital · Continuous Quality Improvement &
+                  Clinical Audits
                 </p>
               </div>
             </div>
@@ -392,8 +446,12 @@ function ReportsPage() {
           <section className="card-soft p-5 xl:col-span-3 min-w-0">
             <div className="flex items-center justify-between pb-3 border-b border-border/70">
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Weekly Clinical Audit Volume</h2>
-                <p className="text-xs text-muted-foreground">Daily audit rounds conducted this week</p>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Weekly Clinical Audit Volume
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Daily audit rounds conducted this week
+                </p>
               </div>
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                 Current Week
@@ -403,14 +461,21 @@ function ReportsPage() {
             <div className="mt-4 h-64">
               {mounted ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={WEEKLY_AUDIT_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart
+                    data={WEEKLY_AUDIT_DATA}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="auditGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--color-border)"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="day"
                       tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
@@ -463,8 +528,16 @@ function ReportsPage() {
             <div className="mt-4 h-64">
               {mounted ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={DEPT_PERFORMANCE} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                  <BarChart
+                    data={DEPT_PERFORMANCE}
+                    layout="vertical"
+                    margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--color-border)"
+                      horizontal={false}
+                    />
                     <XAxis
                       type="number"
                       domain={[80, 100]}
@@ -567,8 +640,44 @@ function ReportsPage() {
               </Select>
             </div>
 
+            {/* Time Period Filter */}
+            <div className="w-full sm:w-44">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="h-10 rounded-xl border-border">
+                  <SelectValue placeholder="Time Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time Periods</SelectItem>
+                  <SelectItem value="4">Last 4 Days</SelectItem>
+                  <SelectItem value="7">Last 7 Days</SelectItem>
+                  <SelectItem value="14">Last 14 Days</SelectItem>
+                  <SelectItem value="30">Last 30 Days</SelectItem>
+                  <SelectItem value="67">Last 67 Days</SelectItem>
+                  <SelectItem value="90">Last 90 Days</SelectItem>
+                  <SelectItem value="custom">Custom Days...</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedPeriod === "custom" && (
+              <div className="flex items-center gap-1.5 w-full sm:w-36">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Days (e.g. 67)"
+                  value={filterCustomDays}
+                  onChange={(e) => setFilterCustomDays(e.target.value)}
+                  className="h-10 rounded-xl border-border bg-card text-xs"
+                />
+              </div>
+            )}
+
             {/* Reset Filters */}
-            {(search || selectedDept !== "all" || selectedCategory !== "all" || selectedStatus !== "all") && (
+            {(search ||
+              selectedDept !== "all" ||
+              selectedCategory !== "all" ||
+              selectedStatus !== "all" ||
+              selectedPeriod !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -577,6 +686,8 @@ function ReportsPage() {
                   setSelectedDept("all");
                   setSelectedCategory("all");
                   setSelectedStatus("all");
+                  setSelectedPeriod("all");
+                  setFilterCustomDays("");
                 }}
                 className="h-10 text-xs text-muted-foreground hover:text-foreground"
               >
@@ -590,7 +701,9 @@ function ReportsPage() {
         <section className="card-soft overflow-hidden">
           <div className="p-3.5 sm:p-4 border-b border-border/80 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-foreground">Hospital Reports Log</h2>
+              <h2 className="text-sm sm:text-base font-bold text-foreground">
+                Hospital Reports Log
+              </h2>
               <p className="text-xs text-muted-foreground">
                 Showing {filteredReports.length} of {reports.length} total reports
               </p>
@@ -623,17 +736,12 @@ function ReportsPage() {
                   </tr>
                 ) : (
                   filteredReports.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="hover:bg-muted/30 transition-colors group"
-                    >
+                    <tr key={r.id} className="hover:bg-muted/30 transition-colors group">
                       <td className="px-4 py-3.5">
                         <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
                           {r.title}
                         </div>
-                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                          {r.id}
-                        </div>
+                        <div className="text-xs text-muted-foreground font-mono mt-0.5">{r.id}</div>
                       </td>
                       <td className="px-4 py-3.5">
                         <Link
@@ -660,15 +768,9 @@ function ReportsPage() {
                           {r.category}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-xs text-muted-foreground">
-                        {r.author}
-                      </td>
-                      <td className="px-4 py-3.5 text-xs text-muted-foreground">
-                        {r.date}
-                      </td>
-                      <td className="px-4 py-3.5 text-xs font-bold text-foreground">
-                        {r.score}
-                      </td>
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground">{r.author}</td>
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground">{r.date}</td>
+                      <td className="px-4 py-3.5 text-xs font-bold text-foreground">{r.score}</td>
                       <td className="px-4 py-3.5">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
@@ -818,13 +920,115 @@ function ReportsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Today">Today</SelectItem>
+                      <SelectItem value="Last 4 Days">Last 4 Days</SelectItem>
                       <SelectItem value="Last 7 Days">Last 7 Days</SelectItem>
+                      <SelectItem value="Last 14 Days">Last 14 Days</SelectItem>
+                      <SelectItem value="Last 30 Days">Last 30 Days</SelectItem>
+                      <SelectItem value="Last 67 Days">Last 67 Days</SelectItem>
                       <SelectItem value="This Month">This Month</SelectItem>
                       <SelectItem value="Quarter to Date">Quarter to Date</SelectItem>
+                      <SelectItem value="Custom Days">Custom Days (Enter any number)</SelectItem>
+                      <SelectItem value="Custom Date Range">
+                        Custom Date Range (Pick dates)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {/* Dynamic Custom Days Section */}
+              {genPeriod === "Custom Days" && (
+                <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2.5 transition-all">
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="custom-days-input"
+                      className="text-xs font-semibold text-foreground"
+                    >
+                      Enter Number of Days
+                    </Label>
+                    <span className="rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                      Last {customDays.trim() || "0"} {Number(customDays) === 1 ? "Day" : "Days"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap pl-1">
+                      Last
+                    </span>
+                    <Input
+                      id="custom-days-input"
+                      type="number"
+                      min="1"
+                      max="3650"
+                      placeholder="e.g. 4 or 67"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(e.target.value)}
+                      className="h-10 rounded-xl bg-card"
+                    />
+                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap pr-1">
+                      {Number(customDays) === 1 ? "Day" : "Days"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] text-muted-foreground">Quick pick:</span>
+                    {["4", "7", "14", "30", "60", "67", "90"].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setCustomDays(d)}
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                          customDays === d
+                            ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                            : "bg-card border border-border text-foreground/80 hover:bg-muted"
+                        }`}
+                      >
+                        Last {d} Days
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Custom Date Range Section */}
+              {genPeriod === "Custom Date Range" && (
+                <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2.5 transition-all">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-foreground">
+                      Pick Specific Date Range
+                    </Label>
+                    {customStartDate && customEndDate && (
+                      <span className="rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                        {customStartDate} to {customEndDate}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="start-date" className="text-[11px] text-muted-foreground">
+                        From Date
+                      </Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="h-9 rounded-lg bg-card text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="end-date" className="text-[11px] text-muted-foreground">
+                        To Date
+                      </Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="h-9 rounded-lg bg-card text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="rep-notes">Additional Focus Notes (Optional)</Label>
