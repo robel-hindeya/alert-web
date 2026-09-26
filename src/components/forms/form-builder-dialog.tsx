@@ -145,7 +145,7 @@ export function FormBuilderDialog({
         // CLEAN INITIAL SCREEN: Empty questions, clear title, banner
         setTitle(`New ${departmentLabel} Form`);
         setDescription("");
-        setBannerUrl(BANNER_PRESETS[0].gradient);
+        setBannerUrl(BANNER_PRESETS[0]?.gradient || "");
         setQuestions([]); // Empty initial screen as requested
         setActiveQuestionId(null);
         setShowTypeSelector(false);
@@ -255,9 +255,12 @@ export function FormBuilderDialog({
     if (newIndex < 0 || newIndex >= questions.length) return;
     const updated = [...questions];
     const temp = updated[index];
-    updated[index] = updated[newIndex];
-    updated[newIndex] = temp;
-    setQuestions(updated);
+    const target = updated[newIndex];
+    if (temp && target) {
+      updated[index] = target;
+      updated[newIndex] = temp;
+      setQuestions(updated);
+    }
   };
 
   // Options handling
@@ -310,7 +313,7 @@ export function FormBuilderDialog({
       departmentLabel,
       title: title.trim() || `Untitled ${departmentLabel} Form`,
       description: description.trim(),
-      bannerUrl: bannerUrl || undefined,
+      ...(bannerUrl ? { bannerUrl } : {}),
       createdAt: initialForm?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       questions: questions.map((q, idx) => ({
@@ -571,7 +574,7 @@ export function FormBuilderDialog({
                 const typeObj =
                   SUPPORTED_QUESTION_TYPES.find((t) => t.type === q.type) ||
                   SUPPORTED_QUESTION_TYPES[0];
-                const TypeIcon = typeObj.icon;
+                const TypeIcon = typeObj?.icon || Type;
 
                 return (
                   <div

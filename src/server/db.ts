@@ -191,3 +191,25 @@ export function dbGetResponses(formId: string): FormResponse[] {
     answers: JSON.parse(r.answers_json || "{}"),
   }));
 }
+
+export function dbGetAllResponses(limit = 100): (FormResponse & { formTitle?: string; departmentLabel?: string; departmentSlug?: string })[] {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT r.id, r.form_id, r.submitted_at, r.answers_json, f.title as form_title, f.department_label, f.department_slug
+    FROM form_responses r
+    LEFT JOIN forms f ON r.form_id = f.id
+    ORDER BY r.submitted_at DESC
+    LIMIT ?
+  `).all(limit) as any[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    formId: r.form_id,
+    submittedAt: r.submitted_at,
+    answers: JSON.parse(r.answers_json || "{}"),
+    formTitle: r.form_title || "Department Form",
+    departmentLabel: r.department_label || "ALERT Hospital",
+    departmentSlug: r.department_slug || "",
+  }));
+}
+

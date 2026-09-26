@@ -32,9 +32,9 @@ function apiDevPlugin(): Plugin {
           }
 
           const webRequest = new Request(fullUrl, {
-            method: req.method,
+            method: req.method || "GET",
             headers: req.headers as HeadersInit,
-            body: bodyBuffer.length > 0 ? bodyBuffer : undefined,
+            body: bodyBuffer.length > 0 ? bodyBuffer : null,
           });
 
           const response = await handleApiRequest(webRequest);

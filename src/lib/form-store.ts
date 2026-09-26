@@ -746,5 +746,77 @@ export function useFormResponses(formId: string) {
   };
 }
 
+export type EnrichedFormResponse = FormResponse & {
+  formTitle?: string;
+  departmentLabel?: string;
+  departmentSlug?: string;
+};
+
+export function useAllResponses() {
+  const [responses, setResponses] = useState<EnrichedFormResponse[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(true);
+
+  const syncAll = async () => {
+    try {
+      const res = await fetch("/api/forms/all-responses");
+      if (res.ok) {
+        const data = (await res.json()) as EnrichedFormResponse[];
+        if (Array.isArray(data)) {
+          setResponses(data);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch all responses from DB API:", err);
+    } finally {
+      setLoading(false);
+    }
+
+    // Fallback: read from local storage
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as FormResponse[];
+          const allForms = getAllForms();
+          const enriched: EnrichedFormResponse[] = parsed.map((r) => {
+            const f = allForms.find((fm) => fm.id === r.formId);
+            return {
+              ...r,
+              formTitle: f?.title || "Department Form",
+              departmentLabel: f?.departmentLabel || "ALERT Hospital",
+              departmentSlug: f?.departmentSlug || "",
+            };
+          });
+          setResponses(enriched);
+        }
+      } catch (e) {
+        console.warn("Fallback to localStorage failed:", e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    syncAll();
+    const handleUpdated = () => syncAll();
+    window.addEventListener("alert-form-responses-updated", handleUpdated);
+    window.addEventListener("storage", handleUpdated);
+    return () => {
+      window.removeEventListener("alert-form-responses-updated", handleUpdated);
+      window.removeEventListener("storage", handleUpdated);
+    };
+  }, []);
+
+  return { responses, loading, refresh: syncAll };
+}
+
 
 

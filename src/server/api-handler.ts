@@ -5,6 +5,7 @@ import {
   dbDeleteForm,
   dbSaveResponse,
   dbGetResponses,
+  dbGetAllResponses,
 } from "./db.ts";
 import type { CustomForm, FormResponse } from "../lib/form-types.ts";
 
@@ -28,6 +29,13 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
   }
 
   try {
+    // GET /api/forms/all-responses
+    if (pathname === "/api/forms/all-responses" && request.method === "GET") {
+      const limit = Number(url.searchParams.get("limit")) || 100;
+      const responses = dbGetAllResponses(limit);
+      return new Response(JSON.stringify(responses), { status: 200, headers: corsHeaders });
+    }
+
     // GET /api/forms?dept=<slug>
     if (pathname === "/api/forms" && request.method === "GET") {
       const dept = url.searchParams.get("dept") || undefined;
@@ -50,7 +58,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
     // Endpoints with /api/forms/:id/...
     const matchResponses = pathname.match(/^\/api\/forms\/([^/]+)\/responses$/);
-    if (matchResponses) {
+    if (matchResponses && matchResponses[1]) {
       const formId = decodeURIComponent(matchResponses[1]);
 
       if (request.method === "GET") {
@@ -72,7 +80,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     }
 
     const matchSingle = pathname.match(/^\/api\/forms\/([^/]+)$/);
-    if (matchSingle) {
+    if (matchSingle && matchSingle[1]) {
       const formId = decodeURIComponent(matchSingle[1]);
 
       if (request.method === "GET") {

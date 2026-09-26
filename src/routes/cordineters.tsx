@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CoordinatorPortal } from "@/components/coordinators/coordinator-portal";
 
-export const Route = createFileRoute("/coordinators")({
+export const Route = createFileRoute("/cordineters")({
   head: () => ({
     meta: [
       { title: "Coordinators Portal | ALERT Hospital Management System" },

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CoordinatorsRouteImport } from './routes/coordinators'
+import { Route as CordinetersRouteImport } from './routes/cordineters'
 import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as LoginRouteImport } from './routes/login'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const CoordinatorsRoute = CoordinatorsRouteImport.update({
   id: '/coordinators',
   path: '/coordinators',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CordinetersRoute = CordinetersRouteImport.update({
+  id: '/cordineters',
+  path: '/cordineters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DepartmentsRoute = DepartmentsRouteImport.update({
@@ -86,6 +92,7 @@ const FormsFormIdRoute = FormsFormIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coordinators': typeof CoordinatorsRoute
+  '/cordineters': typeof CordinetersRoute
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coordinators': typeof CoordinatorsRoute
+  '/cordineters': typeof CordinetersRoute
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
   '/qmt-officer': typeof QmtOfficerRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/coordinators': typeof CoordinatorsRoute
+  '/cordineters': typeof CordinetersRoute
   '/departments': typeof DepartmentsRouteWithChildren
   '/doctors': typeof DoctorsRoute
   '/login': typeof LoginRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/coordinators'
+    | '/cordineters'
     | '/departments'
     | '/doctors'
     | '/login'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/coordinators'
+    | '/cordineters'
     | '/doctors'
     | '/login'
     | '/qmt-officer'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/coordinators'
+    | '/cordineters'
     | '/departments'
     | '/doctors'
     | '/login'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CoordinatorsRoute: typeof CoordinatorsRoute
+  CordinetersRoute: typeof CordinetersRoute
   DepartmentsRoute: typeof DepartmentsRouteWithChildren
   DoctorsRoute: typeof DoctorsRoute
   LoginRoute: typeof LoginRoute
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/coordinators'
       fullPath: '/coordinators'
       preLoaderRoute: typeof CoordinatorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cordineters': {
+      id: '/cordineters'
+      path: '/cordineters'
+      fullPath: '/cordineters'
+      preLoaderRoute: typeof CordinetersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/departments': {
@@ -288,6 +308,7 @@ const DepartmentsRouteWithChildren = DepartmentsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CoordinatorsRoute: CoordinatorsRoute,
+  CordinetersRoute: CordinetersRoute,
   DepartmentsRoute: DepartmentsRouteWithChildren,
   DoctorsRoute: DoctorsRoute,
   LoginRoute: LoginRoute,
