@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Search,
@@ -22,6 +22,9 @@ import {
   Clock,
   LogOut,
   Settings,
+  Award,
+  Star,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
@@ -79,6 +82,76 @@ const statusStyles: Record<string, string> = {
   Pending: "bg-warning/15 text-warning",
   Confirmed: "bg-success/12 text-success",
 };
+
+interface TopOfficerLeader {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  type: "QMT Officer" | "Coordinator";
+  auditsCompleted: number;
+  complianceRate: string;
+  rating: number;
+  status: "Active" | "In Audit" | "Reviewing";
+}
+
+const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
+  {
+    id: "top-1",
+    name: "Dr. Habtamu Girma",
+    role: "Lead QMT Quality Director",
+    department: "Emergency & Triage Corridor",
+    type: "QMT Officer",
+    auditsCompleted: 384,
+    complianceRate: "99.4%",
+    rating: 5.0,
+    status: "Active",
+  },
+  {
+    id: "top-2",
+    name: "Sr. Tigist Alemu",
+    role: "Senior Clinical Audit Coordinator",
+    department: "Intensive Care Unit (ICU)",
+    type: "Coordinator",
+    auditsCompleted: 326,
+    complianceRate: "98.7%",
+    rating: 4.9,
+    status: "In Audit",
+  },
+  {
+    id: "top-3",
+    name: "Dr. Yonas Bekele",
+    role: "Surgical Safety Audit Officer",
+    department: "Major Surgical Theatre",
+    type: "QMT Officer",
+    auditsCompleted: 295,
+    complianceRate: "98.2%",
+    rating: 4.9,
+    status: "Active",
+  },
+  {
+    id: "top-4",
+    name: "Sr. Meron Haile",
+    role: "Inpatient Care Coordinator",
+    department: "Inpatient Medical Ward",
+    type: "Coordinator",
+    auditsCompleted: 258,
+    complianceRate: "97.6%",
+    rating: 4.8,
+    status: "Active",
+  },
+  {
+    id: "top-5",
+    name: "Dr. Dawit Abebe",
+    role: "Pharmacovigilance Audit Officer",
+    department: "Central Pharmacy & OPD",
+    type: "QMT Officer",
+    auditsCompleted: 231,
+    complianceRate: "97.1%",
+    rating: 4.8,
+    status: "Reviewing",
+  },
+];
 
 function AdminMenu() {
   const [open, setOpen] = useState(false);
@@ -249,15 +322,65 @@ function Dashboard() {
     }
   };
 
-  const filteredAppointments = stats.appointments.filter((a) => {
-    if (!search.trim()) return true;
+  const topOfficers = useMemo(() => {
+    let list = [...DEFAULT_TOP_OFFICERS];
+    try {
+      const stored = localStorage.getItem("alert_qmt_officers_list");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const custom = parsed.map(
+            (
+              o: {
+                id?: string;
+                name: string;
+                specialty?: string;
+                dept?: string;
+                exp?: number;
+                rating?: number;
+                status?: string;
+              },
+              idx: number,
+            ) => ({
+              id: o.id || `custom-${idx}`,
+              name: o.name,
+              role: o.specialty || "Quality Management Officer",
+              department: o.dept || "General Ward",
+              type: "QMT Officer" as const,
+              auditsCompleted: Math.max(120, (o.exp || 1) * 45 + ((idx * 17) % 80)),
+              complianceRate: `${(96 + ((idx * 3) % 4) + 0.5).toFixed(1)}%`,
+              rating: o.rating || 5.0,
+              status: o.status === "In Audit" ? ("In Audit" as const) : ("Active" as const),
+            }),
+          );
+          const combined = [...list, ...custom];
+          const seen = new Set<string>();
+          const unique = combined.filter((item) => {
+            const key = item.name.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          unique.sort((a, b) => b.auditsCompleted - a.auditsCompleted);
+          list = unique.slice(0, 5);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!search.trim()) return list.slice(0, 5);
     const q = search.toLowerCase();
-    return (
-      a.patientName.toLowerCase().includes(q) ||
-      a.doctorName.toLowerCase().includes(q) ||
-      a.departmentLabel.toLowerCase().includes(q)
-    );
-  });
+    return list
+      .filter(
+        (o) =>
+          o.name.toLowerCase().includes(q) ||
+          o.role.toLowerCase().includes(q) ||
+          o.department.toLowerCase().includes(q) ||
+          o.type.toLowerCase().includes(q),
+      )
+      .slice(0, 5);
+  }, [search]);
 
   const statCards = [
     {
@@ -461,93 +584,144 @@ function Dashboard() {
 
         {/* Dynamic Appointments, Department Share, and Activities */}
         <section className="grid gap-4 xl:grid-cols-[2.1fr_1fr_1.15fr]">
-          {/* Dynamic Appointments Table */}
+          {/* Most Work QMT Officers & Coordinators (Top 5) */}
           <div className="card-soft min-w-0 p-5">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-foreground">Scheduled Appointments</h2>
-                <p className="text-xs text-muted-foreground">
-                  Dynamic clinical queues & status tracking
+                <div className="flex items-center gap-2">
+                  <span className="grid size-7 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <Award className="size-4" />
+                  </span>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Most Work QMT Officers &amp; Coordinators
+                  </h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Top 5 most active quality officers and coordinators across ALERT Hospital
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setBookModalOpen(true)}
-                className="gap-1 text-xs"
-              >
-                <Plus className="size-3.5" />
-                Book
-              </Button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/qmt-officer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <Users className="size-3.5 text-primary" />
+                  <span>All Officers</span>
+                </Link>
+                <Link
+                  to="/cordineters"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <ShieldCheck className="size-3.5 text-primary" />
+                  <span>Coordinators</span>
+                </Link>
+              </div>
             </div>
+
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] min-w-[520px]">
+              <table className="w-full text-[13px] min-w-[560px]">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="py-2 pr-3 font-medium">Patient</th>
-                    <th className="py-2 pr-3 font-medium">Doctor</th>
-                    <th className="py-2 pr-3 font-medium">Department</th>
-                    <th className="py-2 pr-3 font-medium">Time</th>
-                    <th className="py-2 font-medium">Status</th>
+                    <th className="py-2.5 pr-3 font-medium">Rank &amp; Name</th>
+                    <th className="py-2.5 pr-3 font-medium">Role</th>
+                    <th className="py-2.5 pr-3 font-medium">Department</th>
+                    <th className="py-2.5 pr-3 font-medium text-right">Work Completed</th>
+                    <th className="py-2.5 pr-3 font-medium text-center">Compliance</th>
+                    <th className="py-2.5 font-medium text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAppointments.length === 0 ? (
+                  {topOfficers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-10 text-center text-xs text-muted-foreground">
-                        <Clock className="mx-auto size-7 mb-2 text-muted-foreground/50" />
-                        No appointments currently scheduled. Click <strong>Book</strong> to schedule
-                        a patient.
+                      <td colSpan={6} className="py-10 text-center text-xs text-muted-foreground">
+                        <Users className="mx-auto size-7 mb-2 text-muted-foreground/50" />
+                        No matching officers or coordinators found.
                       </td>
                     </tr>
                   ) : (
-                    filteredAppointments.map((a) => {
-                      const initials = a.patientName
+                    topOfficers.map((officer, index) => {
+                      const initials = officer.name
+                        .replace(/^Dr\.\s*|^Sr\.\s*/i, "")
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
                         .slice(0, 2)
                         .toUpperCase();
+
+                      const rankBadges = [
+                        "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+                        "bg-slate-400/15 text-slate-700 dark:text-slate-300 border-slate-400/30",
+                        "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
+                        "bg-muted text-muted-foreground border-border",
+                        "bg-muted text-muted-foreground border-border",
+                      ];
+
                       return (
-                        <tr key={a.id} className="border-b border-border/60 last:border-0">
+                        <tr
+                          key={officer.id}
+                          className="border-b border-border/60 last:border-0 hover:bg-muted/40 transition-colors"
+                        >
                           <td className="py-3 pr-3">
-                            <span className="flex items-center gap-2">
-                              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-primary">
-                                {initials || "PT"}
+                            <div className="flex items-center gap-2.5">
+                              <span
+                                className={`grid size-6 shrink-0 place-items-center rounded-full border text-[11px] font-bold ${
+                                  rankBadges[index] ||
+                                  "bg-muted text-muted-foreground border-border"
+                                }`}
+                              >
+                                {index + 1}
                               </span>
-                              <span className="whitespace-nowrap font-medium text-foreground">
-                                {a.patientName}
+                              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                                {initials || "OF"}
                               </span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground whitespace-nowrap">
+                                  {officer.name}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground truncate max-w-[150px]">
+                                  {officer.role}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 pr-3 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                                officer.type === "QMT Officer"
+                                  ? "bg-primary/10 text-primary border border-primary/20"
+                                  : "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                              }`}
+                            >
+                              {officer.type}
                             </span>
                           </td>
                           <td className="py-3 pr-3 whitespace-nowrap text-muted-foreground">
-                            {a.doctorName}
+                            {officer.department}
                           </td>
-                          <td className="py-3 pr-3 whitespace-nowrap text-muted-foreground">
-                            {a.departmentLabel}
+                          <td className="py-3 pr-3 whitespace-nowrap text-right">
+                            <span className="font-bold text-foreground">
+                              {officer.auditsCompleted.toLocaleString()}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground ml-1">audits</span>
                           </td>
-                          <td className="py-3 pr-3 whitespace-nowrap text-muted-foreground">
-                            {a.time}
+                          <td className="py-3 pr-3 whitespace-nowrap text-center">
+                            <div className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-xs">
+                              <Star className="size-3 fill-emerald-600 dark:fill-emerald-400" />
+                              <span>{officer.complianceRate}</span>
+                            </div>
                           </td>
-                          <td className="py-3">
-                            <select
-                              value={a.status}
-                              onChange={(e) =>
-                                handleStatusChange(
-                                  a.id,
-                                  e.target.value as
-                                    "Completed" | "In Progress" | "Pending" | "Confirmed",
-                                )
-                              }
-                              className={`rounded-full px-2.5 py-1 text-xs font-medium outline-none cursor-pointer ${
-                                statusStyles[a.status] || "bg-muted text-foreground"
+                          <td className="py-3 whitespace-nowrap text-right">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                                officer.status === "Active"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : officer.status === "In Audit"
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                               }`}
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="In Progress">In Progress</option>
-                              <option value="Completed">Completed</option>
-                              <option value="Pending">Pending</option>
-                            </select>
+                              {officer.status}
+                            </span>
                           </td>
                         </tr>
                       );
