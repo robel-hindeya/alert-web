@@ -24,7 +24,7 @@ export const Route = createFileRoute("/login")({
       {
         name: "description",
         content:
-          "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System. Super Admin, Clinical Admin, and Coordinator authentication.",
+          "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System. Super Admin, Admin, and QMT Officer authentication.",
       },
       { property: "og:title", content: "ALERT Hospital | Quality Management System" },
       {
@@ -194,7 +194,7 @@ function LoginPage() {
                     : "bg-card text-foreground hover:bg-muted border-border"
                 }`}
               >
-                <span>🛡️ Admin (Emergency Corridor)</span>
+                <span>🛡️ Admin</span>
               </button>
               <button
                 type="button"
@@ -216,7 +216,7 @@ function LoginPage() {
                     : "bg-card text-foreground hover:bg-muted border-border"
                 }`}
               >
-                <span>📋 Coordinator</span>
+                <span>📋 QMT Officer</span>
               </button>
             </div>
           </div>
