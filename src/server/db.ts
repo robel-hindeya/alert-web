@@ -974,7 +974,7 @@ export function dbGetDashboardStats(): DashboardStats {
 
   // Doctor headcount & bed metrics
   const totalDoctors = 42;
-  const availableBeds = Math.max(0, 24 - (patientCount % 24));
+  const availableBeds = 654;
 
   // Dynamic 7-day visit trend based on real submissions & appointments
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

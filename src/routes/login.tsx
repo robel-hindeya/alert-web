@@ -99,22 +99,16 @@ function LoginPage() {
         const u = data.user;
         saveAuthUser(u);
 
-        // If user chose a specific department (e.g. emergency-corridor):
-        if (selectedDept && selectedDept !== "main" && selectedDept !== "coordinators") {
-          const dept = departments.find((d) => d.slug === selectedDept) || departments[0]!;
-          saveDeptSession({
-            slug: dept.slug,
-            label: dept.label,
-          });
-          toast.success(`Signed in as ${u.name}. Opening ${dept.label}...`);
-          navigate({
-            to: "/departments/$slug",
-            params: { slug: dept.slug },
-          });
+        // Super Administrator -> Central Dashboard
+        if (u.role === "superadmin") {
+          toast.success(`Welcome back, ${u.name}!`);
+          navigate({ to: "/" });
           return;
         }
 
-        if (selectedDept === "coordinators" || u.role === "coordinator") {
+        // Coordinator -> Coordinators Portal
+        if (u.role === "coordinator") {
+          toast.success(`Signed in as Coordinator ${u.name}`);
           navigate({ to: "/cordineters" });
           return;
         }
@@ -124,9 +118,18 @@ function LoginPage() {
           return;
         }
 
-        // Central Superadmin / Admin dashboard
-        toast.success(`Welcome back, ${u.name}!`);
-        navigate({ to: "/" });
+        // Clinical Admin -> Direct to selected department workspace
+        const dept = departments.find((d) => d.slug === selectedDept) || departments[0]!;
+        saveDeptSession({
+          slug: dept.slug,
+          label: dept.label,
+        });
+        toast.success(`Signed in as ${u.name}. Opening ${dept.label}...`);
+        navigate({
+          to: "/departments/$slug",
+          params: { slug: dept.slug },
+        });
+        return;
       } else {
         setError("Unexpected response from server.");
       }
@@ -234,21 +237,15 @@ function LoginPage() {
                   onChange={(e) => setSelectedDept(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer font-medium"
                 >
-                  <optgroup label="Clinical Audit Departments">
-                    {departments.map((d) => (
-                      <option key={d.slug} value={d.slug}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Central Consoles">
-                    <option value="main">👑 Hospital Main Dashboard (Superadmin)</option>
-                    <option value="coordinators">📋 Department Coordinators Portal</option>
-                  </optgroup>
+                  {departments.map((d) => (
+                    <option key={d.slug} value={d.slug}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Selecting a department will open its full workspace directly.
+                Clinical Admin logins will open the selected department workspace directly.
               </p>
             </div>
 

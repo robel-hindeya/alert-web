@@ -399,47 +399,61 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={() => setBookModalOpen(true)}
-                className="group flex flex-col gap-6 rounded-xl border border-primary/30 bg-primary/8 p-4 text-left transition-colors hover:bg-primary/15"
+                className="group flex flex-col justify-between gap-3 rounded-xl border border-primary/30 bg-primary/8 p-4 text-left transition-colors hover:bg-primary/15"
               >
-                <CalendarPlus className="size-6 text-primary" />
-                <span className="flex items-center justify-between text-sm font-medium text-foreground">
-                  Book Appointment
+                <div className="flex items-center justify-between">
+                  <CalendarPlus className="size-6 text-primary" />
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">500,000+ OPD Visit</p>
+                  <p className="text-xs text-muted-foreground">per yr</p>
+                </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setRegisterModalOpen(true)}
-                className="group flex flex-col gap-6 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
+                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
               >
-                <UserPlus className="size-6 text-primary" />
-                <span className="flex items-center justify-between text-sm font-medium text-foreground">
-                  Register Patient
+                <div className="flex items-center justify-between">
+                  <UserPlus className="size-6 text-primary" />
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">7,000+ Delivery Services</p>
+                  <p className="text-xs text-muted-foreground">per yr</p>
+                </div>
               </button>
 
               <Link
                 to="/reports"
-                className="group flex flex-col gap-6 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
+                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
               >
-                <FileText className="size-6 text-primary" />
-                <span className="flex items-center justify-between text-sm font-medium text-foreground">
-                  View Reports
+                <div className="flex items-center justify-between">
+                  <FileText className="size-6 text-primary" />
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">2,000+ Staff</p>
+                  <p className="text-xs text-muted-foreground">Clinical &amp; Support</p>
+                </div>
               </Link>
 
               <Link
                 to="/departments"
-                className="group flex flex-col gap-6 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
+                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
               >
-                <Activity className="size-6 text-primary" />
-                <span className="flex items-center justify-between text-sm font-medium text-foreground">
-                  Department Forms
+                <div className="flex items-center justify-between">
+                  <Activity className="size-6 text-primary" />
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">
+                    35+ Speciality &amp; Subspeciality
+                  </p>
+                  <p className="text-xs text-muted-foreground">Clinical Departments</p>
+                </div>
               </Link>
             </div>
           </div>
