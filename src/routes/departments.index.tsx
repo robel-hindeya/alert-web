@@ -6,17 +6,17 @@ import { departments } from "./departments.$slug";
 export const Route = createFileRoute("/departments/")({
   head: () => ({
     meta: [
-      { title: "Audit Modules | ALERT Quality Management System" },
+      { title: "QMT Audits | ALERT Quality Management System" },
       {
         name: "description",
         content:
-          "Hierarchy of the 10 clinical audit modules managed under the Super Admin at ALERT Comprehensive Specialized Hospital.",
+          "Hierarchy of clinical department audit modules managed under ALERT Quality Management System.",
       },
-      { property: "og:title", content: "Audit Modules | ALERT Quality Management System" },
+      { property: "og:title", content: "QMT Audits | ALERT Quality Management System" },
       {
         property: "og:description",
         content:
-          "Hierarchy of the 10 clinical audit modules managed under the Super Admin at ALERT Comprehensive Specialized Hospital.",
+          "Hierarchy of clinical department audit modules managed under ALERT Quality Management System.",
       },
     ],
   }),
@@ -29,9 +29,9 @@ function DepartmentsPage() {
       <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Audit Modules</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">QMT Audits</h1>
             <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-              All 10 audit modules organised under the Super Admin.
+              Clinical department audit modules organised under ALERT Quality Management System.
             </p>
           </div>
           <Link

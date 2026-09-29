@@ -76,7 +76,7 @@ function StandaloneFormView() {
               className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
               <ArrowLeft className="size-4" />
-              Return to Departments
+              Return to QMT Audits
             </Link>
           </div>
         </div>
