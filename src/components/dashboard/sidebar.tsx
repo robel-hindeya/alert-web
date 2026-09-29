@@ -8,14 +8,12 @@ import {
   BarChart3,
   Settings,
   HeartPulse,
-  UsersRound,
   X,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 
 const items: { label: string; icon: LucideIcon; to?: string }[] = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/" as const },
-  { label: "Coordinators", icon: UsersRound, to: "/cordineters" as const },
   { label: "QMT Officer", icon: UserCheck, to: "/qmt-officer" as const },
   { label: "Departments", icon: Building2, to: "/departments" as const },
   { label: "Reports", icon: BarChart3, to: "/reports" as const },
