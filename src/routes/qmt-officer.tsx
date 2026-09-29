@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -178,7 +179,8 @@ function QmtOfficerPage() {
                 : `${officers.length} Quality Management Team officer profiles across all hospital departments.`}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <NotificationMenu />
             <Button
               onClick={() => {
                 setFormError("");

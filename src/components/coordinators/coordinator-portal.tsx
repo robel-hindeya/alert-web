@@ -40,6 +40,7 @@ import {
 import { clearAuthUser } from "@/lib/auth-session";
 import { toast } from "sonner";
 import logo from "@/assets/alert-logo.png.asset.json";
+import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,8 +256,8 @@ export function CoordinatorPortal() {
       {/* ============================================================ */}
       <aside className="hidden md:flex flex-col w-64 lg:w-72 border-r border-border bg-card shrink-0 sticky top-0 h-screen select-none z-30">
         {/* Hospital Branding */}
-        <div className="p-4 border-b border-border bg-card/50">
-          <div className="flex items-center gap-3">
+        <div className="p-4 border-b border-border bg-card/50 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs shrink-0">
               <img
                 src={logo.url || "/alert-logo.png"}
@@ -276,6 +277,7 @@ export function CoordinatorPortal() {
               </span>
             </div>
           </div>
+          <NotificationMenu />
         </div>
 
         {/* 3 Main Navigation Buttons in PC Sidebar */}
@@ -467,8 +469,9 @@ export function CoordinatorPortal() {
             </div>
           </div>
 
-          {/* Mobile current active tab badge & sign out */}
+          {/* Mobile current active tab badge, notifications & sign out */}
           <div className="flex items-center gap-1.5 shrink-0">
+            <NotificationMenu />
             <Badge
               variant="outline"
               className="text-[11px] capitalize font-medium px-2 py-0.5 border-primary/30 text-primary bg-primary/5"

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { departments } from "./departments.$slug";
 
 export const Route = createFileRoute("/departments/")({
@@ -34,13 +35,16 @@ function DepartmentsPage() {
               Clinical department audit modules organised under ALERT Quality Management System.
             </p>
           </div>
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
-            Back to QMT
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationMenu />
+            <Link
+              to="/"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
+              Back to QMT
+            </Link>
+          </div>
         </div>
 
         <section className="card-soft overflow-hidden p-4 sm:p-6">

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { useAuthUser } from "@/lib/auth-session";
 import { VisitsChart, DepartmentsChart } from "@/components/dashboard/charts";
 import {
@@ -431,16 +432,7 @@ function Dashboard() {
           />
         </div>
         <div className="ml-auto flex items-center gap-2 sm:gap-4 shrink-0">
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className="relative rounded-full p-2 text-muted-foreground hover:bg-muted"
-            aria-label="Refresh live data"
-            title="Refresh live data"
-          >
-            <Bell className="size-5" />
-            <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
-          </button>
+          <NotificationMenu />
           <AdminMenu />
         </div>
       </header>

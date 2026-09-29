@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, Repeat, CircleUser } from "lucide-react";
 import { Sidebar } from "./sidebar";
+import { NotificationMenu } from "./notification-menu";
 import logo from "@/assets/alert-logo.png.asset.json";
 
 export function DashboardShell({
@@ -38,13 +39,16 @@ export function DashboardShell({
               </span>
             </div>
           </div>
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <Repeat className="size-3.5 text-primary" />
-            <span className="hidden sm:inline">Switch</span> Dept
-          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <NotificationMenu />
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Repeat className="size-3.5 text-primary" />
+              <span className="hidden sm:inline">Switch</span> Dept
+            </Link>
+          </div>
         </header>
 
         <div className="flex min-w-0 flex-1 flex-col">{children}</div>
@@ -89,7 +93,8 @@ export function DashboardShell({
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <NotificationMenu />
             <Link
               to="/login"
               className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors"

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { UserManagementTab } from "@/components/settings/user-management-tab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,7 +226,8 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <NotificationMenu />
             <Button
               onClick={handleSaveSettings}
               disabled={isSaving}
