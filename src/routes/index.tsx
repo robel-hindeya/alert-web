@@ -582,10 +582,10 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* Dynamic Appointments, Department Share, and Activities */}
-        <section className="grid gap-4 xl:grid-cols-[2.1fr_1fr_1.15fr]">
-          {/* Most Work QMT Officers & Coordinators (Top 5) */}
-          <div className="card-soft min-w-0 p-5">
+        {/* Dynamic QMT Officers Leaderboard and Department Share */}
+        <section className="grid gap-4 xl:grid-cols-3">
+          {/* Most Work QMT Officers & Coordinators (Top 5) - Expanded space (2 columns) */}
+          <div className="card-soft min-w-0 p-5 xl:col-span-2">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -732,47 +732,61 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Dynamic Department Distribution */}
-          <div className="card-soft min-w-0 p-5">
+          {/* Dynamic Department Distribution - 1 column */}
+          <div className="card-soft min-w-0 p-5 xl:col-span-1">
             <h2 className="mb-1 text-base font-semibold text-foreground">Department Submissions</h2>
             <p className="mb-4 text-xs text-muted-foreground">Audit volume by clinical unit</p>
             <DepartmentsChart departments={stats.departments} totalPatients={stats.totalPatients} />
           </div>
+        </section>
 
-          {/* Dynamic Recent Activities */}
-          <div className="card-soft min-w-0 p-5">
-            <h2 className="mb-1 text-base font-semibold text-foreground">Recent Activities</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Real-time audit & clinical log</p>
-            <ul className="space-y-4">
-              {stats.activities.length === 0 ? (
-                <li className="py-10 text-center text-xs text-muted-foreground">
-                  <Activity className="mx-auto size-7 mb-2 text-muted-foreground/50" />
-                  No activity logged yet. Submitting forms or appointments records here.
-                </li>
-              ) : (
-                stats.activities.map((item, idx) => (
-                  <li key={item.id || idx} className="flex items-start gap-3">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-primary">
-                      {item.type === "patient_registered" ? (
-                        <UserPlus className="size-4" />
-                      ) : item.type === "form_submitted" ? (
-                        <CheckCircle2 className="size-4" />
-                      ) : (
-                        <CalendarDays className="size-4" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{item.meta}</p>
-                    </div>
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {item.time}
-                    </span>
-                  </li>
-                ))
-              )}
-            </ul>
+        {/* Dynamic Recent Activities - Moved under all */}
+        <section className="card-soft min-w-0 p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Recent Activities</h2>
+              <p className="text-xs text-muted-foreground">
+                Real-time audit log, patient registrations, and clinical documentation
+              </p>
+            </div>
+            <span className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              Live Hospital Feed
+            </span>
           </div>
+
+          {stats.activities.length === 0 ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">
+              <Activity className="mx-auto size-7 mb-2 text-muted-foreground/50" />
+              No activity logged yet. Submitting forms or appointments records here.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {stats.activities.map((item, idx) => (
+                <div
+                  key={item.id || idx}
+                  className="flex items-start gap-3 rounded-xl border border-border/70 bg-card p-3.5 hover:bg-muted/40 transition-colors shadow-2xs"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    {item.type === "patient_registered" ? (
+                      <UserPlus className="size-4" />
+                    ) : item.type === "form_submitted" ? (
+                      <CheckCircle2 className="size-4 text-emerald-600" />
+                    ) : (
+                      <CalendarDays className="size-4" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{item.meta}</p>
+                    <p className="text-[11px] font-medium text-primary/80 mt-1 flex items-center gap-1">
+                      <Clock className="size-3" />
+                      <span>{item.time}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
