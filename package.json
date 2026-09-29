@@ -11,6 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write ."
   },
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "overrides": {
     "rolldown": "1.2.1"
   },

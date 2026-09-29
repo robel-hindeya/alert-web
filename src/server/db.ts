@@ -1,10 +1,43 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.ts";
 
-const DB_DIR = path.resolve(process.cwd(), "data");
-const DB_PATH = path.join(DB_DIR, "hospital.db");
+function getDatabasePath(): string {
+  const isServerless =
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+    Boolean(process.env.NETLIFY) ||
+    process.cwd().startsWith("/var/task");
+
+  if (isServerless) {
+    const tmpDbPath = path.join(os.tmpdir(), "hospital.db");
+    const bundledDb = path.join(process.cwd(), "data", "hospital.db");
+
+    // Copy bundled seed DB to writable /tmp on first run if available
+    if (!fs.existsSync(tmpDbPath) && fs.existsSync(bundledDb)) {
+      try {
+        fs.copyFileSync(bundledDb, tmpDbPath);
+      } catch (err) {
+        console.warn("Could not copy bundled DB to /tmp, will initialize directly in /tmp:", err);
+      }
+    }
+    return tmpDbPath;
+  }
+
+  // Local development / persistent server environment
+  try {
+    const localDir = path.resolve(process.cwd(), "data");
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return path.join(localDir, "hospital.db");
+  } catch (err) {
+    console.warn("Failed to create local data directory, falling back to /tmp:", err);
+    return path.join(os.tmpdir(), "hospital.db");
+  }
+}
 
 let dbInstance: DatabaseSync | null = null;
 
@@ -89,11 +122,18 @@ export interface DashboardStats {
 
 export function getDb(): DatabaseSync {
   if (!dbInstance) {
-    if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
-    }
+    const dbPath = getDatabasePath();
 
-    dbInstance = new DatabaseSync(DB_PATH);
+    try {
+      dbInstance = new DatabaseSync(dbPath);
+    } catch (err) {
+      console.warn(`Failed to open SQLite database at ${dbPath}, falling back to in-memory:`, err);
+      try {
+        dbInstance = new DatabaseSync(path.join(os.tmpdir(), `hospital-${Date.now()}.db`));
+      } catch {
+        dbInstance = new DatabaseSync(":memory:");
+      }
+    }
 
     // Initialize tables
     dbInstance.exec(`
