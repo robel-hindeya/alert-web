@@ -83,7 +83,7 @@ export function DashboardShell({
                   ALERT Hospital
                 </span>
                 <span className="block text-[10px] text-muted-foreground leading-none truncate">
-                  Quality Management System
+                  QMT System
                 </span>
               </div>
             </Link>

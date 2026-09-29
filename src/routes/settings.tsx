@@ -239,7 +239,7 @@ function SettingsPage() {
               className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               <ArrowLeft className="size-3.5 sm:size-4 text-primary" />
-              Back to Dashboard
+              Back to QMT
             </Link>
           </div>
         </div>

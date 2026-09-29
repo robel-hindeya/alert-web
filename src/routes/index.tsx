@@ -59,13 +59,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard | ALERT Quality Management System" },
+      { title: "QMT | ALERT Quality Management System" },
       {
         name: "description",
         content:
           "Live overview of patients, appointments, doctors and beds at ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "Dashboard | ALERT Quality Management System" },
+      { property: "og:title", content: "QMT | ALERT Quality Management System" },
       {
         property: "og:description",
         content:
@@ -448,11 +448,9 @@ function Dashboard() {
       <main className="flex-1 space-y-4 sm:space-y-5 p-3.5 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              ALERT Hospital Overview
-            </h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">ALERT QMT Overview</h1>
             <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-              Dynamic real-time clinical audit and patient monitoring dashboard.
+              Dynamic real-time clinical audit and patient monitoring QMT dashboard.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs sm:text-sm">
