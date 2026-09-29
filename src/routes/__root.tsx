@@ -77,16 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ALERT Hospital Management System" },
+      { title: "ALERT Quality Management System" },
       {
         name: "description",
-        content: "Hospital management dashboard for ALERT Comprehensive Specialized Hospital.",
+        content: "Quality management dashboard for ALERT Comprehensive Specialized Hospital.",
       },
       { name: "author", content: "ALERT Comprehensive Specialized Hospital" },
-      { property: "og:title", content: "ALERT Hospital Management System" },
+      { property: "og:title", content: "ALERT Quality Management System" },
       {
         property: "og:description",
-        content: "Hospital management dashboard for ALERT Comprehensive Specialized Hospital.",
+        content: "Quality management dashboard for ALERT Comprehensive Specialized Hospital.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

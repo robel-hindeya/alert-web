@@ -56,13 +56,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard | ALERT Hospital Management System" },
+      { title: "Dashboard | ALERT Quality Management System" },
       {
         name: "description",
         content:
           "Live overview of patients, appointments, doctors and beds at ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "Dashboard | ALERT Hospital Management System" },
+      { property: "og:title", content: "Dashboard | ALERT Quality Management System" },
       {
         property: "og:description",
         content:

@@ -1,4 +1,4 @@
-# ALERT Hospital Management System
+# ALERT Quality Management System
 
 ALERT Comprehensive Specialized Hospital Clinical Audit & Management Platform.
 

@@ -577,7 +577,7 @@ function StandaloneFormView() {
         <footer className="text-center py-6 text-xs text-muted-foreground space-y-1">
           <p>ALERT Comprehensive Specialized Hospital · Clinical Records & Forms</p>
           <p className="text-[11px] opacity-75">
-            This content is created and maintained within the ALERT Hospital Management System.
+            This content is created and maintained within the ALERT Quality Management System.
           </p>
         </footer>
       </div>

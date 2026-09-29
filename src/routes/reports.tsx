@@ -66,7 +66,7 @@ export const Route = createFileRoute("/reports")({
         content:
           "Comprehensive clinical reports, audit records, and departmental analytics at ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "Reports | ALERT Hospital Management System" },
+      { property: "og:title", content: "Reports | ALERT Quality Management System" },
       {
         property: "og:description",
         content:

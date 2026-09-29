@@ -38,13 +38,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings | ALERT Hospital Management System" },
+      { title: "Settings | ALERT Quality Management System" },
       {
         name: "description",
         content:
           "Manage hospital system settings, QMT parameters, notifications, and security for ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "Settings | ALERT Hospital Management System" },
+      { property: "og:title", content: "Settings | ALERT Quality Management System" },
       {
         property: "og:description",
         content: "Manage hospital system settings, QMT parameters, notifications, and security.",

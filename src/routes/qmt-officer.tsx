@@ -38,13 +38,13 @@ import { departments } from "@/routes/departments.$slug";
 export const Route = createFileRoute("/qmt-officer")({
   head: () => ({
     meta: [
-      { title: "QMT Officer | ALERT Hospital Management System" },
+      { title: "QMT Officer | ALERT Quality Management System" },
       {
         name: "description",
         content:
           "Browse Quality Management Team (QMT) officers at ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "QMT Officer | ALERT Hospital Management System" },
+      { property: "og:title", content: "QMT Officer | ALERT Quality Management System" },
       {
         property: "og:description",
         content:

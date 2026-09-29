@@ -70,12 +70,12 @@ export const Route = createFileRoute("/departments/$slug")({
     const name = loaderData?.label ?? "Department";
     return {
       meta: [
-        { title: `${name} | ALERT Hospital Management System` },
+        { title: `${name} | ALERT Quality Management System` },
         {
           name: "description",
           content: `${name} dashboard at ALERT Comprehensive Specialized Hospital: audits, cases and weekly activity.`,
         },
-        { property: "og:title", content: `${name} | ALERT Hospital Management System` },
+        { property: "og:title", content: `${name} | ALERT Quality Management System` },
         {
           property: "og:description",
           content: `${name} dashboard at ALERT Comprehensive Specialized Hospital: audits, cases and weekly activity.`,

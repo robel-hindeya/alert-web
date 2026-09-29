@@ -20,16 +20,16 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "ALERT Hospital | Secure System Login" },
+      { title: "ALERT Hospital | Quality Management System" },
       {
         name: "description",
         content:
-          "Sign in to ALERT Comprehensive Specialized Hospital management system. Super Admin, Clinical Admin, and Coordinator authentication.",
+          "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System. Super Admin, Clinical Admin, and Coordinator authentication.",
       },
-      { property: "og:title", content: "ALERT Hospital | Secure System Login" },
+      { property: "og:title", content: "ALERT Hospital | Quality Management System" },
       {
         property: "og:description",
-        content: "Sign in to ALERT Comprehensive Specialized Hospital management system.",
+        content: "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System.",
       },
     ],
   }),
@@ -156,7 +156,7 @@ function LoginPage() {
 
           <div className="mt-4 text-center">
             <h1 className="text-xl font-bold text-foreground tracking-tight">
-              Hospital Management System
+              Quality Management System
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
               Sign in with your role credentials and select your department workspace.

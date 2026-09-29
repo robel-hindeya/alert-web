@@ -6,13 +6,13 @@ import { departments } from "./departments.$slug";
 export const Route = createFileRoute("/departments/")({
   head: () => ({
     meta: [
-      { title: "Audit Modules | ALERT Hospital Management System" },
+      { title: "Audit Modules | ALERT Quality Management System" },
       {
         name: "description",
         content:
           "Hierarchy of the 10 clinical audit modules managed under the Super Admin at ALERT Comprehensive Specialized Hospital.",
       },
-      { property: "og:title", content: "Audit Modules | ALERT Hospital Management System" },
+      { property: "og:title", content: "Audit Modules | ALERT Quality Management System" },
       {
         property: "og:description",
         content:
