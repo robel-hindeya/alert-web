@@ -302,7 +302,7 @@ export function CoordinatorPortal() {
                 <div
                   className={`text-[11px] font-normal truncate ${activeTab === "home" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
                 >
-                  Department Forms
+                  QMT Audits &amp; Forms
                 </div>
               </div>
             </div>
@@ -378,10 +378,10 @@ export function CoordinatorPortal() {
           </button>
         </div>
 
-        {/* Department Switcher in PC Sidebar */}
+        {/* QMT Audits Switcher in PC Sidebar */}
         <div className="px-4 py-3 mx-3 my-2 rounded-xl bg-muted/40 border border-border/60">
           <Label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 uppercase tracking-wider">
-            Active Department
+            QMT Audits
           </Label>
           <Select
             value={selectedDeptSlug}
@@ -393,9 +393,9 @@ export function CoordinatorPortal() {
               }
             }}
           >
-            <SelectTrigger className="w-full text-xs h-9 bg-background">
+            <SelectTrigger className="w-full text-xs h-9 bg-background font-medium">
               <Building2 className="size-3.5 text-primary shrink-0 mr-1" />
-              <SelectValue placeholder="Select Department" />
+              <SelectValue placeholder="Select QMT Audit" />
             </SelectTrigger>
             <SelectContent>
               {departments.map((d) => (
@@ -460,7 +460,7 @@ export function CoordinatorPortal() {
               ALERT Hospital
             </span>
             <span className="block text-[10px] text-primary font-semibold leading-none truncate">
-              Coordinator · {activeDept.label}
+              QMT Audit · {activeDept.label}
             </span>
           </div>
         </div>
@@ -471,7 +471,7 @@ export function CoordinatorPortal() {
             variant="outline"
             className="text-[11px] capitalize font-medium px-2 py-0.5 border-primary/30 text-primary bg-primary/5"
           >
-            {activeTab === "home" ? "Forms" : activeTab === "history" ? "History" : "Profile"}
+            {activeTab === "home" ? "QMT Audits" : activeTab === "history" ? "History" : "Profile"}
           </Badge>
           <button
             type="button"
@@ -488,10 +488,45 @@ export function CoordinatorPortal() {
       </header>
 
       {/* ============================================================ */}
+      {/* PHONE QMT AUDITS SELECTOR BAR (Mobile < md)                   */}
+      {/* ============================================================ */}
+      <div className="md:hidden sticky top-14 z-20 flex items-center justify-between gap-2 px-3.5 py-2.5 bg-card/95 border-b border-border/80 shadow-2xs backdrop-blur-md">
+        <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+          <Building2 className="size-3.5 text-primary shrink-0" />
+          <span className="text-[11px] font-bold text-foreground uppercase tracking-wider whitespace-nowrap">
+            QMT Audits:
+          </span>
+        </div>
+        <div className="flex-1 min-w-0 max-w-[240px]">
+          <Select
+            value={selectedDeptSlug}
+            onValueChange={(slug) => {
+              setSelectedDeptSlug(slug);
+              const found = departments.find((d) => d.slug === slug);
+              if (found) {
+                saveDeptSession({ slug: found.slug, label: found.label });
+              }
+            }}
+          >
+            <SelectTrigger className="w-full text-xs h-8.5 bg-background border-border shadow-2xs font-semibold">
+              <SelectValue placeholder="Select QMT Audit" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((d) => (
+                <SelectItem key={d.slug} value={d.slug} className="text-xs font-medium">
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
       {/* MAIN CONTENT AREA (Scrollable, responsive)                   */}
       {/* ============================================================ */}
       <main className="flex-1 min-w-0 pb-24 md:pb-8 flex flex-col">
-        {/* TAB 1: HOME (MY DEPARTMENT FORMS) */}
+        {/* TAB 1: HOME (QMT AUDITS & FORMS) */}
         {activeTab === "home" && (
           <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl w-full mx-auto animate-in fade-in duration-200">
             {/* Page Header */}
@@ -499,13 +534,13 @@ export function CoordinatorPortal() {
               <div>
                 <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-1">
                   <Building2 className="size-3.5" />
-                  <span>{activeDept.label}</span>
+                  <span>QMT Audit · {activeDept.label}</span>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                  My Department Forms
+                  QMT Audit Forms
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Clinical checklists and intake forms assigned to {activeDept.label}.
+                  Clinical checklists and audit intake forms assigned to {activeDept.label}.
                 </p>
               </div>
             </div>
@@ -1071,7 +1106,7 @@ export function CoordinatorPortal() {
       {/* ============================================================ */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-lg border-t border-border z-40 px-3 py-2 shadow-2xl safe-area-bottom">
         <div className="grid grid-cols-3 gap-1 max-w-md mx-auto">
-          {/* 1. HOME BUTTON */}
+          {/* 1. QMT AUDITS BUTTON */}
           <button
             onClick={() => setActiveTab("home")}
             className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all ${
@@ -1081,7 +1116,7 @@ export function CoordinatorPortal() {
             }`}
           >
             <Home className="size-5 shrink-0" />
-            <span className="text-[11px] mt-1 font-medium">Home</span>
+            <span className="text-[11px] mt-1 font-medium">QMT Audits</span>
           </button>
 
           {/* 2. HISTORY BUTTON */}
