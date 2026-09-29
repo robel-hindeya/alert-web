@@ -1,25 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 export * from "./form-types";
-import {
-  CustomForm,
-  FormResponse,
-  INITIAL_DEFAULT_FORMS,
-  FormQuestion,
-} from "./form-types";
+import { CustomForm, FormResponse, INITIAL_DEFAULT_FORMS, FormQuestion } from "./form-types";
 
 const FORMS_STORAGE_KEY = "alert_hospital_forms";
 const RESPONSES_STORAGE_KEY = "alert_hospital_form_responses";
 
 const DEPT_LABELS_MAP: Record<string, string> = {
   "emergency-corridor": "Emergency Corridor",
-  "inpatient": "Inpatient",
-  "mch": "MCH",
+  inpatient: "Inpatient",
+  mch: "MCH",
   "surgical-service": "Surgical Service",
   "or-cancellation": "OR Cancellation",
   "preoperative-preparation": "Preoperative Preparation",
   "chart-completeness": "Chart Completeness",
   "or-time-stamp": "OR Time-Stamp",
-  "opd": "OPD",
+  opd: "OPD",
   "postoperative-care": "Postoperative Care",
 };
 
@@ -111,7 +106,8 @@ export function generateQuestionsForType(
         type: "paragraph",
         required: false,
         options: [],
-        placeholder: notes || "Any specific limitations, blood product preferences, or patient requests...",
+        placeholder:
+          notes || "Any specific limitations, blood product preferences, or patient requests...",
       },
     ];
   }
@@ -171,7 +167,8 @@ export function generateQuestionsForType(
         type: "paragraph",
         required: true,
         options: [],
-        placeholder: "Detail what happened, circumstances, personnel present, and sequence of events...",
+        placeholder:
+          "Detail what happened, circumstances, personnel present, and sequence of events...",
       },
       {
         id: "q-action-taken",
@@ -179,7 +176,9 @@ export function generateQuestionsForType(
         type: "paragraph",
         required: true,
         options: [],
-        placeholder: notes || "Immediate care provided to patient, vital signs reassessed, attending notified...",
+        placeholder:
+          notes ||
+          "Immediate care provided to patient, vital signs reassessed, attending notified...",
       },
       {
         id: "q-follow-up",
@@ -212,7 +211,11 @@ export function generateQuestionsForType(
         title: "Duty Shift Assessed",
         type: "multiple_choice",
         required: true,
-        options: ["Morning Shift (08:00 - 16:00)", "Evening Shift (16:00 - 22:00)", "Night Shift (22:00 - 08:00)"],
+        options: [
+          "Morning Shift (08:00 - 16:00)",
+          "Evening Shift (16:00 - 22:00)",
+          "Night Shift (22:00 - 08:00)",
+        ],
       },
       {
         id: "q-workflow-score",
@@ -247,7 +250,8 @@ export function generateQuestionsForType(
         type: "paragraph",
         required: false,
         options: [],
-        placeholder: notes || "Please suggest specific actions to optimize patient safety and workflow...",
+        placeholder:
+          notes || "Please suggest specific actions to optimize patient safety and workflow...",
       },
     ];
   }
@@ -311,7 +315,8 @@ export function generateQuestionsForType(
         type: "paragraph",
         required: true,
         options: [],
-        placeholder: notes || "Describe clinical evaluation, differential diagnosis, and management steps...",
+        placeholder:
+          notes || "Describe clinical evaluation, differential diagnosis, and management steps...",
       },
     ];
   }
@@ -382,7 +387,9 @@ export function generateQuestionsForType(
       type: "paragraph",
       required: false,
       options: [],
-      placeholder: notes || "Record any observed deficiencies, equipment defects, or immediate actions taken...",
+      placeholder:
+        notes ||
+        "Record any observed deficiencies, equipment defects, or immediate actions taken...",
     },
   ];
 }
@@ -395,7 +402,11 @@ export function createDefaultFormForId(id: string, deptSlug?: string): CustomFor
   let type = "Checklist";
   let desc = `Daily routine operational and clinical audit checklist for ${label} at ALERT Comprehensive Specialized Hospital.`;
 
-  if (id.endsWith("2") || id.toLowerCase().includes("incident") || id.toLowerCase().includes("report")) {
+  if (
+    id.endsWith("2") ||
+    id.toLowerCase().includes("incident") ||
+    id.toLowerCase().includes("report")
+  ) {
     title = "Incident report";
     type = "Report";
     desc = `Official incident and clinical adverse event reporting record for ${label} at ALERT Comprehensive Specialized Hospital.`;
@@ -450,22 +461,25 @@ export function saveCustomDepartmentForm(data: {
   return form;
 }
 
+const STATIC_DEPRECATED_FORM_IDS = new Set([
+  "emergency-triage-assessment",
+  "corridor-handover-checklist",
+]);
+
 export function getAllForms(): CustomForm[] {
-  if (typeof window === "undefined") return INITIAL_DEFAULT_FORMS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(FORMS_STORAGE_KEY);
-    if (!raw) {
-      window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(INITIAL_DEFAULT_FORMS));
-      return INITIAL_DEFAULT_FORMS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(INITIAL_DEFAULT_FORMS));
-      return INITIAL_DEFAULT_FORMS;
+    if (!Array.isArray(parsed) || parsed.length === 0) return [];
+    const cleaned = (parsed as CustomForm[]).filter((f) => !STATIC_DEPRECATED_FORM_IDS.has(f.id));
+    if (cleaned.length !== parsed.length) {
+      window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(cleaned));
     }
-    return parsed as CustomForm[];
+    return cleaned;
   } catch {
-    return INITIAL_DEFAULT_FORMS;
+    return [];
   }
 }
 
@@ -475,6 +489,9 @@ export function getFormsForDepartment(deptSlug: string): CustomForm[] {
 }
 
 export function getFormById(id: string, deptSlug?: string): CustomForm | undefined {
+  if (STATIC_DEPRECATED_FORM_IDS.has(id)) {
+    return undefined;
+  }
   const all = getAllForms();
   const existing = all.find((f) => f.id === id);
   if (existing) return existing;
@@ -482,7 +499,7 @@ export function getFormById(id: string, deptSlug?: string): CustomForm | undefin
   const inDefault = INITIAL_DEFAULT_FORMS.find((f) => f.id === id);
   if (inDefault) return inDefault;
 
-  // Dynamically synthesize and save the form so it is never missing
+  // Dynamically synthesize and save the form so it is never missing if accessed directly
   const synthesized = createDefaultFormForId(id, deptSlug);
   saveForm(synthesized);
   return synthesized;
@@ -549,10 +566,7 @@ export function deleteForm(id: string): void {
   }
 }
 
-export function saveFormResponse(
-  formId: string,
-  answers: Record<string, string | string[] | number>,
-): FormResponse {
+export function saveFormResponse(formId: string, answers: Record<string, unknown>): FormResponse {
   const response: FormResponse = {
     id: `RESP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     formId,
@@ -564,10 +578,7 @@ export function saveFormResponse(
     try {
       const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
       const existing: FormResponse[] = raw ? JSON.parse(raw) : [];
-      window.localStorage.setItem(
-        RESPONSES_STORAGE_KEY,
-        JSON.stringify([response, ...existing]),
-      );
+      window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify([response, ...existing]));
       window.dispatchEvent(new Event("alert-form-responses-updated"));
 
       // Persist to real database
@@ -623,13 +634,14 @@ export function useDepartmentForms(deptSlug: string) {
       })
       .then((dbForms) => {
         if (!isMounted || !dbForms) return;
-        if (Array.isArray(dbForms) && dbForms.length > 0) {
+        if (Array.isArray(dbForms)) {
+          const cleaned = dbForms.filter((f) => !STATIC_DEPRECATED_FORM_IDS.has(f.id));
           // Merge with localStorage
           const all = getAllForms();
           const otherDepts = all.filter((f) => f.departmentSlug !== deptSlug);
-          const merged = [...dbForms, ...otherDepts];
+          const merged = [...cleaned, ...otherDepts];
           window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(merged));
-          setForms(dbForms);
+          setForms(cleaned);
         }
       })
       .catch((err) => console.warn("Could not fetch forms from DB API:", err));
@@ -706,7 +718,7 @@ export function useFormResponses(formId: string) {
   const [responses, setResponses] = useState<FormResponse[]>(() => getFormResponses(formId));
   const [loading, setLoading] = useState(true);
 
-  const syncResponses = async () => {
+  const syncResponses = useCallback(async () => {
     try {
       const res = await fetch(`/api/forms/${encodeURIComponent(formId)}/responses`);
       if (res.ok) {
@@ -726,18 +738,20 @@ export function useFormResponses(formId: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [formId]);
 
   useEffect(() => {
-    syncResponses();
-    const handleUpdated = () => syncResponses();
+    void syncResponses();
+    const handleUpdated = () => {
+      void syncResponses();
+    };
     window.addEventListener("alert-form-responses-updated", handleUpdated);
     window.addEventListener("storage", handleUpdated);
     return () => {
       window.removeEventListener("alert-form-responses-updated", handleUpdated);
       window.removeEventListener("storage", handleUpdated);
     };
-  }, [formId]);
+  }, [syncResponses]);
 
   return {
     responses,
@@ -817,6 +831,3 @@ export function useAllResponses() {
 
   return { responses, loading, refresh: syncAll };
 }
-
-
-

@@ -17,9 +17,11 @@ import {
   Hospital,
   Clock,
   KeyRound,
+  UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { UserManagementTab } from "@/components/settings/user-management-tab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,7 +127,7 @@ function SettingsPage() {
     }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPw) {
       toast.error("Please enter your current password.");
@@ -140,10 +142,36 @@ function SettingsPage() {
       return;
     }
 
-    toast.success("Administrator password updated successfully.");
-    setCurrentPw("");
-    setNewPw("");
-    setConfirmPw("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "habtamu", password: currentPw }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error("Current password verification failed.");
+        return;
+      }
+
+      const updateRes = await fetch(`/api/users/${data.user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPw }),
+      });
+
+      if (!updateRes.ok) {
+        toast.error("Failed to update password in system.");
+        return;
+      }
+
+      toast.success("Super Administrator password updated successfully.");
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } catch {
+      toast.error("Network error while updating password.");
+    }
   };
 
   const handleCreateBackup = () => {
@@ -239,6 +267,13 @@ function SettingsPage() {
             >
               <Bell className="size-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger
+              value="users"
+              className="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            >
+              <UsersRound className="size-4" />
+              Role Accounts &amp; Bans
             </TabsTrigger>
             <TabsTrigger
               value="security"
@@ -638,11 +673,22 @@ function SettingsPage() {
                   <div className="rounded-xl border border-primary/20 bg-primary/8 p-3.5 text-xs text-primary">
                     <p className="font-semibold flex items-center gap-1.5">
                       <ShieldCheck className="size-4" /> Current Security Role: Super Administrator
+                      (Habtamu)
                     </p>
                     <p className="mt-1 opacity-90 text-[11px] leading-relaxed">
-                      Signed in as master operator at ALERT Comprehensive Specialized Hospital. All
-                      privileged actions are audited into immutable system logs.
+                      Signed in as master super administrator at ALERT Comprehensive Specialized
+                      Hospital. You can configure usernames, set passwords, and ban/unban Admin and
+                      Coordinator accounts.
                     </p>
+                    <Button
+                      type="button"
+                      onClick={() => setActiveTab("users")}
+                      variant="outline"
+                      className="mt-3 w-full gap-2 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <UsersRound className="size-3.5" />
+                      Manage All Role Usernames, Passwords &amp; Bans
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -783,6 +829,11 @@ function SettingsPage() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* 6. Role Accounts & Bans Tab (Superadmin) */}
+          <TabsContent value="users" className="space-y-4">
+            <UserManagementTab />
           </TabsContent>
         </Tabs>
       </main>

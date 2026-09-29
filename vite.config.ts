@@ -12,7 +12,7 @@ function apiDevPlugin(): Plugin {
     name: "api-dev-plugin",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith("/api/forms")) {
+        if (!req.url?.startsWith("/api/") && !req.url?.startsWith("/__l5e/")) {
           return next();
         }
 
@@ -46,13 +46,14 @@ function apiDevPlugin(): Plugin {
           response.headers.forEach((val, key) => {
             res.setHeader(key, val);
           });
-          const resBody = await response.text();
-          res.end(resBody);
-        } catch (err: any) {
+          const arrayBuffer = await response.arrayBuffer();
+          res.end(Buffer.from(arrayBuffer));
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "Internal server error";
           console.error("API Dev Plugin error:", err);
           res.statusCode = 500;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: err.message || "Internal server error" }));
+          res.end(JSON.stringify({ error: message }));
         }
       });
     },

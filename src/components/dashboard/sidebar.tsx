@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 
-const items: { label: string; icon: LucideIcon; to?: any }[] = [
+const items: { label: string; icon: LucideIcon; to?: string }[] = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/" as const },
   { label: "Coordinators", icon: UsersRound, to: "/cordineters" as const },
   { label: "QMT Officer", icon: UserCheck, to: "/qmt-officer" as const },
@@ -79,12 +79,23 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
     <>
       {/* Desktop fixed sidebar */}
       <aside className="sidebar-surface fixed inset-y-0 left-0 z-40 hidden w-64 flex-col lg:flex">
-        <div className="bg-card px-4 py-5">
-          <img
-            src={logo.url}
-            alt="ALERT Comprehensive Specialized Hospital logo"
-            className="mx-auto h-28 w-auto object-contain"
-          />
+        <div className="border-b border-sidebar-border/70 bg-card/90 px-3.5 py-4">
+          <Link
+            to="/"
+            className="group block transition-transform active:scale-98"
+            title="ALERT Comprehensive Specialized Hospital"
+          >
+            <div className="flex items-center justify-center rounded-xl bg-white p-2 shadow-xs border border-border/50 group-hover:border-primary/40 group-hover:shadow-sm transition-all">
+              <img
+                src={logo.url || "/alert-logo.png"}
+                alt="ALERT Comprehensive Specialized Hospital logo"
+                className="h-14 w-auto max-w-full object-contain transition-transform group-hover:scale-[1.02]"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+                }}
+              />
+            </div>
+          </Link>
         </div>
         {nav}
         <div className="flex items-center gap-3 px-5 py-6 text-sidebar-foreground/80">
@@ -105,12 +116,19 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
             aria-hidden
           />
           <aside className="sidebar-surface absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col shadow-2xl transition-transform">
-            <div className="flex items-center justify-between border-b border-sidebar-border bg-card px-4 py-4">
-              <img
-                src={logo.url}
-                alt="ALERT Comprehensive Specialized Hospital logo"
-                className="h-14 w-auto object-contain"
-              />
+            <div className="flex items-center justify-between border-b border-sidebar-border/70 bg-card/95 px-4 py-3">
+              <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2">
+                <div className="rounded-lg bg-white p-1.5 shadow-xs border border-border/40">
+                  <img
+                    src={logo.url || "/alert-logo.png"}
+                    alt="ALERT Comprehensive Specialized Hospital logo"
+                    className="h-9 w-auto max-w-[170px] object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+                    }}
+                  />
+                </div>
+              </Link>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}

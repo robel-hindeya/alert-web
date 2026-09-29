@@ -28,12 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useForm,
-  saveFormResponse,
-  FormQuestion,
-  CustomForm,
-} from "@/lib/form-store";
+import { useForm, saveFormResponse, FormQuestion, CustomForm } from "@/lib/form-store";
 
 export const Route = createFileRoute("/forms/$formId")({
   component: StandaloneFormView,
@@ -48,7 +43,7 @@ function StandaloneFormView() {
   const { form, ready } = useForm(formId, dept);
   const navigate = useNavigate();
 
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -102,7 +97,7 @@ function StandaloneFormView() {
 
   const handleCheckboxChange = (qId: string, option: string, checked: boolean) => {
     setAnswers((prev) => {
-      const currentList: string[] = Array.isArray(prev[qId]) ? prev[qId] : [];
+      const currentList: string[] = Array.isArray(prev[qId]) ? (prev[qId] as string[]) : [];
       const updated = checked
         ? [...currentList, option]
         : currentList.filter((item) => item !== option);
@@ -187,12 +182,17 @@ function StandaloneFormView() {
       <div className="mx-auto max-w-2xl space-y-4">
         {/* Hospital Branding Header (matching Login page style) */}
         <div className="flex flex-col items-center text-center pt-2 pb-2">
-          <img
-            src={logo.url}
-            alt="ALERT Comprehensive Specialized Hospital logo"
-            className="h-16 w-auto object-contain"
-          />
-          <p className="mt-1 text-xs font-bold tracking-wider uppercase text-muted-foreground">
+          <div className="rounded-xl bg-white p-2 border border-border/50 shadow-xs max-w-[240px]">
+            <img
+              src={logo.url || "/alert-logo.png"}
+              alt="ALERT Comprehensive Specialized Hospital logo"
+              className="h-14 w-auto object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+              }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-bold tracking-wider uppercase text-muted-foreground">
             ALERT Comprehensive Specialized Hospital
           </p>
         </div>
@@ -251,21 +251,15 @@ function StandaloneFormView() {
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-foreground">
-                  Response Recorded
-                </h2>
+                <h2 className="text-2xl font-bold text-foreground">Response Recorded</h2>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Your submission for <strong>{form.title}</strong> has been recorded and safely stored in ALERT Comprehensive Specialized Hospital records.
+                  Your submission for <strong>{form.title}</strong> has been recorded and safely
+                  stored in ALERT Comprehensive Specialized Hospital records.
                 </p>
               </div>
 
               <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-                <Button
-                  type="button"
-                  onClick={handleResetForm}
-                  variant="outline"
-                  className="gap-2"
-                >
+                <Button type="button" onClick={handleResetForm} variant="outline" className="gap-2">
                   <RotateCcw className="size-4" />
                   Submit another response
                 </Button>
@@ -289,9 +283,10 @@ function StandaloneFormView() {
                 <div
                   className="h-32 sm:h-44 w-full bg-cover bg-center"
                   style={{
-                    background: form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
-                      ? `url("${form.bannerUrl}") center/cover no-repeat`
-                      : form.bannerUrl,
+                    background:
+                      form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
+                        ? `url("${form.bannerUrl}") center/cover no-repeat`
+                        : form.bannerUrl,
                   }}
                 />
               ) : (
@@ -318,9 +313,7 @@ function StandaloneFormView() {
 
                 <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs text-destructive font-medium">
                   <span>* Indicates required question</span>
-                  <span className="text-muted-foreground">
-                    {form.questions.length} questions
-                  </span>
+                  <span className="text-muted-foreground">{form.questions.length} questions</span>
                 </div>
               </div>
             </div>
@@ -329,6 +322,8 @@ function StandaloneFormView() {
             {form.questions.map((q, idx) => {
               const hasError = !!errors[q.id];
               const value = answers[q.id];
+              const strValue =
+                typeof value === "string" ? value : value != null ? String(value) : "";
 
               return (
                 <div
@@ -344,9 +339,7 @@ function StandaloneFormView() {
                   <div className="space-y-1 mb-4">
                     <Label className="text-base font-semibold text-foreground leading-snug flex items-baseline gap-1">
                       <span>{q.title}</span>
-                      {q.required && (
-                        <span className="text-destructive text-sm font-bold">*</span>
-                      )}
+                      {q.required && <span className="text-destructive text-sm font-bold">*</span>}
                     </Label>
                     {q.description && (
                       <p className="text-xs text-muted-foreground">{q.description}</p>
@@ -358,7 +351,7 @@ function StandaloneFormView() {
                     {/* Short Answer Text */}
                     {q.type === "text" && (
                       <Input
-                        value={value || ""}
+                        value={strValue}
                         onChange={(e) => handleTextChange(q.id, e.target.value)}
                         placeholder={q.placeholder || "Your answer"}
                         className="max-w-xl border-b border-t-0 border-x-0 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-base"
@@ -368,7 +361,7 @@ function StandaloneFormView() {
                     {/* Paragraph Long Answer */}
                     {q.type === "paragraph" && (
                       <Textarea
-                        value={value || ""}
+                        value={strValue}
                         onChange={(e) => handleTextChange(q.id, e.target.value)}
                         placeholder={q.placeholder || "Your answer"}
                         rows={3}
@@ -379,7 +372,7 @@ function StandaloneFormView() {
                     {/* Multiple Choice (Radio) */}
                     {q.type === "multiple_choice" && (
                       <RadioGroup
-                        value={value || ""}
+                        value={strValue}
                         onValueChange={(val) => handleTextChange(q.id, val)}
                         className="space-y-3"
                       >
@@ -405,16 +398,13 @@ function StandaloneFormView() {
                     {q.type === "checkboxes" && (
                       <div className="space-y-3">
                         {q.options?.map((opt, optIdx) => {
-                          const checked =
-                            Array.isArray(value) && value.includes(opt);
+                          const checked = Array.isArray(value) && (value as string[]).includes(opt);
                           return (
                             <div key={optIdx} className="flex items-center space-x-3">
                               <Checkbox
                                 id={`${q.id}-chk-${optIdx}`}
                                 checked={checked}
-                                onCheckedChange={(c) =>
-                                  handleCheckboxChange(q.id, opt, Boolean(c))
-                                }
+                                onCheckedChange={(c) => handleCheckboxChange(q.id, opt, Boolean(c))}
                               />
                               <Label
                                 htmlFor={`${q.id}-chk-${optIdx}`}
@@ -432,7 +422,7 @@ function StandaloneFormView() {
                     {q.type === "dropdown" && (
                       <div className="max-w-md">
                         <Select
-                          value={value || ""}
+                          value={strValue}
                           onValueChange={(val) => handleTextChange(q.id, val)}
                         >
                           <SelectTrigger className="h-11 border-border">
@@ -453,7 +443,7 @@ function StandaloneFormView() {
                     {q.type === "number" && (
                       <Input
                         type="number"
-                        value={value || ""}
+                        value={strValue}
                         onChange={(e) => handleTextChange(q.id, e.target.value)}
                         placeholder="Enter a number"
                         className="max-w-xs h-11 border-border"
@@ -462,22 +452,57 @@ function StandaloneFormView() {
 
                     {/* Date */}
                     {q.type === "date" && (
-                      <Input
-                        type="date"
-                        value={value || ""}
-                        onChange={(e) => handleTextChange(q.id, e.target.value)}
-                        className="max-w-xs h-11 border-border"
-                      />
+                      <div className="flex items-center gap-2 max-w-xs">
+                        <Input
+                          type="date"
+                          value={strValue}
+                          onChange={(e) => handleTextChange(q.id, e.target.value)}
+                          className="h-11 border-border flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const now = new Date();
+                            const yyyy = now.getFullYear();
+                            const mm = String(now.getMonth() + 1).padStart(2, "0");
+                            const dd = String(now.getDate()).padStart(2, "0");
+                            handleTextChange(q.id, `${yyyy}-${mm}-${dd}`);
+                          }}
+                          className="h-11 text-xs shrink-0 px-3 font-medium text-primary hover:bg-primary/10"
+                          title="Set today's date"
+                        >
+                          Today
+                        </Button>
+                      </div>
                     )}
 
                     {/* Time */}
                     {q.type === "time" && (
-                      <Input
-                        type="time"
-                        value={value || ""}
-                        onChange={(e) => handleTextChange(q.id, e.target.value)}
-                        className="max-w-xs h-11 border-border"
-                      />
+                      <div className="flex items-center gap-2 max-w-xs">
+                        <Input
+                          type="time"
+                          value={strValue}
+                          onChange={(e) => handleTextChange(q.id, e.target.value)}
+                          className="h-11 border-border flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const now = new Date();
+                            const hh = String(now.getHours()).padStart(2, "0");
+                            const mm = String(now.getMinutes()).padStart(2, "0");
+                            handleTextChange(q.id, `${hh}:${mm}`);
+                          }}
+                          className="h-11 text-xs shrink-0 px-3 font-medium text-primary hover:bg-primary/10"
+                          title="Set current time"
+                        >
+                          Now
+                        </Button>
+                      </div>
                     )}
 
                     {/* Rating Scale (1 to 5) */}
@@ -523,11 +548,7 @@ function StandaloneFormView() {
 
             {/* Bottom Form Actions */}
             <div className="flex items-center justify-between pt-2">
-              <Button
-                type="submit"
-                size="lg"
-                className="gap-2 px-8 font-semibold shadow-md"
-              >
+              <Button type="submit" size="lg" className="gap-2 px-8 font-semibold shadow-md">
                 <Send className="size-4" />
                 Submit
               </Button>

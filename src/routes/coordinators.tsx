@@ -13,8 +13,7 @@ export const Route = createFileRoute("/coordinators")({
       { property: "og:title", content: "Coordinators Portal | ALERT Hospital Management System" },
       {
         property: "og:description",
-        content:
-          "Manage department forms, track submit history, and view coordinator credentials.",
+        content: "Manage department forms, track submit history, and view coordinator credentials.",
       },
     ],
   }),

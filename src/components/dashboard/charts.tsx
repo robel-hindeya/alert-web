@@ -12,22 +12,14 @@ import {
   YAxis,
 } from "recharts";
 
-const visits = [
-  { day: "Apr 18", value: 62 },
-  { day: "Apr 19", value: 88 },
-  { day: "Apr 20", value: 95 },
-  { day: "Apr 21", value: 150 },
-  { day: "Apr 22", value: 100 },
-  { day: "Apr 23", value: 118 },
-  { day: "Apr 24", value: 138 },
-];
-
-const departments = [
-  { name: "Internal Medicine", value: 32, color: "var(--color-chart-2)" },
-  { name: "Pediatrics", value: 24, color: "var(--color-chart-1)" },
-  { name: "Orthopedics", value: 16, color: "var(--color-chart-4)" },
-  { name: "Cardiology", value: 14, color: "var(--color-chart-3)" },
-  { name: "Others", value: 14, color: "var(--color-chart-5)" },
+const DEFAULT_VISITS = [
+  { day: "Mon", value: 0 },
+  { day: "Tue", value: 0 },
+  { day: "Wed", value: 0 },
+  { day: "Thu", value: 0 },
+  { day: "Fri", value: 0 },
+  { day: "Sat", value: 0 },
+  { day: "Sun", value: 0 },
 ];
 
 function useMounted() {
@@ -36,14 +28,22 @@ function useMounted() {
   return mounted;
 }
 
-export function VisitsChart() {
+interface VisitsChartProps {
+  data?: { day: string; value: number }[];
+}
+
+export function VisitsChart({ data }: VisitsChartProps) {
   const mounted = useMounted();
   if (!mounted) return <div className="h-[240px]" />;
+
+  const chartData = data && data.length > 0 ? data : DEFAULT_VISITS;
+  const maxVal = Math.max(...chartData.map((d) => d.value), 10);
+  const domainMax = Math.ceil(maxVal / 5) * 5;
 
   return (
     <div className="h-[240px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={visits} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <defs>
             <linearGradient id="visitsFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.35} />
@@ -58,8 +58,7 @@ export function VisitsChart() {
             tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
           />
           <YAxis
-            domain={[0, 200]}
-            ticks={[0, 50, 100, 150, 200]}
+            domain={[0, domainMax]}
             tickLine={false}
             axisLine={false}
             tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
@@ -87,8 +86,18 @@ export function VisitsChart() {
   );
 }
 
-export function DepartmentsChart() {
+interface DepartmentsChartProps {
+  departments?: { name: string; value: number; color: string }[];
+  totalPatients?: number;
+}
+
+export function DepartmentsChart({ departments, totalPatients = 0 }: DepartmentsChartProps) {
   const mounted = useMounted();
+
+  const deptList =
+    departments && departments.length > 0
+      ? departments
+      : [{ name: "Emergency Corridor", value: 100, color: "var(--color-chart-1)" }];
 
   return (
     <div className="flex flex-col items-center gap-5">
@@ -97,7 +106,7 @@ export function DepartmentsChart() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={departments}
+                data={deptList}
                 dataKey="value"
                 innerRadius={58}
                 outerRadius={90}
@@ -105,7 +114,7 @@ export function DepartmentsChart() {
                 stroke="none"
                 isAnimationActive={false}
               >
-                {departments.map((d) => (
+                {deptList.map((d) => (
                   <Cell key={d.name} fill={d.color} />
                 ))}
               </Pie>
@@ -113,19 +122,21 @@ export function DepartmentsChart() {
           </ResponsiveContainer>
         )}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold text-foreground">1,248</span>
-          <span className="text-xs text-muted-foreground">Total Patients</span>
+          <span className="text-xl font-bold text-foreground">
+            {totalPatients.toLocaleString()}
+          </span>
+          <span className="text-xs text-muted-foreground">Total Records</span>
         </div>
       </div>
       <ul className="w-full space-y-3">
-        {departments.map((d) => (
+        {deptList.map((d) => (
           <li key={d.name} className="flex items-center gap-2 text-xs">
             <span
               className="size-2.5 rounded-full"
               style={{ backgroundColor: d.color }}
               aria-hidden
             />
-            <span className="flex-1 text-foreground">{d.name}</span>
+            <span className="flex-1 text-foreground truncate">{d.name}</span>
             <span className="font-semibold text-muted-foreground">{d.value}%</span>
           </li>
         ))}

@@ -35,7 +35,9 @@ import {
   FileQuestion,
   Info,
   CalendarDays,
+  LogOut,
 } from "lucide-react";
+import { clearAuthUser } from "@/lib/auth-session";
 import { toast } from "sonner";
 import logo from "@/assets/alert-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,7 @@ import {
   CustomForm,
   FormResponse,
   FormQuestion,
+  EnrichedFormResponse,
 } from "@/lib/form-store";
 import { departments } from "@/routes/departments.$slug";
 import { useDeptSession, saveDeptSession } from "@/lib/dept-session";
@@ -150,7 +153,11 @@ export function CoordinatorPortal() {
   const { forms, refresh: refreshForms } = useDepartmentForms(selectedDeptSlug);
 
   // All responses hook for history
-  const { responses: allResponses, loading: loadingResponses, refresh: refreshResponses } = useAllResponses();
+  const {
+    responses: allResponses,
+    loading: loadingResponses,
+    refresh: refreshResponses,
+  } = useAllResponses();
 
   // Modals state
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -160,7 +167,7 @@ export function CoordinatorPortal() {
   const [formToFill, setFormToFill] = useState<CustomForm | null>(null);
 
   const [viewResponseModalOpen, setViewResponseModalOpen] = useState(false);
-  const [viewingResponse, setViewingResponse] = useState<any | null>(null);
+  const [viewingResponse, setViewingResponse] = useState<EnrichedFormResponse | null>(null);
 
   // Filters
   const [formSearch, setFormSearch] = useState("");
@@ -197,10 +204,13 @@ export function CoordinatorPortal() {
 
       if (formTypeFilter === "all") return true;
       const lowerTitle = f.title.toLowerCase();
-      if (formTypeFilter === "audit") return lowerTitle.includes("audit") || lowerTitle.includes("checklist");
+      if (formTypeFilter === "audit")
+        return lowerTitle.includes("audit") || lowerTitle.includes("checklist");
       if (formTypeFilter === "consent") return lowerTitle.includes("consent");
-      if (formTypeFilter === "report") return lowerTitle.includes("report") || lowerTitle.includes("incident");
-      if (formTypeFilter === "survey") return lowerTitle.includes("survey") || lowerTitle.includes("quality");
+      if (formTypeFilter === "report")
+        return lowerTitle.includes("report") || lowerTitle.includes("incident");
+      if (formTypeFilter === "survey")
+        return lowerTitle.includes("survey") || lowerTitle.includes("quality");
       return true;
     });
   }, [forms, formSearch, formTypeFilter]);
@@ -247,11 +257,16 @@ export function CoordinatorPortal() {
         {/* Hospital Branding */}
         <div className="p-4 border-b border-border bg-card/50">
           <div className="flex items-center gap-3">
-            <img
-              src={logo.url}
-              alt="ALERT Hospital Logo"
-              className="h-10 w-auto object-contain shrink-0"
-            />
+            <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs shrink-0">
+              <img
+                src={logo.url || "/alert-logo.png"}
+                alt="ALERT Hospital Logo"
+                className="h-9 w-auto object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+                }}
+              />
+            </div>
             <div className="min-w-0">
               <span className="block text-sm font-bold leading-tight text-foreground truncate">
                 ALERT Hospital
@@ -279,10 +294,14 @@ export function CoordinatorPortal() {
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <Home className={`size-4.5 shrink-0 ${activeTab === "home" ? "text-primary-foreground" : "text-primary"}`} />
+              <Home
+                className={`size-4.5 shrink-0 ${activeTab === "home" ? "text-primary-foreground" : "text-primary"}`}
+              />
               <div className="text-left min-w-0">
                 <div className="truncate">Home</div>
-                <div className={`text-[11px] font-normal truncate ${activeTab === "home" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                <div
+                  className={`text-[11px] font-normal truncate ${activeTab === "home" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                >
                   Department Forms
                 </div>
               </div>
@@ -309,10 +328,14 @@ export function CoordinatorPortal() {
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <History className={`size-4.5 shrink-0 ${activeTab === "history" ? "text-primary-foreground" : "text-primary"}`} />
+              <History
+                className={`size-4.5 shrink-0 ${activeTab === "history" ? "text-primary-foreground" : "text-primary"}`}
+              />
               <div className="text-left min-w-0">
                 <div className="truncate">History</div>
-                <div className={`text-[11px] font-normal truncate ${activeTab === "history" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                <div
+                  className={`text-[11px] font-normal truncate ${activeTab === "history" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                >
                   My Submit History
                 </div>
               </div>
@@ -339,10 +362,14 @@ export function CoordinatorPortal() {
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <User className={`size-4.5 shrink-0 ${activeTab === "profile" ? "text-primary-foreground" : "text-primary"}`} />
+              <User
+                className={`size-4.5 shrink-0 ${activeTab === "profile" ? "text-primary-foreground" : "text-primary"}`}
+              />
               <div className="text-left min-w-0">
                 <div className="truncate">Profile</div>
-                <div className={`text-[11px] font-normal truncate ${activeTab === "profile" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                <div
+                  className={`text-[11px] font-normal truncate ${activeTab === "profile" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                >
                   My Info & Credentials
                 </div>
               </div>
@@ -399,13 +426,17 @@ export function CoordinatorPortal() {
             </div>
           </div>
 
-          <Link
-            to="/"
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors border border-border/60"
+          <button
+            type="button"
+            onClick={() => {
+              clearAuthUser();
+              window.location.href = "/login";
+            }}
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-border/60"
           >
-            <ArrowLeft className="size-3.5" />
-            <span>Hospital Dashboard</span>
-          </Link>
+            <LogOut className="size-3.5" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
@@ -414,11 +445,16 @@ export function CoordinatorPortal() {
       {/* ============================================================ */}
       <header className="sticky top-0 z-30 flex md:hidden h-14 w-full items-center justify-between border-b border-border bg-card/95 px-4 backdrop-blur-md">
         <div className="flex items-center gap-2.5 min-w-0">
-          <img
-            src={logo.url}
-            alt="ALERT Hospital Logo"
-            className="h-7 w-auto object-contain shrink-0"
-          />
+          <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs shrink-0">
+            <img
+              src={logo.url || "/alert-logo.png"}
+              alt="ALERT Hospital Logo"
+              className="h-7 w-auto object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+              }}
+            />
+          </div>
           <div className="min-w-0">
             <span className="block text-xs font-bold leading-tight text-foreground truncate">
               ALERT Hospital
@@ -431,16 +467,23 @@ export function CoordinatorPortal() {
 
         {/* Mobile current active tab badge */}
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-[11px] capitalize font-medium px-2 py-0.5 border-primary/30 text-primary bg-primary/5">
+          <Badge
+            variant="outline"
+            className="text-[11px] capitalize font-medium px-2 py-0.5 border-primary/30 text-primary bg-primary/5"
+          >
             {activeTab === "home" ? "Forms" : activeTab === "history" ? "History" : "Profile"}
           </Badge>
-          <Link
-            to="/"
-            className="grid size-7 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
-            title="Main Dashboard"
+          <button
+            type="button"
+            onClick={() => {
+              clearAuthUser();
+              window.location.href = "/login";
+            }}
+            className="grid size-7 place-items-center rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            title="Sign Out"
           >
-            <ArrowLeft className="size-3.5" />
-          </Link>
+            <LogOut className="size-3.5" />
+          </button>
         </div>
       </header>
 
@@ -470,24 +513,40 @@ export function CoordinatorPortal() {
             {/* Quick KPI stats banner */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
-                <span className="text-[11px] font-semibold text-muted-foreground block">Available Forms</span>
-                <span className="text-xl sm:text-2xl font-bold text-foreground mt-0.5 block">{forms.length}</span>
+                <span className="text-[11px] font-semibold text-muted-foreground block">
+                  Available Forms
+                </span>
+                <span className="text-xl sm:text-2xl font-bold text-foreground mt-0.5 block">
+                  {forms.length}
+                </span>
                 <span className="text-[10px] text-primary font-medium">Ready to fill</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
-                <span className="text-[11px] font-semibold text-muted-foreground block">Department</span>
-                <span className="text-sm font-bold text-foreground mt-1 truncate block">{activeDept.label}</span>
+                <span className="text-[11px] font-semibold text-muted-foreground block">
+                  Department
+                </span>
+                <span className="text-sm font-bold text-foreground mt-1 truncate block">
+                  {activeDept.label}
+                </span>
                 <span className="text-[10px] text-muted-foreground">ALERT Hospital</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
-                <span className="text-[11px] font-semibold text-muted-foreground block">Coordinator</span>
-                <span className="text-sm font-bold text-foreground mt-1 truncate block">{profile.name}</span>
+                <span className="text-[11px] font-semibold text-muted-foreground block">
+                  Coordinator
+                </span>
+                <span className="text-sm font-bold text-foreground mt-1 truncate block">
+                  {profile.name}
+                </span>
                 <span className="text-[10px] text-primary font-medium">{profile.role}</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs">
                 <span className="text-[11px] font-semibold text-muted-foreground block">Shift</span>
-                <span className="text-xs sm:text-sm font-bold text-foreground mt-1 truncate block">{profile.shift}</span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Active Duty</span>
+                <span className="text-xs sm:text-sm font-bold text-foreground mt-1 truncate block">
+                  {profile.shift}
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  Active Duty
+                </span>
               </div>
             </div>
 
@@ -570,7 +629,8 @@ export function CoordinatorPortal() {
                             {form.title}
                           </h3>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                            {form.description || "Standard department audit and clinical data collection form."}
+                            {form.description ||
+                              "Standard department audit and clinical data collection form."}
                           </p>
                         </div>
                       </div>
@@ -637,8 +697,12 @@ export function CoordinatorPortal() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-muted-foreground font-medium block">Total Entries Recorded</span>
-                  <span className="text-2xl font-bold text-foreground mt-0.5 block">{allResponses.length}</span>
+                  <span className="text-xs text-muted-foreground font-medium block">
+                    Total Entries Recorded
+                  </span>
+                  <span className="text-2xl font-bold text-foreground mt-0.5 block">
+                    {allResponses.length}
+                  </span>
                 </div>
                 <div className="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center">
                   <CheckCircle2 className="size-5" />
@@ -647,7 +711,9 @@ export function CoordinatorPortal() {
 
               <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-muted-foreground font-medium block">Latest Submission</span>
+                  <span className="text-xs text-muted-foreground font-medium block">
+                    Latest Submission
+                  </span>
                   <span className="text-xs sm:text-sm font-bold text-foreground mt-1 block">
                     {allResponses[0]
                       ? new Date(allResponses[0].submittedAt).toLocaleTimeString([], {
@@ -666,9 +732,15 @@ export function CoordinatorPortal() {
 
               <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-muted-foreground font-medium block">Submitter ID</span>
-                  <span className="text-sm font-bold text-foreground mt-0.5 block">{profile.id}</span>
-                  <span className="text-[11px] text-muted-foreground truncate block">{profile.name}</span>
+                  <span className="text-xs text-muted-foreground font-medium block">
+                    Submitter ID
+                  </span>
+                  <span className="text-sm font-bold text-foreground mt-0.5 block">
+                    {profile.id}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground truncate block">
+                    {profile.name}
+                  </span>
                 </div>
                 <div className="size-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 grid place-items-center">
                   <ShieldCheck className="size-5" />
@@ -763,7 +835,10 @@ export function CoordinatorPortal() {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 gap-1"
+                          >
                             <CheckCircle2 className="size-3" />
                             <span>Submitted</span>
                           </Badge>
@@ -779,11 +854,14 @@ export function CoordinatorPortal() {
                           const displayVal = Array.isArray(val)
                             ? val.join(", ")
                             : typeof val === "object"
-                            ? JSON.stringify(val)
-                            : String(val);
+                              ? JSON.stringify(val)
+                              : String(val);
 
                           return (
-                            <div key={qKey} className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-xs">
+                            <div
+                              key={qKey}
+                              className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-xs"
+                            >
                               <span className="text-[10px] text-muted-foreground uppercase font-semibold block truncate">
                                 {qKey.replace(/^q-/, "").replace(/-/g, " ")}
                               </span>
@@ -863,8 +941,13 @@ export function CoordinatorPortal() {
 
                 <div className="text-center sm:text-left space-y-2 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">{profile.name}</h2>
-                    <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold text-xs">
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                      {profile.name}
+                    </h2>
+                    <Badge
+                      variant="secondary"
+                      className="bg-primary/10 text-primary font-semibold text-xs"
+                    >
                       {profile.id}
                     </Badge>
                     {profile.certified && (
@@ -885,25 +968,33 @@ export function CoordinatorPortal() {
               {/* Badges / Metrics in Profile Card */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-border/70">
                 <div className="p-3 rounded-xl bg-muted/40">
-                  <span className="text-[11px] text-muted-foreground font-medium block">Department</span>
+                  <span className="text-[11px] text-muted-foreground font-medium block">
+                    Department
+                  </span>
                   <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5 truncate block">
                     {profile.department}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40">
-                  <span className="text-[11px] text-muted-foreground font-medium block">Shift Schedule</span>
+                  <span className="text-[11px] text-muted-foreground font-medium block">
+                    Shift Schedule
+                  </span>
                   <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5 truncate block">
                     {profile.shift}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40">
-                  <span className="text-[11px] text-muted-foreground font-medium block">Total Submissions</span>
+                  <span className="text-[11px] text-muted-foreground font-medium block">
+                    Total Submissions
+                  </span>
                   <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5 truncate block">
                     {allResponses.length} Logs
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40">
-                  <span className="text-[11px] text-muted-foreground font-medium block">Account Status</span>
+                  <span className="text-[11px] text-muted-foreground font-medium block">
+                    Account Status
+                  </span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
                     <span className="size-2 rounded-full bg-emerald-500 inline-block" />
                     Active Duty
@@ -924,19 +1015,29 @@ export function CoordinatorPortal() {
                 <div className="space-y-3 text-xs">
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Official Email</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{profile.email}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {profile.email}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Direct Phone</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{profile.phone}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {profile.phone}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-[11px]">Facility Location</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{profile.hospital}</span>
+                    <span className="text-muted-foreground block text-[11px]">
+                      Facility Location
+                    </span>
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {profile.hospital}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Office Room</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{profile.office}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {profile.office}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -945,7 +1046,9 @@ export function CoordinatorPortal() {
               <div className="p-5 rounded-2xl border border-border/80 bg-card space-y-4">
                 <div className="flex items-center gap-2 border-b border-border/70 pb-3">
                   <Briefcase className="size-4 text-primary" />
-                  <h3 className="text-sm font-bold text-foreground">Assigned Duties & Audit Scope</h3>
+                  <h3 className="text-sm font-bold text-foreground">
+                    Assigned Duties & Audit Scope
+                  </h3>
                 </div>
 
                 <div className="space-y-2 text-xs">
@@ -1164,7 +1267,8 @@ export function CoordinatorPortal() {
             </DialogTitle>
             <DialogDescription className="text-xs">
               ID: {viewingResponse?.id} · Submitted on{" "}
-              {viewingResponse?.submittedAt && new Date(viewingResponse.submittedAt).toLocaleString()}
+              {viewingResponse?.submittedAt &&
+                new Date(viewingResponse.submittedAt).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
 
@@ -1175,8 +1279,8 @@ export function CoordinatorPortal() {
                 const formattedVal = Array.isArray(val)
                   ? val.join(", ")
                   : typeof val === "object"
-                  ? JSON.stringify(val)
-                  : String(val);
+                    ? JSON.stringify(val)
+                    : String(val);
 
                 return (
                   <div key={key} className="p-3.5 rounded-2xl bg-muted/40 border border-border/60">
@@ -1198,7 +1302,6 @@ export function CoordinatorPortal() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
@@ -1217,7 +1320,7 @@ function InteractiveFormFillerDialog({
   form: CustomForm;
   onSuccess?: () => void;
 }) {
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -1253,7 +1356,12 @@ function InteractiveFormFillerDialog({
     for (const q of form.questions || []) {
       if (q.required) {
         const val = answers[q.id];
-        if (val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0)) {
+        if (
+          val === undefined ||
+          val === null ||
+          val === "" ||
+          (Array.isArray(val) && val.length === 0)
+        ) {
           nextErrors[q.id] = "This question is required";
         }
       }
@@ -1310,7 +1418,7 @@ function InteractiveFormFillerDialog({
               {q.type === "text" && (
                 <Input
                   placeholder={q.placeholder || "Your answer"}
-                  value={answers[q.id] || ""}
+                  value={String(answers[q.id] ?? "")}
                   onChange={(e) => handleTextChange(q.id, e.target.value)}
                   className="text-xs h-9 bg-background"
                 />
@@ -1320,7 +1428,7 @@ function InteractiveFormFillerDialog({
               {q.type === "paragraph" && (
                 <Textarea
                   placeholder={q.placeholder || "Your detailed answer"}
-                  value={answers[q.id] || ""}
+                  value={String(answers[q.id] ?? "")}
                   onChange={(e) => handleTextChange(q.id, e.target.value)}
                   className="text-xs min-h-[70px] bg-background"
                 />
@@ -1329,12 +1437,15 @@ function InteractiveFormFillerDialog({
               {/* Multiple Choice */}
               {q.type === "multiple_choice" && (
                 <RadioGroup
-                  value={answers[q.id] || ""}
+                  value={String(answers[q.id] ?? "")}
                   onValueChange={(val) => handleTextChange(q.id, val)}
                   className="space-y-1.5 pt-1"
                 >
                   {(q.options || []).map((opt) => (
-                    <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer py-1">
+                    <label
+                      key={opt}
+                      className="flex items-center gap-2 text-xs cursor-pointer py-1"
+                    >
                       <RadioGroupItem value={opt} id={`${q.id}-${opt}`} />
                       <span>{opt}</span>
                     </label>
@@ -1346,9 +1457,13 @@ function InteractiveFormFillerDialog({
               {q.type === "checkboxes" && (
                 <div className="space-y-1.5 pt-1">
                   {(q.options || []).map((opt) => {
-                    const checked = Array.isArray(answers[q.id]) && answers[q.id].includes(opt);
+                    const checked =
+                      Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt);
                     return (
-                      <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer py-1">
+                      <label
+                        key={opt}
+                        className="flex items-center gap-2 text-xs cursor-pointer py-1"
+                      >
                         <Checkbox
                           checked={checked}
                           onCheckedChange={(c) => handleCheckboxChange(q.id, opt, c === true)}
@@ -1358,6 +1473,53 @@ function InteractiveFormFillerDialog({
                     );
                   })}
                 </div>
+              )}
+
+              {/* Dropdown */}
+              {q.type === "dropdown" && (
+                <select
+                  value={String(answers[q.id] ?? "")}
+                  onChange={(e) => handleTextChange(q.id, e.target.value)}
+                  className="w-full text-xs h-9 bg-background border border-border rounded-lg px-2.5 text-foreground"
+                >
+                  <option value="">Select an option...</option>
+                  {(q.options || []).map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Number */}
+              {q.type === "number" && (
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={String(answers[q.id] ?? "")}
+                  onChange={(e) => handleTextChange(q.id, e.target.value)}
+                  className="text-xs h-9 bg-background max-w-xs"
+                />
+              )}
+
+              {/* Date */}
+              {q.type === "date" && (
+                <Input
+                  type="date"
+                  value={String(answers[q.id] ?? "")}
+                  onChange={(e) => handleTextChange(q.id, e.target.value)}
+                  className="text-xs h-9 bg-background max-w-xs"
+                />
+              )}
+
+              {/* Time */}
+              {q.type === "time" && (
+                <Input
+                  type="time"
+                  value={String(answers[q.id] ?? "")}
+                  onChange={(e) => handleTextChange(q.id, e.target.value)}
+                  className="text-xs h-9 bg-background max-w-xs"
+                />
               )}
 
               {/* Rating */}
@@ -1394,7 +1556,12 @@ function InteractiveFormFillerDialog({
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button size="sm" disabled={submitting} onClick={handleSubmit} className="gap-1.5 font-semibold">
+          <Button
+            size="sm"
+            disabled={submitting}
+            onClick={handleSubmit}
+            className="gap-1.5 font-semibold"
+          >
             <Send className="size-3.5" />
             <span>Submit Response</span>
           </Button>

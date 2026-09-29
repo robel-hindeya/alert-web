@@ -1,15 +1,8 @@
 import { useState, useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  CustomForm,
-  FormResponse,
-  useFormResponses,
-} from "@/lib/form-store";
+import { CustomForm, FormResponse, useFormResponses } from "@/lib/form-store";
 import {
   BarChart3,
   User,
@@ -58,11 +51,7 @@ const CHART_COLORS = [
   "#4b5563", // gray
 ];
 
-export function FormResponsesDialog({
-  open,
-  onOpenChange,
-  form,
-}: FormResponsesDialogProps) {
+export function FormResponsesDialog({ open, onOpenChange, form }: FormResponsesDialogProps) {
   const { responses, loading, refresh } = useFormResponses(form.id);
   const [activeTab, setActiveTab] = useState<TabType>("summary");
   const [individualIndex, setIndividualIndex] = useState(0);
@@ -107,9 +96,7 @@ export function FormResponsesDialog({
   const questionAnalytics = useMemo(() => {
     return form.questions.map((q) => {
       const isChoice =
-        q.type === "multiple_choice" ||
-        q.type === "checkboxes" ||
-        q.type === "dropdown";
+        q.type === "multiple_choice" || q.type === "checkboxes" || q.type === "dropdown";
 
       if (isChoice) {
         const optionCounts: Record<string, number> = {};
@@ -195,7 +182,7 @@ export function FormResponsesDialog({
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `${form.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-responses.csv`
+      `${form.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-responses.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -218,7 +205,9 @@ export function FormResponsesDialog({
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary truncate max-w-[120px] sm:max-w-none">
                 {form.departmentLabel}
               </span>
-              <span className="text-xs text-muted-foreground hidden sm:inline">Responses Dashboard</span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Responses Dashboard
+              </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-foreground truncate mt-0.5">
               {form.title}
@@ -273,7 +262,9 @@ export function FormResponsesDialog({
               }`}
             >
               <BarChart3 className="size-3.5" />
-              <span>Summary <span className="hidden sm:inline">&amp; Analytics</span></span>
+              <span>
+                Summary <span className="hidden sm:inline">&amp; Analytics</span>
+              </span>
             </button>
 
             <button
@@ -299,7 +290,9 @@ export function FormResponsesDialog({
               }`}
             >
               <TableIcon className="size-3.5" />
-              <span>Table <span className="hidden sm:inline">View</span></span>
+              <span>
+                Table <span className="hidden sm:inline">View</span>
+              </span>
             </button>
           </div>
 
@@ -328,7 +321,9 @@ export function FormResponsesDialog({
               </div>
               <h3 className="text-base font-bold text-foreground">Waiting for responses</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                No submissions have been recorded for <strong>{form.title}</strong> yet. Once staff or patients fill out the public form, their real database records and analytics will show up here automatically.
+                No submissions have been recorded for <strong>{form.title}</strong> yet. Once staff
+                or patients fill out the public form, their real database records and analytics will
+                show up here automatically.
               </p>
             </div>
           ) : (
@@ -355,7 +350,9 @@ export function FormResponsesDialog({
                         <Clock className="size-5" />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground font-medium">Latest Submission</p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          Latest Submission
+                        </p>
                         <p className="text-sm font-bold text-foreground truncate">
                           {new Date(responses[0]?.submittedAt || "").toLocaleDateString()}{" "}
                           {new Date(responses[0]?.submittedAt || "").toLocaleTimeString([], {
@@ -371,8 +368,12 @@ export function FormResponsesDialog({
                         <Layers className="size-5" />
                       </span>
                       <div>
-                        <p className="text-xs text-muted-foreground font-medium">Questions Configured</p>
-                        <p className="text-2xl font-bold text-foreground">{form.questions.length}</p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          Questions Configured
+                        </p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {form.questions.length}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -383,7 +384,9 @@ export function FormResponsesDialog({
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-sm font-bold text-foreground">Responses Over Time</h3>
-                          <p className="text-xs text-muted-foreground">Volume of submissions by date</p>
+                          <p className="text-xs text-muted-foreground">
+                            Volume of submissions by date
+                          </p>
                         </div>
                         <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                           Real Database Data
@@ -392,8 +395,15 @@ export function FormResponsesDialog({
 
                       <div className="h-48 w-full pt-2">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                          <BarChart
+                            data={timelineData}
+                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                              vertical={false}
+                            />
                             <XAxis
                               dataKey="date"
                               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -433,115 +443,133 @@ export function FormResponsesDialog({
                       Question Breakdown ({form.questions.length} questions)
                     </h3>
 
-                    {questionAnalytics.map(({ question: q, totalAnswered, chartData, answersList }, qIdx) => {
-                      return (
-                        <div
-                          key={q.id}
-                          className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm space-y-4"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
-                            <div className="flex items-center gap-2.5">
-                              <span className="grid size-6 place-items-center rounded-md bg-primary/10 text-xs font-bold text-primary">
-                                {qIdx + 1}
-                              </span>
-                              <h4 className="text-sm font-bold text-foreground">{q.title}</h4>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {totalAnswered} / {responses.length} answered
-                              </span>
-                              <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground uppercase">
-                                {q.type.replace("_", " ")}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Chart for choice-based questions */}
-                          {chartData && chartData.length > 0 && (
-                            <div className="grid gap-6 md:grid-cols-2 items-center">
-                              {/* Chart visual */}
-                              <div className="h-48 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart
-                                    data={chartData}
-                                    layout="vertical"
-                                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                                  >
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-                                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10 }} />
-                                    <YAxis
-                                      type="category"
-                                      dataKey="name"
-                                      width={95}
-                                      tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
-                                    />
-                                    <Tooltip
-                                      formatter={(val, name, item) => [
-                                        `${val} responses (${item.payload.percentage}%)`,
-                                        item.payload.fullName,
-                                      ]}
-                                    />
-                                    <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-                                      {chartData.map((_, idx) => (
-                                        <Cell
-                                          key={idx}
-                                          fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                                        />
-                                      ))}
-                                    </Bar>
-                                  </BarChart>
-                                </ResponsiveContainer>
+                    {questionAnalytics.map(
+                      ({ question: q, totalAnswered, chartData, answersList }, qIdx) => {
+                        return (
+                          <div
+                            key={q.id}
+                            className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm space-y-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
+                              <div className="flex items-center gap-2.5">
+                                <span className="grid size-6 place-items-center rounded-md bg-primary/10 text-xs font-bold text-primary">
+                                  {qIdx + 1}
+                                </span>
+                                <h4 className="text-sm font-bold text-foreground">{q.title}</h4>
                               </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {totalAnswered} / {responses.length} answered
+                                </span>
+                                <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground uppercase">
+                                  {q.type.replace("_", " ")}
+                                </span>
+                              </div>
+                            </div>
 
-                              {/* Percentages and counts breakdown */}
-                              <div className="space-y-2.5 text-xs">
-                                {chartData.map((item, optIdx) => (
-                                  <div key={optIdx} className="space-y-1">
-                                    <div className="flex justify-between font-medium">
-                                      <span className="text-foreground truncate max-w-[200px]">
-                                        {item.fullName}
-                                      </span>
-                                      <span className="text-muted-foreground font-semibold">
-                                        {item.count} ({item.percentage}%)
-                                      </span>
-                                    </div>
-                                    <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full transition-all duration-300"
-                                        style={{
-                                          width: `${item.percentage}%`,
-                                          backgroundColor: CHART_COLORS[optIdx % CHART_COLORS.length],
-                                        }}
+                            {/* Chart for choice-based questions */}
+                            {chartData && chartData.length > 0 && (
+                              <div className="grid gap-6 md:grid-cols-2 items-center">
+                                {/* Chart visual */}
+                                <div className="h-48 w-full">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                      data={chartData}
+                                      layout="vertical"
+                                      margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                                    >
+                                      <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        horizontal={false}
+                                        stroke="hsl(var(--border))"
                                       />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                                      <XAxis
+                                        type="number"
+                                        allowDecimals={false}
+                                        tick={{ fontSize: 10 }}
+                                      />
+                                      <YAxis
+                                        type="category"
+                                        dataKey="name"
+                                        width={95}
+                                        tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
+                                      />
+                                      <Tooltip
+                                        formatter={(val, name, item) => [
+                                          `${val} responses (${item.payload.percentage}%)`,
+                                          item.payload.fullName,
+                                        ]}
+                                      />
+                                      <Bar dataKey="count" radius={[0, 6, 6, 0]}>
+                                        {chartData.map((_, idx) => (
+                                          <Cell
+                                            key={idx}
+                                            fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                                          />
+                                        ))}
+                                      </Bar>
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
 
-                          {/* Text/Paragraph responses list */}
-                          {answersList && (
-                            <div className="space-y-2">
-                              {answersList.length === 0 ? (
-                                <p className="text-xs text-muted-foreground italic">No answers recorded yet</p>
-                              ) : (
-                                <div className="max-h-48 overflow-y-auto divide-y divide-border/60 rounded-xl border border-border bg-muted/20">
-                                  {answersList.slice(0, 10).map((ans, aIdx) => (
-                                    <div key={aIdx} className="p-3 text-xs flex justify-between gap-3">
-                                      <p className="text-foreground font-medium flex-1">{ans.text}</p>
-                                      <span className="text-[11px] text-muted-foreground shrink-0">
-                                        {ans.date}
-                                      </span>
+                                {/* Percentages and counts breakdown */}
+                                <div className="space-y-2.5 text-xs">
+                                  {chartData.map((item, optIdx) => (
+                                    <div key={optIdx} className="space-y-1">
+                                      <div className="flex justify-between font-medium">
+                                        <span className="text-foreground truncate max-w-[200px]">
+                                          {item.fullName}
+                                        </span>
+                                        <span className="text-muted-foreground font-semibold">
+                                          {item.count} ({item.percentage}%)
+                                        </span>
+                                      </div>
+                                      <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                                        <div
+                                          className="h-full rounded-full transition-all duration-300"
+                                          style={{
+                                            width: `${item.percentage}%`,
+                                            backgroundColor:
+                                              CHART_COLORS[optIdx % CHART_COLORS.length],
+                                          }}
+                                        />
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              </div>
+                            )}
+
+                            {/* Text/Paragraph responses list */}
+                            {answersList && (
+                              <div className="space-y-2">
+                                {answersList.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground italic">
+                                    No answers recorded yet
+                                  </p>
+                                ) : (
+                                  <div className="max-h-48 overflow-y-auto divide-y divide-border/60 rounded-xl border border-border bg-muted/20">
+                                    {answersList.slice(0, 10).map((ans, aIdx) => (
+                                      <div
+                                        key={aIdx}
+                                        className="p-3 text-xs flex justify-between gap-3"
+                                      >
+                                        <p className="text-foreground font-medium flex-1">
+                                          {ans.text}
+                                        </p>
+                                        <span className="text-[11px] text-muted-foreground shrink-0">
+                                          {ans.date}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
               )}
@@ -576,7 +604,7 @@ export function FormResponsesDialog({
                         size="icon"
                         onClick={() =>
                           setIndividualIndex((prev) =>
-                            Math.min(filteredResponses.length - 1, prev + 1)
+                            Math.min(filteredResponses.length - 1, prev + 1),
                           )
                         }
                         disabled={individualIndex >= filteredResponses.length - 1}
@@ -591,7 +619,8 @@ export function FormResponsesDialog({
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="size-3.5" />
                         <span>
-                          Submitted on {new Date(currentIndividual.submittedAt).toLocaleDateString()} at{" "}
+                          Submitted on{" "}
+                          {new Date(currentIndividual.submittedAt).toLocaleDateString()} at{" "}
                           {new Date(currentIndividual.submittedAt).toLocaleTimeString()}
                         </span>
                       </div>
@@ -616,7 +645,8 @@ export function FormResponsesDialog({
                           >
                             <div className="flex items-start justify-between gap-2">
                               <span className="text-xs font-semibold text-muted-foreground">
-                                Question {qIdx + 1} {q.required && <span className="text-destructive">*</span>}
+                                Question {qIdx + 1}{" "}
+                                {q.required && <span className="text-destructive">*</span>}
                               </span>
                               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground uppercase">
                                 {q.type.replace("_", " ")}
@@ -676,7 +706,9 @@ export function FormResponsesDialog({
                       <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm border-b border-border z-10">
                         <tr>
                           <th className="p-3 font-bold text-foreground shrink-0">#</th>
-                          <th className="p-3 font-bold text-foreground whitespace-nowrap">Submitted At</th>
+                          <th className="p-3 font-bold text-foreground whitespace-nowrap">
+                            Submitted At
+                          </th>
                           {form.questions.map((q) => (
                             <th key={q.id} className="p-3 font-bold text-foreground min-w-[160px]">
                               {q.title}
@@ -708,7 +740,10 @@ export function FormResponsesDialog({
                                 }
                               }
                               return (
-                                <td key={q.id} className="p-3 text-foreground line-clamp-2 max-w-xs">
+                                <td
+                                  key={q.id}
+                                  className="p-3 text-foreground line-clamp-2 max-w-xs"
+                                >
                                   {displayVal}
                                 </td>
                               );
@@ -726,16 +761,9 @@ export function FormResponsesDialog({
 
         {/* Modal Footer */}
         <div className="border-t border-border px-3.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 shrink-0 bg-card">
-          <p className="text-xs text-muted-foreground">
-            {responses.length} total database records
-          </p>
+          <p className="text-xs text-muted-foreground">{responses.length} total database records</p>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Close
           </Button>
         </div>

@@ -15,11 +15,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  useDepartmentForms,
-  CustomForm,
-  deleteForm,
-} from "@/lib/form-store";
+import { useDepartmentForms, CustomForm, deleteForm } from "@/lib/form-store";
 import { FormBuilderDialog } from "./form-builder-dialog";
 import { FormResponsesDialog } from "./form-responses-dialog";
 import { toast } from "sonner";
@@ -29,10 +25,7 @@ interface DepartmentFormBoxProps {
   departmentLabel: string;
 }
 
-export function DepartmentFormBox({
-  departmentSlug,
-  departmentLabel,
-}: DepartmentFormBoxProps) {
+export function DepartmentFormBox({ departmentSlug, departmentLabel }: DepartmentFormBoxProps) {
   const { forms, refresh } = useDepartmentForms(departmentSlug);
 
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -85,15 +78,14 @@ export function DepartmentFormBox({
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-bold text-foreground">
-                Department Forms & Checklists
-              </h2>
+              <h2 className="text-base font-bold text-foreground">Department Forms & Checklists</h2>
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary inline-flex items-center gap-1">
                 <Sparkles className="size-3" /> Google Form Style
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Build custom intake forms, triage surveys, and audit sheets with custom questions and datatypes
+              Build custom intake forms, triage surveys, and audit sheets with custom questions and
+              datatypes
             </p>
           </div>
         </div>
@@ -115,7 +107,8 @@ export function DepartmentFormBox({
         <div className="rounded-xl border border-dashed border-border py-10 px-4 text-center">
           <p className="text-sm font-medium text-foreground">No forms created yet</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            Click &quot;Add Form&quot; to design your first Google Forms-style questionnaire with custom questions and datatypes.
+            Click &quot;Add Form&quot; to design your first Google Forms-style questionnaire with
+            custom questions and datatypes.
           </p>
           <Button
             type="button"
@@ -143,9 +136,10 @@ export function DepartmentFormBox({
                   <div
                     className="h-14 w-full bg-cover bg-center border-b border-border/40 relative"
                     style={{
-                      background: form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
-                        ? `url("${form.bannerUrl}") center/cover no-repeat`
-                        : form.bannerUrl,
+                      background:
+                        form.bannerUrl.startsWith("data:") || form.bannerUrl.startsWith("http")
+                          ? `url("${form.bannerUrl}") center/cover no-repeat`
+                          : form.bannerUrl,
                     }}
                   >
                     <div className="absolute inset-0 bg-black/15" />
@@ -162,7 +156,8 @@ export function DepartmentFormBox({
                         <FileText className="size-4" />
                       </span>
                       <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
-                        {form.questions.length} {form.questions.length === 1 ? "question" : "questions"}
+                        {form.questions.length}{" "}
+                        {form.questions.length === 1 ? "question" : "questions"}
                       </span>
                     </div>
 

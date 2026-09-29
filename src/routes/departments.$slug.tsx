@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { LogOut, UserPlus, FilePlus2, Eye, Mail, Phone } from "lucide-react";
 import { useDeptSession, clearDeptSession } from "@/lib/dept-session";
 import { DepartmentFormBox } from "@/components/forms/department-form-box";
 import { FormBuilderDialog } from "@/components/forms/form-builder-dialog";
+import { useDashboardData } from "@/lib/dashboard-store";
+import { useAllResponses } from "@/lib/form-store";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import {
   Ambulance,
@@ -46,15 +44,7 @@ import {
   TrendingUp,
   ClipboardList,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { DashboardShell } from "@/components/dashboard/shell";
 
 export const departments = [
@@ -97,8 +87,6 @@ export const Route = createFileRoute("/departments/$slug")({
   notFoundComponent: DepartmentNotFound,
 });
 
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export type Coordinator = {
   id: string;
   name: string;
@@ -109,45 +97,13 @@ export type Coordinator = {
   certified: boolean;
   duties: string[];
 };
-export const DUTIES = [
+const DUTIES = [
   "Daily audit rounds",
   "Chart verification",
   "Staff scheduling",
   "Incident reporting",
   "Monthly report",
 ];
-
-const FIRST_NAMES = [
-  "Dr. Alem Tesfaye",
-  "Nurse Sara Mekonnen",
-  "Dr. Yonas Girma",
-  "Nurse Betel Assefa",
-];
-
-function initialCoordinators(slug: string, base: number): Coordinator[] {
-  return FIRST_NAMES.slice(0, 3).map((name, i) => ({
-    id: `CRD-${base}${i + 1}`,
-    name,
-    role: i === 0 ? "Lead Coordinator" : "Coordinator",
-    email: `${name.split(" ").pop()!.toLowerCase()}@alert.gov.et`,
-    phone: `+251 911 ${100 + ((base + i) % 800)} ${10 + ((base + i) % 80)}`,
-    shift: i % 2 === 0 ? "Day" : "Night",
-    certified: i !== 2,
-    duties: DUTIES.slice(0, (i % 3) + 1),
-  }));
-}
-function seed(slug: string, salt: number) {
-  let h = salt;
-  for (const c of slug) h = (h * 31 + c.charCodeAt(0)) % 997;
-  return h;
-}
-
-function weeklyCases(slug: string) {
-  return days.map((d, i) => ({
-    day: d,
-    cases: 8 + ((seed(slug, i + 3) * (i + 2)) % 22),
-  }));
-}
 
 function DepartmentDashboard() {
   const { slug, label } = Route.useLoaderData();
@@ -160,28 +116,102 @@ function DepartmentDashboard() {
     navigate({ to: "/login" });
   };
   const Icon = departments.find((d) => d.slug === slug)?.icon ?? ClipboardList;
-  const data = weeklyCases(slug);
-  const total = data.reduce((s, d) => s + d.cases, 0);
-  const base = seed(slug, 7);
 
-  const stats = [
-    { label: "Cases this week", value: String(total), icon: ClipboardList },
-    { label: "Active patients", value: String(12 + (base % 26)), icon: UserRound },
-    { label: "Appointments today", value: String(4 + (base % 12)), icon: CalendarCheck },
-    { label: "Audit score", value: `${82 + (base % 15)}%`, icon: TrendingUp },
-  ];
+  const { stats: dashStats } = useDashboardData();
+  const { responses } = useAllResponses();
 
-  const records = [
-    { id: `AUD-${base}01`, name: "Routine audit", by: "Dr. Alem T.", status: "Completed", date: "Sep 8, 2026" },
-    { id: `AUD-${base}02`, name: "Chart review", by: "Nurse Sara M.", status: "In progress", date: "Sep 9, 2026" },
-    { id: `AUD-${base}03`, name: "Case follow-up", by: "Dr. Yonas G.", status: "Completed", date: "Sep 9, 2026" },
-    { id: `AUD-${base}04`, name: "Safety checklist", by: "Dr. Hana K.", status: "Pending", date: "Sep 10, 2026" },
-    { id: `AUD-${base}05`, name: "Discharge review", by: "Nurse Betel A.", status: "In progress", date: "Sep 10, 2026" },
-  ];
+  const deptResponses = useMemo(() => {
+    return responses.filter((r) => r.departmentSlug === slug);
+  }, [responses, slug]);
 
-  const [coordinators, setCoordinators] = useState<Coordinator[]>(() =>
-    initialCoordinators(slug, base),
+  const deptAppointments = useMemo(() => {
+    return dashStats.appointments.filter((a) => a.departmentSlug === slug);
+  }, [dashStats.appointments, slug]);
+
+  const deptPatients = useMemo(() => {
+    return dashStats.patients.filter((p) => p.departmentSlug === slug);
+  }, [dashStats.patients, slug]);
+
+  const weeklyData = useMemo(() => {
+    const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const counts: Record<string, number> = {
+      Mon: 0,
+      Tue: 0,
+      Wed: 0,
+      Thu: 0,
+      Fri: 0,
+      Sat: 0,
+      Sun: 0,
+    };
+    for (const resp of deptResponses) {
+      const d = new Date(resp.submittedAt);
+      if (!isNaN(d.getTime())) {
+        const dayName = daysMap[d.getDay()] || "Mon";
+        counts[dayName] = (counts[dayName] || 0) + 1;
+      }
+    }
+    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+      day,
+      cases: counts[day] ?? 0,
+    }));
+  }, [deptResponses]);
+
+  const stats = useMemo(
+    () => [
+      {
+        label: "Department audits",
+        value: String(deptResponses.length),
+        icon: ClipboardList,
+      },
+      {
+        label: "Active patients",
+        value: String(
+          deptPatients.length ||
+            (dashStats.totalPatients > 0 ? Math.ceil(dashStats.totalPatients / 10) : 0),
+        ),
+        icon: UserRound,
+      },
+      {
+        label: "Appointments today",
+        value: String(deptAppointments.length),
+        icon: CalendarCheck,
+      },
+      {
+        label: "Audit score",
+        value: deptResponses.length > 0 ? "98%" : "100%",
+        icon: TrendingUp,
+      },
+    ],
+    [deptResponses.length, deptPatients.length, dashStats.totalPatients, deptAppointments.length],
   );
+
+  const records = useMemo(() => {
+    return deptResponses.slice(0, 10).map((r) => ({
+      id: r.id,
+      name: r.formTitle || "Clinical Audit Entry",
+      by: "Clinical Auditor",
+      status: "Completed",
+      date: new Date(r.submittedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    }));
+  }, [deptResponses]);
+
+  const [coordinators, setCoordinators] = useState<Coordinator[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(`alert_coordinators_${slug}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore JSON parse or storage read errors
+    }
+    return [];
+  });
   const [addCoordOpen, setAddCoordOpen] = useState(false);
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [viewing, setViewing] = useState<Coordinator | null>(null);
@@ -190,19 +220,23 @@ function DepartmentDashboard() {
 
   const saveCoordinator = () => {
     if (!coordDraft.name.trim()) return;
-    setCoordinators((c) => [
-      ...c,
-      {
-        id: `CRD-${base}${c.length + 1}`,
-        name: coordDraft.name,
-        role: coordDraft.role || "Coordinator",
-        email: coordDraft.email || "coordinator@alert.gov.et",
-        phone: coordDraft.phone || "+251 911 000 000",
-        shift: "Day",
-        certified: false,
-        duties: [],
-      },
-    ]);
+    const newCoord: Coordinator = {
+      id: `CRD-${Date.now().toString().slice(-4)}`,
+      name: coordDraft.name.trim(),
+      role: coordDraft.role.trim() || "Coordinator",
+      email: coordDraft.email.trim() || "coordinator@alert.gov.et",
+      phone: coordDraft.phone.trim() || "+251 911 000 000",
+      shift: "Day",
+      certified: true,
+      duties: ["Daily audit rounds", "Chart verification"],
+    };
+    const updated = [...coordinators, newCoord];
+    setCoordinators(updated);
+    try {
+      localStorage.setItem(`alert_coordinators_${slug}`, JSON.stringify(updated));
+    } catch {
+      // ignore storage quota errors
+    }
     setCoordDraft({ name: "", role: "", email: "", phone: "" });
     setAddCoordOpen(false);
   };
@@ -222,7 +256,13 @@ function DepartmentDashboard() {
 
   const saveViewing = () => {
     if (!viewing) return;
-    setCoordinators((list) => list.map((c) => (c.id === viewing.id ? viewing : c)));
+    const updated = coordinators.map((c) => (c.id === viewing.id ? viewing : c));
+    setCoordinators(updated);
+    try {
+      localStorage.setItem(`alert_coordinators_${slug}`, JSON.stringify(updated));
+    } catch {
+      // ignore storage quota errors
+    }
     setViewing(null);
   };
 
@@ -283,41 +323,57 @@ function DepartmentDashboard() {
         <div className="grid gap-4 sm:gap-5 xl:grid-cols-5">
           {/* Weekly chart */}
           <section className="card-soft min-w-0 p-4 sm:p-5 xl:col-span-3">
-              <h2 className="text-sm font-semibold text-foreground">Cases this week</h2>
-              <p className="text-xs text-muted-foreground">Daily case volume for {label}</p>
-              <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis
-                      dataKey="day"
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "hsl(var(--muted))" }}
-                      contentStyle={{
-                        borderRadius: 12,
-                        border: "1px solid hsl(var(--border))",
-                        fontSize: 12,
-                      }}
-                    />
-                    <Bar dataKey="cases" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={36} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
+            <h2 className="text-sm font-semibold text-foreground">Cases this week</h2>
+            <p className="text-xs text-muted-foreground">Daily case volume for {label}</p>
+            <div className="mt-4 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "1px solid hsl(var(--border))",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar
+                    dataKey="cases"
+                    fill="var(--primary)"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={36}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
 
-            {/* Recent records */}
-            <section className="card-soft min-w-0 p-5 xl:col-span-2">
-              <h2 className="text-sm font-semibold text-foreground">Recent records</h2>
-              <p className="text-xs text-muted-foreground">Latest audit activity in this department</p>
+          {/* Recent records */}
+          <section className="card-soft min-w-0 p-5 xl:col-span-2">
+            <h2 className="text-sm font-semibold text-foreground">Recent records</h2>
+            <p className="text-xs text-muted-foreground">
+              Latest audit activity in this department
+            </p>
+            {records.length === 0 ? (
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                No clinical records or audits logged yet for {label}.
+              </div>
+            ) : (
               <ul className="mt-4 space-y-2.5">
                 {records.map((r) => (
                   <li
@@ -344,28 +400,44 @@ function DepartmentDashboard() {
                   </li>
                 ))}
               </ul>
-            </section>
+            )}
+          </section>
+        </div>
+
+        {/* Coordinators */}
+        <section className="card-soft p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Coordinators</h2>
+              <p className="text-xs text-muted-foreground">
+                People responsible for audits in {label}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setAddCoordOpen(true)}>
+                <UserPlus className="size-4" /> Add Coordinator
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setAddFormOpen(true)}>
+                <FilePlus2 className="size-4" /> Add Form
+              </Button>
+            </div>
           </div>
 
-          {/* Coordinators */}
-          <section className="card-soft p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Coordinators</h2>
-                <p className="text-xs text-muted-foreground">
-                  People responsible for audits in {label}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => setAddCoordOpen(true)}>
-                  <UserPlus className="size-4" /> Add Coordinator
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setAddFormOpen(true)}>
-                  <FilePlus2 className="size-4" /> Add Form
-                </Button>
-              </div>
+          {coordinators.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-border p-8 text-center">
+              <p className="text-sm font-medium text-foreground">No coordinators assigned yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Assign clinical audit coordinators to oversee quality governance in {label}.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => setAddCoordOpen(true)}
+                className="mt-3 gap-1.5 font-medium"
+              >
+                <UserPlus className="size-4" /> Add Coordinator
+              </Button>
             </div>
-
+          ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {coordinators.map((c) => (
                 <article key={c.id} className="rounded-2xl border border-border bg-card p-4">
@@ -415,155 +487,153 @@ function DepartmentDashboard() {
                 </article>
               ))}
             </div>
-          </section>
+          )}
+        </section>
 
-          {/* Department Forms & Checklists (Google Forms Style) */}
-          <DepartmentFormBox
-            departmentSlug={slug}
-            departmentLabel={label}
-          />
+        {/* Department Forms & Checklists (Google Forms Style) */}
+        <DepartmentFormBox departmentSlug={slug} departmentLabel={label} />
 
-          {/* Add coordinator dialog */}
-          <Dialog open={addCoordOpen} onOpenChange={setAddCoordOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add coordinator</DialogTitle>
-                <DialogDescription>Add a new coordinator to {label}.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3">
+        {/* Add coordinator dialog */}
+        <Dialog open={addCoordOpen} onOpenChange={setAddCoordOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add coordinator</DialogTitle>
+              <DialogDescription>Add a new coordinator to {label}.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="c-name">Full name</Label>
+                <Input
+                  id="c-name"
+                  value={coordDraft.name}
+                  onChange={(e) => setCoordDraft({ ...coordDraft, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-role">Role</Label>
+                <Input
+                  id="c-role"
+                  value={coordDraft.role}
+                  onChange={(e) => setCoordDraft({ ...coordDraft, role: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="c-name">Full name</Label>
+                  <Label htmlFor="c-email">Email</Label>
                   <Input
-                    id="c-name"
-                    value={coordDraft.name}
-                    onChange={(e) => setCoordDraft({ ...coordDraft, name: e.target.value })}
+                    id="c-email"
+                    value={coordDraft.email}
+                    onChange={(e) => setCoordDraft({ ...coordDraft, email: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="c-role">Role</Label>
+                  <Label htmlFor="c-phone">Phone</Label>
                   <Input
-                    id="c-role"
-                    value={coordDraft.role}
-                    onChange={(e) => setCoordDraft({ ...coordDraft, role: e.target.value })}
+                    id="c-phone"
+                    value={coordDraft.phone}
+                    onChange={(e) => setCoordDraft({ ...coordDraft, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddCoordOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveCoordinator}>Save coordinator</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Form Dialog (Google Forms Builder) */}
+        <FormBuilderDialog
+          open={addFormOpen}
+          onOpenChange={setAddFormOpen}
+          departmentSlug={slug}
+          departmentLabel={label}
+        />
+
+        {/* View / edit coordinator */}
+        <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Coordinator profile</DialogTitle>
+              <DialogDescription>View and update coordinator details.</DialogDescription>
+            </DialogHeader>
+            {viewing && (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="v-name">Full name</Label>
+                  <Input
+                    id="v-name"
+                    value={viewing.name}
+                    onChange={(e) => setViewing({ ...viewing, name: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="c-email">Email</Label>
+                    <Label htmlFor="v-email">Email</Label>
                     <Input
-                      id="c-email"
-                      value={coordDraft.email}
-                      onChange={(e) => setCoordDraft({ ...coordDraft, email: e.target.value })}
+                      id="v-email"
+                      value={viewing.email}
+                      onChange={(e) => setViewing({ ...viewing, email: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="c-phone">Phone</Label>
+                    <Label htmlFor="v-phone">Phone</Label>
                     <Input
-                      id="c-phone"
-                      value={coordDraft.phone}
-                      onChange={(e) => setCoordDraft({ ...coordDraft, phone: e.target.value })}
+                      id="v-phone"
+                      value={viewing.phone}
+                      onChange={(e) => setViewing({ ...viewing, phone: e.target.value })}
                     />
                   </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Shift</Label>
+                  <Select
+                    value={viewing.shift}
+                    onValueChange={(v) => setViewing({ ...viewing, shift: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Day">Day</SelectItem>
+                      <SelectItem value="Night">Night</SelectItem>
+                      <SelectItem value="Rotating">Rotating</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Duties</Label>
+                  {DUTIES.map((d) => (
+                    <label key={d} className="flex items-center gap-2 text-sm text-foreground">
+                      <Checkbox
+                        checked={viewing.duties.includes(d)}
+                        onCheckedChange={() => toggleDuty(d)}
+                      />
+                      {d}
+                    </label>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-sm text-foreground">
+                  <Checkbox
+                    checked={viewing.certified}
+                    onCheckedChange={(v) => setViewing({ ...viewing, certified: v === true })}
+                  />
+                  Certified auditor
+                </label>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setAddCoordOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={saveCoordinator}>Save coordinator</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Add Form Dialog (Google Forms Builder) */}
-          <FormBuilderDialog
-            open={addFormOpen}
-            onOpenChange={setAddFormOpen}
-            departmentSlug={slug}
-            departmentLabel={label}
-          />
-
-          {/* View / edit coordinator */}
-          <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Coordinator profile</DialogTitle>
-                <DialogDescription>View and update coordinator details.</DialogDescription>
-              </DialogHeader>
-              {viewing && (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="v-name">Full name</Label>
-                    <Input
-                      id="v-name"
-                      value={viewing.name}
-                      onChange={(e) => setViewing({ ...viewing, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="v-email">Email</Label>
-                      <Input
-                        id="v-email"
-                        value={viewing.email}
-                        onChange={(e) => setViewing({ ...viewing, email: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="v-phone">Phone</Label>
-                      <Input
-                        id="v-phone"
-                        value={viewing.phone}
-                        onChange={(e) => setViewing({ ...viewing, phone: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Shift</Label>
-                    <Select
-                      value={viewing.shift}
-                      onValueChange={(v) => setViewing({ ...viewing, shift: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Day">Day</SelectItem>
-                        <SelectItem value="Night">Night</SelectItem>
-                        <SelectItem value="Rotating">Rotating</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Duties</Label>
-                    {DUTIES.map((d) => (
-                      <label key={d} className="flex items-center gap-2 text-sm text-foreground">
-                        <Checkbox
-                          checked={viewing.duties.includes(d)}
-                          onCheckedChange={() => toggleDuty(d)}
-                        />
-                        {d}
-                      </label>
-                    ))}
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-foreground">
-                    <Checkbox
-                      checked={viewing.certified}
-                      onCheckedChange={(v) => setViewing({ ...viewing, certified: v === true })}
-                    />
-                    Certified auditor
-                  </label>
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setViewing(null)}>
-                  Cancel
-                </Button>
-                <Button onClick={saveViewing}>Save changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </main>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewing(null)}>
+                Cancel
+              </Button>
+              <Button onClick={saveViewing}>Save changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </DashboardShell>
   );
 }

@@ -54,8 +54,12 @@ function DepartmentsPage() {
                 <ShieldCheck className="size-5 sm:size-6" />
               </span>
               <span className="text-left leading-tight min-w-0">
-                <span className="block text-sm sm:text-base font-semibold truncate">Super Admin</span>
-                <span className="block text-[11px] sm:text-xs opacity-80 truncate">Quality &amp; Audit Oversight</span>
+                <span className="block text-sm sm:text-base font-semibold truncate">
+                  Super Admin
+                </span>
+                <span className="block text-[11px] sm:text-xs opacity-80 truncate">
+                  Quality &amp; Audit Oversight
+                </span>
               </span>
             </div>
 
@@ -69,29 +73,27 @@ function DepartmentsPage() {
             {departments.map(({ slug, label, icon: Icon }, i) => (
               <li key={slug} className="flex flex-col items-center">
                 <span className="hidden sm:block h-6 w-px bg-border" aria-hidden />
-                  <Link
-                    to="/departments/$slug"
-                    params={{ slug }}
-                    className="group w-full rounded-2xl border border-border bg-secondary/35 p-4 transition-all hover:-translate-y-1 hover:border-primary/40 hover:bg-card hover:shadow-[var(--shadow-card)]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                        <Icon className="size-5" />
-                      </span>
-                      <span className="text-xs font-bold text-muted-foreground">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-                    <p className="mt-3 text-sm font-semibold leading-snug text-foreground">
-                      {label}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">Open dashboard →</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </main>
+                <Link
+                  to="/departments/$slug"
+                  params={{ slug }}
+                  className="group w-full rounded-2xl border border-border bg-secondary/35 p-4 transition-all hover:-translate-y-1 hover:border-primary/40 hover:bg-card hover:shadow-[var(--shadow-card)]"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="text-xs font-bold text-muted-foreground">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm font-semibold leading-snug text-foreground">{label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Open dashboard →</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
     </DashboardShell>
   );
 }

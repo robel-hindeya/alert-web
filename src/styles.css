@@ -98,11 +98,7 @@
   --chart-3: oklch(0.72 0.07 190);
   --chart-4: oklch(0.42 0.08 160);
   --chart-5: oklch(0.82 0.05 190);
-  --gradient-sidebar: linear-gradient(
-    180deg,
-    oklch(0.33 0.075 162),
-    oklch(0.27 0.06 168)
-  );
+  --gradient-sidebar: linear-gradient(180deg, oklch(0.33 0.075 162), oklch(0.27 0.06 168));
   --shadow-card: 0 1px 2px oklch(0.3 0.05 175 / 6%), 0 8px 24px oklch(0.3 0.05 175 / 6%);
   --sidebar: oklch(0.32 0.075 162);
   --sidebar-foreground: oklch(0.95 0.02 170);

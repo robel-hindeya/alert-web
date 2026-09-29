@@ -18,12 +18,17 @@ export function DashboardShell({
       <div className="flex min-h-screen flex-col bg-background">
         {/* Mobile / Department Top Bar in bare mode */}
         <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card/95 px-3.5 backdrop-blur-sm sm:px-5">
-          <Link to="/" className="flex items-center gap-2.5">
-            <img
-              src={logo.url}
-              alt="ALERT Hospital Logo"
-              className="h-8 w-auto object-contain"
-            />
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs">
+              <img
+                src={logo.url || "/alert-logo.png"}
+                alt="ALERT Hospital Logo"
+                className="h-7 w-auto object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+                }}
+              />
+            </div>
             <div className="min-w-0">
               <span className="block text-xs font-bold leading-tight text-foreground truncate">
                 ALERT Hospital
@@ -32,7 +37,7 @@ export function DashboardShell({
                 Department Workspace
               </span>
             </div>
-          </Link>
+          </div>
           <Link
             to="/login"
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
@@ -63,11 +68,16 @@ export function DashboardShell({
               <Menu className="size-5 text-foreground" />
             </button>
             <Link to="/" className="flex items-center gap-2">
-              <img
-                src={logo.url}
-                alt="ALERT Hospital Logo"
-                className="h-8 w-auto object-contain"
-              />
+              <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs">
+                <img
+                  src={logo.url || "/alert-logo.png"}
+                  alt="ALERT Hospital Logo"
+                  className="h-7 w-auto object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/alert-logo.png";
+                  }}
+                />
+              </div>
               <div className="min-w-0">
                 <span className="block text-xs font-bold leading-tight text-foreground truncate">
                   ALERT Hospital

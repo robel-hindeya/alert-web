@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +24,10 @@ import {
   CircleDot,
   CheckSquare,
   ListFilter,
+  Clock,
+  Calendar,
+  Hash,
+  Star,
   X,
   FileCheck2,
   Image as ImageIcon,
@@ -34,12 +35,7 @@ import {
   Palette,
   Sparkles,
 } from "lucide-react";
-import {
-  CustomForm,
-  FormQuestion,
-  QuestionType,
-  saveForm,
-} from "@/lib/form-store";
+import { CustomForm, FormQuestion, QuestionType, saveForm } from "@/lib/form-store";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
@@ -87,6 +83,30 @@ const SUPPORTED_QUESTION_TYPES: Array<{
     label: "Dropdown",
     desc: "Select dropdown menu for lists, bays, transfer wards",
     icon: ListFilter,
+  },
+  {
+    type: "time",
+    label: "Time",
+    desc: "Time selector for procedure timestamp, triage time, vitals check",
+    icon: Clock,
+  },
+  {
+    type: "date",
+    label: "Date",
+    desc: "Calendar date picker for admission, incident, evaluation date",
+    icon: Calendar,
+  },
+  {
+    type: "number",
+    label: "Number",
+    desc: "Numeric value for age, dosage, systolic/diastolic, bed count",
+    icon: Hash,
+  },
+  {
+    type: "rating",
+    label: "Rating Scale (1-5)",
+    desc: "1 to 5 linear score scale for urgency or satisfaction",
+    icon: Star,
   },
 ];
 
@@ -181,8 +201,7 @@ export function FormBuilderDialog({
   // Add question with chosen type
   const handleAddQuestion = (type: QuestionType) => {
     const newId = `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const isChoiceType =
-      type === "multiple_choice" || type === "checkboxes" || type === "dropdown";
+    const isChoiceType = type === "multiple_choice" || type === "checkboxes" || type === "dropdown";
 
     const newQuestion: FormQuestion = {
       id: newId,
@@ -196,7 +215,9 @@ export function FormBuilderDialog({
     setQuestions((prev) => [...prev, newQuestion]);
     setActiveQuestionId(newId);
     setShowTypeSelector(false);
-    toast.success(`Added ${SUPPORTED_QUESTION_TYPES.find((t) => t.type === type)?.label || "question"}`);
+    toast.success(
+      `Added ${SUPPORTED_QUESTION_TYPES.find((t) => t.type === type)?.label || "question"}`,
+    );
   };
 
   // Update question
@@ -218,7 +239,7 @@ export function FormBuilderDialog({
         }
 
         return updated;
-      })
+      }),
     );
   };
 
@@ -273,7 +294,7 @@ export function FormBuilderDialog({
           ...q,
           options: [...currentOptions, `Option ${currentOptions.length + 1}`],
         };
-      })
+      }),
     );
   };
 
@@ -284,7 +305,7 @@ export function FormBuilderDialog({
         const opts = [...(q.options || [])];
         opts[optIndex] = val;
         return { ...q, options: opts };
-      })
+      }),
     );
   };
 
@@ -294,7 +315,7 @@ export function FormBuilderDialog({
         if (q.id !== questionId) return q;
         const opts = (q.options || []).filter((_, i) => i !== optIndex);
         return { ...q, options: opts.length > 0 ? opts : ["Option 1"] };
-      })
+      }),
     );
   };
 
@@ -302,10 +323,12 @@ export function FormBuilderDialog({
   const buildFormObject = (): CustomForm => {
     const formId =
       initialForm?.id ||
-      `frm-${title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "") || "form"}-${Date.now().toString(36)}`;
+      `frm-${
+        title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "form"
+      }-${Date.now().toString(36)}`;
 
     return {
       id: formId,
@@ -412,9 +435,10 @@ export function FormBuilderDialog({
                 <div
                   className="h-32 sm:h-40 w-full transition-all bg-cover bg-center flex items-end p-4 relative"
                   style={{
-                    background: bannerUrl.startsWith("data:") || bannerUrl.startsWith("http")
-                      ? `url("${bannerUrl}") center/cover no-repeat`
-                      : bannerUrl,
+                    background:
+                      bannerUrl.startsWith("data:") || bannerUrl.startsWith("http")
+                        ? `url("${bannerUrl}") center/cover no-repeat`
+                        : bannerUrl,
                   }}
                 >
                   <div className="absolute inset-0 bg-black/20" />
@@ -452,7 +476,9 @@ export function FormBuilderDialog({
                     <div className="flex items-center gap-2 text-left">
                       <ImageIcon className="size-5 text-muted-foreground" />
                       <div>
-                        <p className="text-xs font-semibold text-foreground">Form Banner / Header Image</p>
+                        <p className="text-xs font-semibold text-foreground">
+                          Form Banner / Header Image
+                        </p>
                         <p className="text-[11px] text-muted-foreground">
                           Add a hospital header image or select a clinical gradient
                         </p>
@@ -511,7 +537,10 @@ export function FormBuilderDialog({
             {/* FORM TITLE BOX */}
             <div className="p-6 sm:p-7 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="form-title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Label
+                  htmlFor="form-title"
+                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                >
                   Form Title <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -551,7 +580,8 @@ export function FormBuilderDialog({
               <div className="space-y-1 max-w-md mx-auto">
                 <h3 className="text-base font-bold text-foreground">No questions yet</h3>
                 <p className="text-xs text-muted-foreground">
-                  Start designing your form. Click the button below to choose a question type and add your first question.
+                  Start designing your form. Click the button below to choose a question type and
+                  add your first question.
                 </p>
               </div>
 
@@ -621,7 +651,11 @@ export function FormBuilderDialog({
                             {SUPPORTED_QUESTION_TYPES.map((t) => {
                               const ItemIcon = t.icon;
                               return (
-                                <SelectItem key={t.type} value={t.type} className="cursor-pointer py-2">
+                                <SelectItem
+                                  key={t.type}
+                                  value={t.type}
+                                  className="cursor-pointer py-2"
+                                >
                                   <div className="flex items-center gap-2">
                                     <ItemIcon className="size-4 text-primary shrink-0" />
                                     <div>
@@ -782,6 +816,70 @@ export function FormBuilderDialog({
                           </Button>
                         </div>
                       )}
+
+                      {/* Time */}
+                      {q.type === "time" && (
+                        <div className="w-full sm:w-2/3">
+                          <div className="flex items-center gap-2.5 max-w-xs">
+                            <Input
+                              disabled
+                              type="time"
+                              placeholder="--:--"
+                              className="bg-muted/30 text-muted-foreground text-sm cursor-not-allowed h-10 border-border"
+                            />
+                            <span className="text-xs text-muted-foreground font-medium">
+                              Time (e.g. 14:30)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Date */}
+                      {q.type === "date" && (
+                        <div className="w-full sm:w-2/3">
+                          <div className="flex items-center gap-2.5 max-w-xs">
+                            <Input
+                              disabled
+                              type="date"
+                              className="bg-muted/30 text-muted-foreground text-sm cursor-not-allowed h-10 border-border"
+                            />
+                            <span className="text-xs text-muted-foreground font-medium">
+                              Date (YYYY-MM-DD)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Number */}
+                      {q.type === "number" && (
+                        <div className="w-full sm:w-2/3">
+                          <Input
+                            disabled
+                            type="number"
+                            placeholder="0"
+                            className="bg-muted/30 text-muted-foreground text-sm cursor-not-allowed h-10 max-w-xs border-border"
+                          />
+                        </div>
+                      )}
+
+                      {/* Rating Scale */}
+                      {q.type === "rating" && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            {[1, 2, 3, 4, 5].map((score) => (
+                              <span
+                                key={score}
+                                className="size-9 rounded-lg border border-border bg-muted/40 text-muted-foreground text-xs font-bold flex items-center justify-center cursor-not-allowed"
+                              >
+                                {score}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Scale from 1 (Low) to 5 (Critical)
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Question Bottom Action Bar (Google Forms Style) */}
@@ -833,7 +931,9 @@ export function FormBuilderDialog({
                           <Switch
                             id={`req-${q.id}`}
                             checked={q.required}
-                            onCheckedChange={(checked) => updateQuestion(q.id, { required: checked })}
+                            onCheckedChange={(checked) =>
+                              updateQuestion(q.id, { required: checked })
+                            }
                           />
                         </div>
 
@@ -952,7 +1052,7 @@ export function FormBuilderDialog({
             </p>
           </div>
 
-          <div className="p-4 grid gap-2.5">
+          <div className="p-4 grid gap-2.5 max-h-[70vh] overflow-y-auto">
             {SUPPORTED_QUESTION_TYPES.map((item) => {
               const IconComp = item.icon;
               return (
@@ -969,9 +1069,7 @@ export function FormBuilderDialog({
                     <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                       {item.label}
                     </p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {item.desc}
-                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{item.desc}</p>
                   </div>
                 </button>
               );
