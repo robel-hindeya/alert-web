@@ -6,9 +6,9 @@ import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.t
 
 function getDatabasePath(): string {
   const isServerless =
-    Boolean(process.env.VERCEL) ||
-    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
-    Boolean(process.env.NETLIFY) ||
+    Boolean(process.env["VERCEL"]) ||
+    Boolean(process.env["AWS_LAMBDA_FUNCTION_NAME"]) ||
+    Boolean(process.env["NETLIFY"]) ||
     process.cwd().startsWith("/var/task");
 
   if (isServerless) {

@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
+import { AdminMenu } from "@/components/dashboard/admin-menu";
 import { useAuthUser } from "@/lib/auth-session";
 import { VisitsChart, DepartmentsChart } from "@/components/dashboard/charts";
 import {
@@ -153,74 +154,6 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
     status: "Reviewing",
   },
 ];
-
-function AdminMenu() {
-  const [open, setOpen] = useState(false);
-  const { user, logout } = useAuthUser();
-  const displayName = user?.name || "Habtamu (Superadmin)";
-  const displayRole =
-    user?.role === "superadmin"
-      ? "Super Administrator"
-      : user?.role === "admin"
-        ? "Hospital Admin"
-        : "Administrator";
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm font-medium text-foreground hover:opacity-85 transition-opacity"
-      >
-        <div className="size-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center">
-          {displayName.charAt(0).toUpperCase()}
-        </div>
-        <div className="text-left hidden sm:block">
-          <span className="block text-xs font-semibold leading-tight text-foreground truncate max-w-[140px]">
-            {user?.name ? user.name.split(" ")[0] : "Habtamu"}
-          </span>
-          <span className="block text-[10px] text-muted-foreground leading-none capitalize">
-            {user?.role || "superadmin"}
-          </span>
-        </div>
-        <ChevronDown
-          className={`size-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-border bg-card shadow-xl p-1.5 space-y-1">
-            <div className="px-3 py-2 border-b border-border/60">
-              <p className="text-xs font-bold text-foreground truncate">{displayName}</p>
-              <p className="text-[11px] text-primary font-medium">{displayRole}</p>
-            </div>
-            <Link
-              to="/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <Settings className="size-4 text-primary" />
-              Settings &amp; Role Accounts
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                logout();
-                window.location.href = "/login";
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <LogOut className="size-4" />
-              Sign Out
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 function Dashboard() {
   const { stats, loading, refresh } = useDashboardData();
@@ -421,7 +354,7 @@ function Dashboard() {
   return (
     <DashboardShell>
       <header className="flex items-center gap-2.5 sm:gap-4 border-b border-border bg-card px-3.5 py-2.5 sm:px-5 sm:py-3.5">
-        <div className="relative flex-1 min-w-0 max-w-md">
+        <div className="relative flex-1 min-w-0 max-w-full lg:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
@@ -431,7 +364,7 @@ function Dashboard() {
             className="w-full rounded-full bg-muted py-2 pl-9 pr-3 sm:py-2.5 sm:pl-10 sm:pr-4 text-xs sm:text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40"
           />
         </div>
-        <div className="ml-auto flex items-center gap-2 sm:gap-4 shrink-0">
+        <div className="ml-auto hidden lg:flex items-center gap-4 shrink-0">
           <NotificationMenu />
           <AdminMenu />
         </div>

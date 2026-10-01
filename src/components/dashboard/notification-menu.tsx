@@ -56,33 +56,11 @@ export function NotificationMenu({ className }: { className?: string }) {
     });
   }, []);
 
-  // Build structured notifications combining activities & system critical alerts
+  // Build structured notifications exclusively from dynamic activities in server DB
   const items: NotificationItem[] = useMemo(() => {
     const list: NotificationItem[] = [];
 
-    // 1. System Bed Capacity & Operational Alert
-    list.push({
-      id: "sys-bed-capacity-alert",
-      type: "alert",
-      title: "Bed Capacity Watch",
-      description: "654 inpatient beds tracked across all clinical departments.",
-      time: "Live",
-      link: "/",
-      isRead: readIds.has("sys-bed-capacity-alert"),
-    });
-
-    // 2. High-priority QMT standard alert
-    list.push({
-      id: "sys-qmt-audit-cycle",
-      type: "system",
-      title: "QMT Audit Schedule Active",
-      description: "Daily clinical documentation and triage audit cycle underway.",
-      time: "Today",
-      link: "/departments",
-      isRead: readIds.has("sys-qmt-audit-cycle"),
-    });
-
-    // 3. Dynamic Activity logs from server DB
+    // Dynamic Activity logs from server DB
     if (stats?.activities && stats.activities.length > 0) {
       stats.activities.forEach((act) => {
         let type: NotificationItem["type"] = "audit";
