@@ -365,6 +365,52 @@ function getSqliteDb(): DatabaseSync {
             nowIso,
           );
       }
+
+      const doctorExists = sqliteInstance
+        .prepare("SELECT id FROM users WHERE username = ?")
+        .get("doctor") as { id: string } | undefined;
+      if (!doctorExists) {
+        sqliteInstance
+          .prepare(
+            `INSERT INTO users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            "usr-doctor-default",
+            "doctor",
+            "Doctor123",
+            "doctor",
+            "Dr. Abebe Bekele (Consultant Physician)",
+            "emergency",
+            "Emergency & Critical Care",
+            "active",
+            nowIso,
+            nowIso,
+          );
+      }
+
+      const staffExists = sqliteInstance
+        .prepare("SELECT id FROM users WHERE username = ?")
+        .get("staff") as { id: string } | undefined;
+      if (!staffExists) {
+        sqliteInstance
+          .prepare(
+            `INSERT INTO users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            "usr-staff-default",
+            "staff",
+            "Staff123",
+            "staff",
+            "Sr. Almaz Tadesse (Clinical Nurse)",
+            "inpatient",
+            "Inpatient & Surgical Wards",
+            "active",
+            nowIso,
+            nowIso,
+          );
+      }
     } catch {
       // ignore seed err
     }
@@ -550,14 +596,16 @@ async function initMySql(): Promise<Pool> {
       ('usr-superadmin-habtamu', 'habtamu', 'Habtamu5645', 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', ?, ?),
       ('usr-admin-default', 'admin', 'Admin123', 'admin', 'Hospital Administrator', NULL, NULL, 'active', ?, ?),
       ('usr-coordinator-default', 'coordinator', 'Coord123', 'coordinator', 'Emergency Clinical Coordinator', 'emergency', 'Emergency & Critical Care', 'active', ?, ?),
-      ('usr-qmt-default', 'qmt', 'Qmt123', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', ?, ?)
+      ('usr-qmt-default', 'qmt', 'Qmt123', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', ?, ?),
+      ('usr-doctor-default', 'doctor', 'Doctor123', 'doctor', 'Dr. Abebe Bekele (Consultant Physician)', 'emergency', 'Emergency & Critical Care', 'active', ?, ?),
+      ('usr-staff-default', 'staff', 'Staff123', 'staff', 'Sr. Almaz Tadesse (Clinical Nurse)', 'inpatient', 'Inpatient & Surgical Wards', 'active', ?, ?)
     ON DUPLICATE KEY UPDATE
       \`password\` = VALUES(\`password\`),
       \`role\` = VALUES(\`role\`),
       \`status\` = 'active',
       \`updated_at\` = VALUES(\`updated_at\`);
   `,
-    [nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso],
+    [nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso],
   );
 
   // If MySQL tables are empty, migrate any existing data from local SQLite database
@@ -1725,15 +1773,7 @@ export async function dbAuthenticateUser(
   }
 
   if (user.password !== pass) {
-    const isRootMatch =
-      (user.username.toLowerCase() === "habtamu" && pass.toLowerCase() === "habtamu5645") ||
-      (user.username.toLowerCase() === "admin" && pass.toLowerCase() === "admin123") ||
-      (user.username.toLowerCase() === "coordinator" && pass.toLowerCase() === "coord123") ||
-      (user.username.toLowerCase() === "qmt" && pass.toLowerCase() === "qmt123");
-
-    if (!isRootMatch) {
-      return { success: false, error: "Invalid username or password" };
-    }
+    return { success: false, error: "Invalid username or password" };
   }
 
   return { success: true, user };

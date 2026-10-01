@@ -114,5 +114,7 @@ VALUES
   ('usr-superadmin-habtamu', 'habtamu', 'Habtamu5645', 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', NOW(), NOW()),
   ('usr-admin-default', 'admin', 'Admin123', 'admin', 'Hospital Administrator', NULL, NULL, 'active', NOW(), NOW()),
   ('usr-coordinator-default', 'coordinator', 'Coord123', 'coordinator', 'Emergency Clinical Coordinator', 'emergency', 'Emergency & Critical Care', 'active', NOW(), NOW()),
-  ('usr-qmt-default', 'qmt', 'Qmt123', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', NOW(), NOW())
+  ('usr-qmt-default', 'qmt', 'Qmt123', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', NOW(), NOW()),
+  ('usr-doctor-default', 'doctor', 'Doctor123', 'doctor', 'Dr. Abebe Bekele (Consultant Physician)', 'emergency', 'Emergency & Critical Care', 'active', NOW(), NOW()),
+  ('usr-staff-default', 'staff', 'Staff123', 'staff', 'Sr. Almaz Tadesse (Clinical Nurse)', 'inpatient', 'Inpatient & Surgical Wards', 'active', NOW(), NOW())
 ON DUPLICATE KEY UPDATE `password` = VALUES(`password`), `role` = VALUES(`role`), `status` = 'active', `updated_at` = NOW();
