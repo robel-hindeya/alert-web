@@ -7,14 +7,12 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  Sparkles,
+  ShieldCheck,
   CheckCircle2,
-  Building2,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 import { saveDeptSession } from "@/lib/dept-session";
 import { saveAuthUser, useAuthUser } from "@/lib/auth-session";
-import { departments } from "./departments.$slug";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -24,7 +22,7 @@ export const Route = createFileRoute("/login")({
       {
         name: "description",
         content:
-          "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System. Super Admin, Admin, and QMT Officer authentication.",
+          "Sign in to ALERT Comprehensive Specialized Hospital Quality Management System. Super Administrator, Admin, and QMT Officer authentication.",
       },
       { property: "og:title", content: "ALERT Hospital | Quality Management System" },
       {
@@ -47,25 +45,12 @@ function LoginPage() {
     }
   }, [ready, user, navigate]);
 
-  const [selectedRole, setSelectedRole] = useState<"admin" | "superadmin" | "coordinator">("admin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedDept, setSelectedDept] = useState("emergency-corridor");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isBanned, setIsBanned] = useState(false);
-
-  const showDeptWorkspace =
-    selectedRole === "admin" &&
-    username.toLowerCase() !== "habtamu" &&
-    username.toLowerCase() !== "coordinator";
-
-  const handleSelectRole = (role: "admin" | "superadmin" | "coordinator") => {
-    setSelectedRole(role);
-    setError(null);
-    setIsBanned(false);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,19 +97,16 @@ function LoginPage() {
         const u = data.user;
         saveAuthUser(u);
 
-        // Store active department context if selected
-        if (selectedDept) {
-          const dept = departments.find((d) => d.slug === selectedDept);
-          if (dept) {
-            saveDeptSession({
-              slug: dept.slug,
-              label: dept.label,
-            });
-          }
+        // Store active department context if user has assigned department
+        if (u.departmentSlug) {
+          saveDeptSession({
+            slug: u.departmentSlug,
+            label: u.departmentLabel || u.departmentSlug,
+          });
         }
 
         toast.success(`Welcome back, ${u.name}!`);
-        // All users see the website after identifying / logging in
+        // All roles see the website after identifying / logging in
         navigate({ to: "/" });
         return;
       } else {
@@ -141,7 +123,7 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="card-soft p-6 sm:p-8 border border-border/80 shadow-lg bg-card">
+        <div className="card-soft p-6 sm:p-8 border border-border/80 shadow-lg bg-card rounded-2xl">
           {/* Hospital Logo */}
           <div className="mx-auto flex justify-center rounded-xl bg-white p-2.5 shadow-xs border border-border/50 max-w-[240px]">
             <img
@@ -159,51 +141,14 @@ function LoginPage() {
               Quality Management System
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in with your role credentials and select your department workspace.
+              Sign in with your credentials to access the ALERT hospital portal.
             </p>
           </div>
 
-          {/* Role Selector */}
-          <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-              <Sparkles className="size-3.5" />
-              <span>Select Role:</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleSelectRole("admin")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "admin"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>🛡️ Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectRole("superadmin")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "superadmin"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>👑 Superadmin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectRole("coordinator")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "coordinator"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>📋 QMT Officer</span>
-              </button>
-            </div>
+          {/* Universal Role Indicator */}
+          <div className="mt-5 flex items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 py-2 px-3 text-[11px] font-medium text-primary">
+            <ShieldCheck className="size-3.5 shrink-0" />
+            <span>All Roles Access: Superadmin, Hospital Admin &amp; Coordinators</span>
           </div>
 
           {/* Banned / Deactivated Alert */}
@@ -229,37 +174,6 @@ function LoginPage() {
           )}
 
           <form className="mt-5 space-y-4" onSubmit={handleLogin}>
-            {/* Department Workspace Selector - Only shown for Clinical Admin */}
-            {showDeptWorkspace && (
-              <div>
-                <label
-                  htmlFor="dept-select"
-                  className="text-xs font-semibold text-foreground flex items-center justify-between"
-                >
-                  <span>Department Workspace</span>
-                  <span className="text-[11px] font-normal text-primary">Target View</span>
-                </label>
-                <div className="relative mt-1.5">
-                  <Building2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <select
-                    id="dept-select"
-                    value={selectedDept}
-                    onChange={(e) => setSelectedDept(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer font-medium"
-                  >
-                    {departments.map((d) => (
-                      <option key={d.slug} value={d.slug}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Clinical Admin logins will open the selected department workspace directly.
-                </p>
-              </div>
-            )}
-
             <div>
               <label htmlFor="username" className="text-xs font-semibold text-foreground">
                 Username
@@ -271,22 +185,14 @@ function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    setUsername(val);
-                    if (val.toLowerCase() === "habtamu") {
-                      setSelectedRole("superadmin");
-                    } else if (val.toLowerCase() === "coordinator") {
-                      setSelectedRole("coordinator");
-                    } else if (val.toLowerCase() === "admin") {
-                      setSelectedRole("admin");
-                    }
+                    setUsername(e.target.value);
                     setError(null);
                     setIsBanned(false);
                   }}
                   placeholder="Enter your username"
                   autoComplete="username"
                   required
-                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium"
                 />
               </div>
             </div>
@@ -311,12 +217,12 @@ function LoginPage() {
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   required
-                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-10 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-10 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -327,14 +233,14 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50 shadow-xs mt-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50 shadow-xs mt-3 cursor-pointer"
             >
               {loading ? (
                 <span>Authenticating...</span>
               ) : (
                 <>
                   <LogIn className="size-4" />
-                  <span>Sign In &amp; Open Workspace</span>
+                  <span>Sign In &amp; Open Website</span>
                 </>
               )}
             </button>
