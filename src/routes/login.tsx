@@ -7,9 +7,7 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  Sparkles,
   CheckCircle2,
-  Building2,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 import { saveDeptSession } from "@/lib/dept-session";
@@ -38,33 +36,12 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<"admin" | "superadmin" | "coordinator">("admin");
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("Admin123");
-  const [selectedDept, setSelectedDept] = useState("emergency-corridor");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isBanned, setIsBanned] = useState(false);
-
-  const showDeptWorkspace =
-    selectedRole === "admin" &&
-    username.toLowerCase() !== "habtamu" &&
-    username.toLowerCase() !== "coordinator";
-
-  const fillCredentials = (
-    role: "admin" | "superadmin" | "coordinator",
-    u: string,
-    p: string,
-    dept = "emergency-corridor",
-  ) => {
-    setSelectedRole(role);
-    setUsername(u);
-    setPassword(p);
-    setSelectedDept(dept);
-    setError(null);
-    setIsBanned(false);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,8 +107,9 @@ function LoginPage() {
           return;
         }
 
-        // Clinical Admin -> Direct to selected department workspace
-        const dept = departments.find((d) => d.slug === selectedDept) || departments[0]!;
+        // Clinical Admin -> Direct to assigned department workspace
+        const targetSlug = u.departmentSlug || "emergency-corridor";
+        const dept = departments.find((d) => d.slug === targetSlug) || departments[0]!;
         saveDeptSession({
           slug: dept.slug,
           label: dept.label,
@@ -174,51 +152,8 @@ function LoginPage() {
               Quality Management System
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in with your role credentials and select your department workspace.
+              Sign in with your credentials to access the hospital management portal.
             </p>
-          </div>
-
-          {/* Quick Demo Credentials helper buttons */}
-          <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-              <Sparkles className="size-3.5" />
-              <span>Quick Login (Select Role):</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => fillCredentials("admin", "admin", "Admin123", "emergency-corridor")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "admin"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>🛡️ Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials("superadmin", "habtamu", "Habtamu5645")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "superadmin"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>👑 Superadmin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials("coordinator", "coordinator", "Coord123")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                  selectedRole === "coordinator"
-                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
-                    : "bg-card text-foreground hover:bg-muted border-border"
-                }`}
-              >
-                <span>📋 QMT Officer</span>
-              </button>
-            </div>
           </div>
 
           {/* Banned / Deactivated Alert */}
@@ -244,37 +179,6 @@ function LoginPage() {
           )}
 
           <form className="mt-5 space-y-4" onSubmit={handleLogin}>
-            {/* Department Workspace Selector - Only shown for Clinical Admin */}
-            {showDeptWorkspace && (
-              <div>
-                <label
-                  htmlFor="dept-select"
-                  className="text-xs font-semibold text-foreground flex items-center justify-between"
-                >
-                  <span>Department Workspace</span>
-                  <span className="text-[11px] font-normal text-primary">Target View</span>
-                </label>
-                <div className="relative mt-1.5">
-                  <Building2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <select
-                    id="dept-select"
-                    value={selectedDept}
-                    onChange={(e) => setSelectedDept(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer font-medium"
-                  >
-                    {departments.map((d) => (
-                      <option key={d.slug} value={d.slug}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Clinical Admin logins will open the selected department workspace directly.
-                </p>
-              </div>
-            )}
-
             <div>
               <label htmlFor="username" className="text-xs font-semibold text-foreground">
                 Username
@@ -286,19 +190,11 @@ function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    setUsername(val);
-                    if (val.toLowerCase() === "habtamu") {
-                      setSelectedRole("superadmin");
-                    } else if (val.toLowerCase() === "coordinator") {
-                      setSelectedRole("coordinator");
-                    } else if (val.toLowerCase() === "admin") {
-                      setSelectedRole("admin");
-                    }
+                    setUsername(e.target.value);
                     setError(null);
                     setIsBanned(false);
                   }}
-                  placeholder="admin, habtamu, coordinator..."
+                  placeholder="Enter username"
                   autoComplete="username"
                   required
                   className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
@@ -323,7 +219,7 @@ function LoginPage() {
                     setError(null);
                     setIsBanned(false);
                   }}
-                  placeholder="••••••••"
+                  placeholder="Enter password"
                   autoComplete="current-password"
                   required
                   className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-10 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
@@ -349,7 +245,7 @@ function LoginPage() {
               ) : (
                 <>
                   <LogIn className="size-4" />
-                  <span>Sign In &amp; Open Workspace</span>
+                  <span>Sign In</span>
                 </>
               )}
             </button>
