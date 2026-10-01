@@ -61,63 +61,10 @@ function LoginPage() {
     username.toLowerCase() !== "habtamu" &&
     username.toLowerCase() !== "coordinator";
 
-  const quickLoginAsRole = async (usernameValue: string, passwordValue: string, deptSlug?: string) => {
-    setLoading(true);
+  const handleSelectRole = (role: "admin" | "superadmin" | "coordinator") => {
+    setSelectedRole(role);
     setError(null);
     setIsBanned(false);
-
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: usernameValue,
-          password: passwordValue,
-        }),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        if (res.status === 403 || data?.banned) {
-          setIsBanned(true);
-          setError(
-            data?.error ||
-              "This account has been banned by Super Administrator. Access is revoked.",
-          );
-        } else {
-          setError(data?.error || "Login failed for selected role.");
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (data?.success && data?.user) {
-        const u = data.user;
-        saveAuthUser(u);
-
-        if (deptSlug) {
-          const dept = departments.find((d) => d.slug === deptSlug);
-          if (dept) {
-            saveDeptSession({
-              slug: dept.slug,
-              label: dept.label,
-            });
-          }
-        }
-
-        toast.success(`Signed in as ${u.name}!`);
-        navigate({ to: "/" });
-        return;
-      } else {
-        setError("Unexpected response from server.");
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      setError(`Login failed: ${msg}`);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -216,93 +163,47 @@ function LoginPage() {
             </p>
           </div>
 
-          {/* 1-Click Role Login Section */}
-          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                <Sparkles className="size-3.5" />
-                <span>1-Click Role Sign In:</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-medium">Click role to enter</span>
+          {/* Role Selector */}
+          <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+              <Sparkles className="size-3.5" />
+              <span>Select Role:</span>
             </div>
-
-            <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               <button
                 type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("habtamu", "Habtamu5645")}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as Super Administrator (Habtamu)"
+                onClick={() => handleSelectRole("admin")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                  selectedRole === "admin"
+                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
+                    : "bg-card text-foreground hover:bg-muted border-border"
+                }`}
               >
-                <span className="text-sm">👑</span>
-                <span className="truncate">Superadmin</span>
+                <span>🛡️ Admin</span>
               </button>
-
               <button
                 type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("admin", "Admin123", selectedDept)}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as Hospital Administrator"
+                onClick={() => handleSelectRole("superadmin")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                  selectedRole === "superadmin"
+                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
+                    : "bg-card text-foreground hover:bg-muted border-border"
+                }`}
               >
-                <span className="text-sm">🛡️</span>
-                <span className="truncate">Admin</span>
+                <span>👑 Superadmin</span>
               </button>
-
               <button
                 type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("coordinator", "Coord123", "emergency")}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as Emergency Clinical Coordinator"
+                onClick={() => handleSelectRole("coordinator")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                  selectedRole === "coordinator"
+                    ? "bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs"
+                    : "bg-card text-foreground hover:bg-muted border-border"
+                }`}
               >
-                <span className="text-sm">📋</span>
-                <span className="truncate">Coordinator</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("qmt", "Qmt123")}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as QMT Quality Officer (Dr. Roman Sisay)"
-              >
-                <span className="text-sm">🔬</span>
-                <span className="truncate">QMT Officer</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("doctor", "Doctor123", "emergency")}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as Clinical Doctor (Dr. Abebe Bekele)"
-              >
-                <span className="text-sm">🩺</span>
-                <span className="truncate">Doctor</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => quickLoginAsRole("staff", "Staff123", "inpatient")}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all border bg-card text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary shadow-xs active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                title="Sign in as Clinical Staff (Sr. Almaz Tadesse)"
-              >
-                <span className="text-sm">👥</span>
-                <span className="truncate">Staff / Nurse</span>
+                <span>📋 QMT Officer</span>
               </button>
             </div>
-          </div>
-
-          {/* Divider */}
-          <div className="relative my-4 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border/80" />
-            </div>
-            <span className="relative bg-card px-2.5 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
-              Or sign in manually
-            </span>
           </div>
 
           {/* Banned / Deactivated Alert */}

@@ -149,7 +149,8 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname === "/api/users") {
       if (request.method === "GET") {
         const users = await dbGetUsers();
-        return new Response(JSON.stringify(users), { status: 200, headers: corsHeaders });
+        const safeUsers = users.map((u) => ({ ...u, password: undefined }));
+        return new Response(JSON.stringify(safeUsers), { status: 200, headers: corsHeaders });
       }
 
       if (request.method === "POST") {
@@ -178,7 +179,10 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
             departmentSlug: raw.departmentSlug,
             departmentLabel: raw.departmentLabel,
           });
-          return new Response(JSON.stringify(newUser), { status: 201, headers: corsHeaders });
+          return new Response(JSON.stringify({ ...newUser, password: undefined }), {
+            status: 201,
+            headers: corsHeaders,
+          });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Failed to create user";
           return new Response(JSON.stringify({ error: msg }), {
@@ -207,7 +211,10 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
             headers: corsHeaders,
           });
         }
-        return new Response(JSON.stringify(user), { status: 200, headers: corsHeaders });
+        return new Response(JSON.stringify({ ...user, password: undefined }), {
+          status: 200,
+          headers: corsHeaders,
+        });
       }
 
       if (request.method === "PATCH") {
@@ -230,7 +237,10 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
         try {
           const updated = await dbUpdateUser(userId, raw);
-          return new Response(JSON.stringify(updated), { status: 200, headers: corsHeaders });
+          return new Response(JSON.stringify({ ...updated, password: undefined }), {
+            status: 200,
+            headers: corsHeaders,
+          });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Failed to update user";
           return new Response(JSON.stringify({ error: msg }), {
@@ -672,9 +682,8 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       headers: corsHeaders,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("API error in handleApiRequest:", err);
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: "Internal server error. Please try again." }), {
       status: 500,
       headers: corsHeaders,
     });

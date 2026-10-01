@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import crypto from "node:crypto";
 import mysql, { type Pool, type RowDataPacket } from "mysql2/promise";
 import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.ts";
 
@@ -19,7 +20,10 @@ function loadEnv() {
         const eqIdx = trimmed.indexOf("=");
         if (eqIdx > 0) {
           const key = trimmed.slice(0, eqIdx).trim();
-          const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+          const val = trimmed
+            .slice(eqIdx + 1)
+            .trim()
+            .replace(/^["']|["']$/g, "");
           if (!(key in process.env)) {
             process.env[key] = val;
           }
@@ -112,6 +116,117 @@ export interface DashboardStats {
   appointments: Appointment[];
   patients: Patient[];
   activities: ActivityItem[];
+}
+
+export interface FormDbRow {
+  id: string;
+  department_slug: string;
+  department_label: string;
+  title: string;
+  description: string | null;
+  banner_url: string | null;
+  questions_json: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FormResponseDbRow {
+  id: string;
+  form_id: string;
+  submitted_at: string;
+  answers_json: string;
+  form_title?: string | null;
+  department_label?: string | null;
+  department_slug?: string | null;
+}
+
+export interface PatientDbRow {
+  id: string;
+  name: string;
+  mrn: string;
+  age: number;
+  gender: "Male" | "Female";
+  phone: string;
+  department_slug: string;
+  department_label: string;
+  registered_at: string;
+  status: "Active" | "Discharged" | "Admitted";
+}
+
+export interface AppointmentDbRow {
+  id: string;
+  patient_name: string;
+  patient_id: string;
+  doctor_name: string;
+  department_slug: string;
+  department_label: string;
+  time: string;
+  date: string;
+  status: "Completed" | "In Progress" | "Pending" | "Confirmed";
+  created_at: string;
+}
+
+export interface ActivityDbRow {
+  id: string;
+  type: string;
+  title: string;
+  meta: string;
+  timestamp: string;
+}
+
+export interface ReportDbRow {
+  id: string;
+  title: string;
+  category: "Audit" | "Incident" | "Consent" | "Survey" | "Checklist";
+  department: string;
+  department_slug: string;
+  author: string;
+  date: string;
+  score: string;
+  status: "Completed" | "Reviewed" | "Pending Review";
+  summary: string;
+  created_at: string;
+}
+
+export interface UserDbRow {
+  id: string;
+  username: string;
+  password: string;
+  role: string;
+  name: string;
+  department_slug: string | null;
+  department_label: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// -----------------------------------------------------------------------------
+// Secure Cryptographic Password Hashing & Verification
+// -----------------------------------------------------------------------------
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `scrypt:${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored) return false;
+  if (stored.startsWith("scrypt:")) {
+    const parts = stored.split(":");
+    if (parts.length !== 3) return false;
+    const [, salt, hash] = parts;
+    if (!salt || !hash) return false;
+    try {
+      const computed = crypto.scryptSync(password, salt, 64).toString("hex");
+      return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(computed, "hex"));
+    } catch {
+      return false;
+    }
+  }
+  // Constant-time check for legacy plain strings to mitigate timing analysis
+  if (password.length !== stored.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(password), Buffer.from(stored));
 }
 
 function safeJsonParse<T>(raw: string | null | undefined, fallback: T): T {
@@ -264,12 +379,17 @@ function getSqliteDb(): DatabaseSync {
       CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
     `);
 
-    // Seed default SQLite users
+    // Seed default SQLite users with cryptographic security
     try {
       const nowIso = new Date().toISOString();
       const superAdminExists = sqliteInstance
         .prepare("SELECT id FROM users WHERE username = ?")
         .get("habtamu") as { id: string } | undefined;
+
+      const hashedSuperadmin = hashPassword("Habtamu5645");
+      const hashedAdmin = hashPassword("Admin123");
+      const hashedCoord = hashPassword("Coord123");
+      const hashedQmt = hashPassword("Qmt123");
 
       if (!superAdminExists) {
         sqliteInstance
@@ -280,7 +400,7 @@ function getSqliteDb(): DatabaseSync {
           .run(
             "usr-superadmin-habtamu",
             "habtamu",
-            "Habtamu5645",
+            hashedSuperadmin,
             "superadmin",
             "Habtamu (Super Administrator)",
             null,
@@ -294,7 +414,7 @@ function getSqliteDb(): DatabaseSync {
           .prepare(
             "UPDATE users SET password = ?, role = 'superadmin', status = 'active', updated_at = ? WHERE username = 'habtamu'",
           )
-          .run("Habtamu5645", nowIso);
+          .run(hashedSuperadmin, nowIso);
       }
 
       const adminExists = sqliteInstance
@@ -309,7 +429,7 @@ function getSqliteDb(): DatabaseSync {
           .run(
             "usr-admin-default",
             "admin",
-            "Admin123",
+            hashedAdmin,
             "admin",
             "Hospital Administrator",
             null,
@@ -332,7 +452,7 @@ function getSqliteDb(): DatabaseSync {
           .run(
             "usr-coordinator-default",
             "coordinator",
-            "Coord123",
+            hashedCoord,
             "coordinator",
             "Emergency Clinical Coordinator",
             "emergency",
@@ -355,57 +475,11 @@ function getSqliteDb(): DatabaseSync {
           .run(
             "usr-qmt-default",
             "qmt",
-            "Qmt123",
+            hashedQmt,
             "qmt",
             "Dr. Roman Sisay (QMT Officer)",
             null,
             null,
-            "active",
-            nowIso,
-            nowIso,
-          );
-      }
-
-      const doctorExists = sqliteInstance
-        .prepare("SELECT id FROM users WHERE username = ?")
-        .get("doctor") as { id: string } | undefined;
-      if (!doctorExists) {
-        sqliteInstance
-          .prepare(
-            `INSERT INTO users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
-            "usr-doctor-default",
-            "doctor",
-            "Doctor123",
-            "doctor",
-            "Dr. Abebe Bekele (Consultant Physician)",
-            "emergency",
-            "Emergency & Critical Care",
-            "active",
-            nowIso,
-            nowIso,
-          );
-      }
-
-      const staffExists = sqliteInstance
-        .prepare("SELECT id FROM users WHERE username = ?")
-        .get("staff") as { id: string } | undefined;
-      if (!staffExists) {
-        sqliteInstance
-          .prepare(
-            `INSERT INTO users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
-            "usr-staff-default",
-            "staff",
-            "Staff123",
-            "staff",
-            "Sr. Almaz Tadesse (Clinical Nurse)",
-            "inpatient",
-            "Inpatient & Surgical Wards",
             "active",
             nowIso,
             nowIso,
@@ -427,7 +501,8 @@ async function initMySql(): Promise<Pool> {
   const port = Number(process.env["MYSQL_PORT"]) || 3306;
   const user = process.env["MYSQL_USER"] || "root";
   const password = process.env["MYSQL_PASSWORD"] || "";
-  const database = process.env["MYSQL_DATABASE"] || "alert_hospital";
+  const rawDatabase = process.env["MYSQL_DATABASE"] || "alert_hospital";
+  const database = rawDatabase.replace(/[`\\/]/g, "").trim() || "alert_hospital";
   const url = process.env["MYSQL_URL"] || process.env["DATABASE_URL"];
 
   let poolConfig: mysql.PoolOptions;
@@ -587,25 +662,41 @@ async function initMySql(): Promise<Pool> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
-  // Seed default superadmin "habtamu" and key accounts in MySQL
+  // Seed default superadmin "habtamu" and key accounts in MySQL with secure cryptographic password hashes
   const nowIso = new Date().toISOString();
+  const hashedSuperadmin = hashPassword("Habtamu5645");
+  const hashedAdmin = hashPassword("Admin123");
+  const hashedCoord = hashPassword("Coord123");
+  const hashedQmt = hashPassword("Qmt123");
+
   await pool.query(
     `
     INSERT INTO \`users\` (\`id\`, \`username\`, \`password\`, \`role\`, \`name\`, \`department_slug\`, \`department_label\`, \`status\`, \`created_at\`, \`updated_at\`)
     VALUES
-      ('usr-superadmin-habtamu', 'habtamu', 'Habtamu5645', 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', ?, ?),
-      ('usr-admin-default', 'admin', 'Admin123', 'admin', 'Hospital Administrator', NULL, NULL, 'active', ?, ?),
-      ('usr-coordinator-default', 'coordinator', 'Coord123', 'coordinator', 'Emergency Clinical Coordinator', 'emergency', 'Emergency & Critical Care', 'active', ?, ?),
-      ('usr-qmt-default', 'qmt', 'Qmt123', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', ?, ?),
-      ('usr-doctor-default', 'doctor', 'Doctor123', 'doctor', 'Dr. Abebe Bekele (Consultant Physician)', 'emergency', 'Emergency & Critical Care', 'active', ?, ?),
-      ('usr-staff-default', 'staff', 'Staff123', 'staff', 'Sr. Almaz Tadesse (Clinical Nurse)', 'inpatient', 'Inpatient & Surgical Wards', 'active', ?, ?)
+      ('usr-superadmin-habtamu', 'habtamu', ?, 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', ?, ?),
+      ('usr-admin-default', 'admin', ?, 'admin', 'Hospital Administrator', NULL, NULL, 'active', ?, ?),
+      ('usr-coordinator-default', 'coordinator', ?, 'coordinator', 'Emergency Clinical Coordinator', 'emergency', 'Emergency & Critical Care', 'active', ?, ?),
+      ('usr-qmt-default', 'qmt', ?, 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', ?, ?)
     ON DUPLICATE KEY UPDATE
       \`password\` = VALUES(\`password\`),
       \`role\` = VALUES(\`role\`),
       \`status\` = 'active',
       \`updated_at\` = VALUES(\`updated_at\`);
   `,
-    [nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso, nowIso],
+    [
+      hashedSuperadmin,
+      nowIso,
+      nowIso,
+      hashedAdmin,
+      nowIso,
+      nowIso,
+      hashedCoord,
+      nowIso,
+      nowIso,
+      hashedQmt,
+      nowIso,
+      nowIso,
+    ],
   );
 
   // If MySQL tables are empty, migrate any existing data from local SQLite database
@@ -618,7 +709,7 @@ async function initMySql(): Promise<Pool> {
     if (patientCount === 0) {
       const sqlite = getSqliteDb();
       // Migrate patients
-      const patients = sqlite.prepare("SELECT * FROM patients").all() as any[];
+      const patients = sqlite.prepare("SELECT * FROM patients").all() as unknown as PatientDbRow[];
       for (const p of patients) {
         await pool.query(
           "INSERT IGNORE INTO `patients` (id, name, mrn, age, gender, phone, department_slug, department_label, registered_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -638,7 +729,9 @@ async function initMySql(): Promise<Pool> {
       }
 
       // Migrate appointments
-      const appointments = sqlite.prepare("SELECT * FROM appointments").all() as any[];
+      const appointments = sqlite
+        .prepare("SELECT * FROM appointments")
+        .all() as unknown as AppointmentDbRow[];
       for (const a of appointments) {
         await pool.query(
           "INSERT IGNORE INTO `appointments` (id, patient_name, patient_id, doctor_name, department_slug, department_label, time, date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -658,7 +751,7 @@ async function initMySql(): Promise<Pool> {
       }
 
       // Migrate forms
-      const forms = sqlite.prepare("SELECT * FROM forms").all() as any[];
+      const forms = sqlite.prepare("SELECT * FROM forms").all() as unknown as FormDbRow[];
       for (const f of forms) {
         await pool.query(
           "INSERT IGNORE INTO `forms` (id, department_slug, department_label, title, description, banner_url, questions_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -677,7 +770,9 @@ async function initMySql(): Promise<Pool> {
       }
 
       // Migrate form responses
-      const responses = sqlite.prepare("SELECT * FROM form_responses").all() as any[];
+      const responses = sqlite
+        .prepare("SELECT * FROM form_responses")
+        .all() as unknown as FormResponseDbRow[];
       for (const r of responses) {
         await pool.query(
           "INSERT IGNORE INTO `form_responses` (id, form_id, submitted_at, answers_json) VALUES (?, ?, ?, ?)",
@@ -686,7 +781,7 @@ async function initMySql(): Promise<Pool> {
       }
 
       // Migrate reports
-      const reports = sqlite.prepare("SELECT * FROM reports").all() as any[];
+      const reports = sqlite.prepare("SELECT * FROM reports").all() as unknown as ReportDbRow[];
       for (const rep of reports) {
         await pool.query(
           "INSERT IGNORE INTO `reports` (id, title, category, department, department_slug, author, date, score, status, summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -747,18 +842,6 @@ export async function getDbBackend(): Promise<"mysql" | "sqlite"> {
 // -----------------------------------------------------------------------------
 // FORMS CRUD
 // -----------------------------------------------------------------------------
-interface FormDbRow {
-  id: string;
-  department_slug: string;
-  department_label: string;
-  title: string;
-  description: string | null;
-  banner_url: string | null;
-  questions_json: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm[]> {
   const backend = await getDbBackend();
   let rows: FormDbRow[];
@@ -927,16 +1010,6 @@ export async function dbDeleteForm(id: string): Promise<boolean> {
 // -----------------------------------------------------------------------------
 // RESPONSES CRUD
 // -----------------------------------------------------------------------------
-interface FormResponseDbRow {
-  id: string;
-  form_id: string;
-  submitted_at: string;
-  answers_json: string;
-  form_title?: string | null;
-  department_label?: string | null;
-  department_slug?: string | null;
-}
-
 export async function dbSaveResponse(response: FormResponse): Promise<FormResponse> {
   const backend = await getDbBackend();
 
@@ -946,12 +1019,7 @@ export async function dbSaveResponse(response: FormResponse): Promise<FormRespon
       INSERT INTO form_responses (id, form_id, submitted_at, answers_json)
       VALUES (?, ?, ?, ?)
     `,
-      [
-        response.id,
-        response.formId,
-        response.submittedAt,
-        JSON.stringify(response.answers || {}),
-      ],
+      [response.id, response.formId, response.submittedAt, JSON.stringify(response.answers || {})],
     );
   } else {
     const db = getSqliteDb();
@@ -1010,9 +1078,13 @@ export async function dbGetResponses(formId: string): Promise<FormResponse[]> {
   }));
 }
 
-export async function dbGetAllResponses(
-  limit = 100,
-): Promise<(FormResponse & { formTitle?: string; departmentLabel?: string; departmentSlug?: string })[]> {
+export async function dbGetAllResponses(limit = 100): Promise<
+  (FormResponse & {
+    formTitle?: string;
+    departmentLabel?: string;
+    departmentSlug?: string;
+  })[]
+> {
   const backend = await getDbBackend();
   const safeLimit = Math.min(Math.max(1, limit || 100), 500);
   let rows: FormResponseDbRow[];
@@ -1047,19 +1119,6 @@ export async function dbGetAllResponses(
 // -----------------------------------------------------------------------------
 // PATIENTS CRUD
 // -----------------------------------------------------------------------------
-interface PatientDbRow {
-  id: string;
-  name: string;
-  mrn: string;
-  age: number;
-  gender: "Male" | "Female";
-  phone: string;
-  department_slug: string;
-  department_label: string;
-  registered_at: string;
-  status: "Active" | "Discharged" | "Admitted";
-}
-
 export async function dbGetPatients(limit = 100): Promise<Patient[]> {
   const backend = await getDbBackend();
   const safeLimit = Math.min(Math.max(1, limit), 500);
@@ -1155,19 +1214,6 @@ export async function dbAddPatient(patient: {
 // -----------------------------------------------------------------------------
 // APPOINTMENTS CRUD
 // -----------------------------------------------------------------------------
-interface AppointmentDbRow {
-  id: string;
-  patient_name: string;
-  patient_id: string;
-  doctor_name: string;
-  department_slug: string;
-  department_label: string;
-  time: string;
-  date: string;
-  status: "Completed" | "In Progress" | "Pending" | "Confirmed";
-  created_at: string;
-}
-
 export async function dbGetAppointments(limit = 100, deptSlug?: string): Promise<Appointment[]> {
   const backend = await getDbBackend();
   const safeLimit = Math.min(Math.max(1, limit), 500);
@@ -1285,18 +1331,16 @@ export async function dbUpdateAppointmentStatus(
   let row: AppointmentDbRow | undefined;
 
   if (backend === "mysql" && mysqlPool) {
-    const [res] = (await mysqlPool.query(
-      "SELECT * FROM appointments WHERE id = ? LIMIT 1",
-      [id],
-    )) as RowDataPacket[];
+    const [res] = (await mysqlPool.query("SELECT * FROM appointments WHERE id = ? LIMIT 1", [
+      id,
+    ])) as RowDataPacket[];
     row = (res as AppointmentDbRow[])[0];
     if (!row) return null;
     await mysqlPool.query("UPDATE appointments SET status = ? WHERE id = ?", [status, id]);
   } else {
     const db = getSqliteDb();
     row = db.prepare("SELECT * FROM appointments WHERE id = ?").get(id) as unknown as
-      | AppointmentDbRow
-      | undefined;
+      AppointmentDbRow | undefined;
     if (!row) return null;
     db.prepare("UPDATE appointments SET status = ? WHERE id = ?").run(status, id);
   }
@@ -1324,14 +1368,6 @@ export async function dbUpdateAppointmentStatus(
 // -----------------------------------------------------------------------------
 // ACTIVITIES CRUD
 // -----------------------------------------------------------------------------
-interface ActivityDbRow {
-  id: string;
-  type: string;
-  title: string;
-  meta: string;
-  timestamp: string;
-}
-
 export async function dbGetActivities(limit = 20): Promise<ActivityItem[]> {
   const backend = await getDbBackend();
   const safeLimit = Math.min(Math.max(1, limit), 100);
@@ -1359,7 +1395,11 @@ export async function dbGetActivities(limit = 20): Promise<ActivityItem[]> {
   }));
 }
 
-export async function dbAddActivity(type: string, title: string, meta: string): Promise<ActivityItem> {
+export async function dbAddActivity(
+  type: string,
+  title: string,
+  meta: string,
+): Promise<ActivityItem> {
   const backend = await getDbBackend();
   const id = `ACT-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`;
   const now = new Date();
@@ -1388,30 +1428,15 @@ export async function dbAddActivity(type: string, title: string, meta: string): 
 // -----------------------------------------------------------------------------
 // REPORTS CRUD
 // -----------------------------------------------------------------------------
-interface ReportDbRow {
-  id: string;
-  title: string;
-  category: "Audit" | "Incident" | "Consent" | "Survey" | "Checklist";
-  department: string;
-  department_slug: string;
-  author: string;
-  date: string;
-  score: string;
-  status: "Completed" | "Reviewed" | "Pending Review";
-  summary: string;
-  created_at: string;
-}
-
 export async function dbGetReports(limit = 100): Promise<ReportItem[]> {
   const backend = await getDbBackend();
   const safeLimit = Math.min(Math.max(1, limit), 200);
   let rows: ReportDbRow[];
 
   if (backend === "mysql" && mysqlPool) {
-    const [res] = (await mysqlPool.query(
-      "SELECT * FROM reports ORDER BY created_at DESC LIMIT ?",
-      [safeLimit],
-    )) as RowDataPacket[];
+    const [res] = (await mysqlPool.query("SELECT * FROM reports ORDER BY created_at DESC LIMIT ?", [
+      safeLimit,
+    ])) as RowDataPacket[];
     rows = res as ReportDbRow[];
   } else {
     const db = getSqliteDb();
@@ -1559,19 +1584,19 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
     deptCountsRaw = dRows as { department_label: string; response_count: number }[];
   } else {
     const db = getSqliteDb();
-    const patientCountRow = db.prepare("SELECT COUNT(*) as count FROM patients").get() as
-      | { count: number }
-      | undefined;
+    const patientCountRow = db.prepare("SELECT COUNT(*) as count FROM patients").get() as {
+      count: number;
+    };
     patientCount = patientCountRow?.count || 0;
 
-    const formsCountRow = db.prepare("SELECT COUNT(*) as count FROM forms").get() as
-      | { count: number }
-      | undefined;
+    const formsCountRow = db.prepare("SELECT COUNT(*) as count FROM forms").get() as {
+      count: number;
+    };
     totalForms = formsCountRow?.count || 0;
 
-    const responsesCountRow = db.prepare("SELECT COUNT(*) as count FROM form_responses").get() as
-      | { count: number }
-      | undefined;
+    const responsesCountRow = db.prepare("SELECT COUNT(*) as count FROM form_responses").get() as {
+      count: number;
+    };
     totalResponses = responsesCountRow?.count || 0;
 
     const apptCountRow = db
@@ -1667,24 +1692,10 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
 // -----------------------------------------------------------------------------
 // USER MANAGEMENT & AUTHENTICATION DB METHODS
 // -----------------------------------------------------------------------------
-interface UserDbRow {
-  id: string;
-  username: string;
-  password: string;
-  role: string;
-  name: string;
-  department_slug: string | null;
-  department_label: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
 function mapUserRow(row: UserDbRow): UserAccount {
   return {
     id: row.id,
     username: row.username,
-    password: row.password,
     role: row.role as UserRole,
     name: row.name,
     departmentSlug: row.department_slug,
@@ -1725,8 +1736,7 @@ export async function dbGetUserById(id: string): Promise<UserAccount | null> {
   } else {
     const db = getSqliteDb();
     row = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as unknown as
-      | UserDbRow
-      | undefined;
+      UserDbRow | undefined;
   }
 
   return row ? mapUserRow(row) : null;
@@ -1757,26 +1767,59 @@ export async function dbAuthenticateUser(
   pass: string,
 ): Promise<{ success: boolean; user?: UserAccount; error?: string; banned?: boolean }> {
   const trimmed = username.trim();
-  const user = await dbGetUserByUsername(trimmed);
+  const backend = await getDbBackend();
 
-  if (!user) {
+  let storedUserRow: UserDbRow | undefined;
+  if (backend === "mysql" && mysqlPool) {
+    const [res] = (await mysqlPool.query(
+      "SELECT * FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1",
+      [trimmed],
+    )) as RowDataPacket[];
+    storedUserRow = (res as UserDbRow[])[0];
+  } else {
+    const db = getSqliteDb();
+    storedUserRow = db
+      .prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)")
+      .get(trimmed) as unknown as UserDbRow | undefined;
+  }
+
+  if (!storedUserRow) {
     return { success: false, error: "Invalid username or password" };
   }
 
-  if (user.status === "banned") {
+  if (storedUserRow.status === "banned") {
     return {
       success: false,
       error: "This account has been banned. Please contact Super Administrator Habtamu.",
       banned: true,
-      user,
+      user: mapUserRow(storedUserRow),
     };
   }
 
-  if (user.password !== pass) {
+  // Secure constant-time password verification
+  if (!verifyPassword(pass, storedUserRow.password)) {
     return { success: false, error: "Invalid username or password" };
   }
 
-  return { success: true, user };
+  // Upgrade legacy plaintext password to secure scrypt hash transparently upon successful login
+  if (!storedUserRow.password.startsWith("scrypt:")) {
+    const newHash = hashPassword(pass);
+    try {
+      if (backend === "mysql" && mysqlPool) {
+        await mysqlPool.query("UPDATE users SET password = ? WHERE id = ?", [
+          newHash,
+          storedUserRow.id,
+        ]);
+      } else {
+        const db = getSqliteDb();
+        db.prepare("UPDATE users SET password = ? WHERE id = ?").run(newHash, storedUserRow.id);
+      }
+    } catch {
+      // Ignore background upgrade error
+    }
+  }
+
+  return { success: true, user: mapUserRow(storedUserRow) };
 }
 
 export async function dbAddUser(data: {
@@ -1797,6 +1840,7 @@ export async function dbAddUser(data: {
 
   const id = `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const now = new Date().toISOString();
+  const securePassword = hashPassword(data.password);
 
   const sql = `
     INSERT INTO users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
@@ -1805,7 +1849,7 @@ export async function dbAddUser(data: {
   const params = [
     id,
     trimmedUser,
-    data.password,
+    securePassword,
     data.role,
     data.name.trim(),
     data.departmentSlug ?? null,
@@ -1839,12 +1883,24 @@ export async function dbUpdateUser(
   },
 ): Promise<UserAccount> {
   const backend = await getDbBackend();
-  const existing = await dbGetUserById(id);
-  if (!existing) {
+  let existingRow: UserDbRow | undefined;
+
+  if (backend === "mysql" && mysqlPool) {
+    const [res] = (await mysqlPool.query("SELECT * FROM users WHERE id = ? LIMIT 1", [
+      id,
+    ])) as RowDataPacket[];
+    existingRow = (res as UserDbRow[])[0];
+  } else {
+    const db = getSqliteDb();
+    existingRow = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as unknown as
+      UserDbRow | undefined;
+  }
+
+  if (!existingRow) {
     throw new Error("User not found");
   }
 
-  if (existing.username === "habtamu") {
+  if (existingRow.username === "habtamu") {
     if (updates.status === "banned") {
       throw new Error("Super Administrator account cannot be banned.");
     }
@@ -1855,7 +1911,7 @@ export async function dbUpdateUser(
 
   if (
     updates.username &&
-    updates.username.trim().toLowerCase() !== existing.username.toLowerCase()
+    updates.username.trim().toLowerCase() !== existingRow.username.toLowerCase()
   ) {
     const check = await dbGetUserByUsername(updates.username.trim());
     if (check && check.id !== id) {
@@ -1863,17 +1919,19 @@ export async function dbUpdateUser(
     }
   }
 
-  const newUsername = (updates.username ? updates.username.trim() : existing.username) ?? "";
-  const newPassword = (updates.password !== undefined ? updates.password : existing.password) ?? "";
-  const newRole = updates.role || existing.role;
-  const newName = (updates.name !== undefined ? updates.name.trim() : existing.name) ?? "";
+  const newUsername = (updates.username ? updates.username.trim() : existingRow.username) ?? "";
+  const newPassword =
+    updates.password !== undefined ? hashPassword(updates.password) : existingRow.password;
+  const newRole = updates.role || existingRow.role;
+  const newName = (updates.name !== undefined ? updates.name.trim() : existingRow.name) ?? "";
   const newDeptSlug =
-    (updates.departmentSlug !== undefined ? updates.departmentSlug : existing.departmentSlug) ??
+    (updates.departmentSlug !== undefined ? updates.departmentSlug : existingRow.department_slug) ??
     null;
   const newDeptLabel =
-    (updates.departmentLabel !== undefined ? updates.departmentLabel : existing.departmentLabel) ??
-    null;
-  const newStatus = updates.status || existing.status;
+    (updates.departmentLabel !== undefined
+      ? updates.departmentLabel
+      : existingRow.department_label) ?? null;
+  const newStatus = updates.status || existingRow.status;
   const now = new Date().toISOString();
 
   const sql = `

@@ -574,7 +574,10 @@ function ReportsPage() {
       escapeCsv(r.summary),
     ]);
 
-    const csvContent = [headers.map((h) => `"${h}"`).join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const csvContent = [
+      headers.map((h) => `"${h}"`).join(","),
+      ...rows.map((r) => r.join(",")),
+    ].join("\r\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -795,7 +798,10 @@ function ReportsPage() {
                   <ChevronDown className="size-3.5 opacity-60 ml-0.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60 rounded-2xl p-1.5 shadow-xl border border-border">
+              <DropdownMenuContent
+                align="end"
+                className="w-60 rounded-2xl p-1.5 shadow-xl border border-border"
+              >
                 <DropdownMenuItem
                   onClick={handleExportCsv}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer"
@@ -803,7 +809,9 @@ function ReportsPage() {
                   <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <div className="flex flex-col">
                     <span className="font-semibold text-foreground">Export Data to CSV</span>
-                    <span className="text-[10px] text-muted-foreground">Excel &amp; Google Sheets spreadsheet</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Excel &amp; Google Sheets spreadsheet
+                    </span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -813,7 +821,9 @@ function ReportsPage() {
                   <Printer className="size-4 text-primary shrink-0" />
                   <div className="flex flex-col">
                     <span className="font-semibold text-foreground">Print Data Document</span>
-                    <span className="text-[10px] text-muted-foreground">Official formatted table (not UI)</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Official formatted table (not UI)
+                    </span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1" />
@@ -824,7 +834,9 @@ function ReportsPage() {
                   <FileText className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
                   <div className="flex flex-col">
                     <span className="font-semibold text-foreground">Export Data to JSON</span>
-                    <span className="text-[10px] text-muted-foreground">Structured hospital database</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Structured hospital database
+                    </span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

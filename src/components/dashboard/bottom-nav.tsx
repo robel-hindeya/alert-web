@@ -1,11 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  LayoutDashboard,
-  UserCheck,
-  Building2,
-  BarChart3,
-  Settings,
-} from "lucide-react";
+import { LayoutDashboard, UserCheck, Building2, BarChart3, Settings } from "lucide-react";
 
 export const navItems = [
   { label: "QMT", shortLabel: "QMT", icon: LayoutDashboard, to: "/" as const },
@@ -40,7 +34,9 @@ export function MobileBottomNav() {
               }`}
             >
               <div className="relative">
-                <Icon className={`size-5 shrink-0 transition-transform ${isActive ? "scale-110" : ""}`} />
+                <Icon
+                  className={`size-5 shrink-0 transition-transform ${isActive ? "scale-110" : ""}`}
+                />
                 {isActive && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 size-1 rounded-full bg-primary" />
                 )}

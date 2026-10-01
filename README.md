@@ -23,11 +23,13 @@ MYSQL_DATABASE=alert_hospital
 ```
 
 Alternatively, you can provide a full connection URL:
+
 ```env
 DATABASE_URL=mysql://user:password@localhost:3306/alert_hospital
 ```
 
 ### 2. Schema and Tables
+
 - The server will **automatically create the database and tables** if they don't exist when it starts.
 - If you prefer to manually import the database schema, run the included `schema.sql` script into MySQL or phpMyAdmin.
 - Default Super Administrator account:
@@ -35,6 +37,7 @@ DATABASE_URL=mysql://user:password@localhost:3306/alert_hospital
   - **Password**: `Habtamu5645`
 
 ### 3. Graceful SQLite Fallback
+
 If your MySQL server is temporarily stopped or offline during local development, the application automatically falls back to the embedded SQLite database (`data/hospital.db`) so your workflow is never interrupted.
 
 ---
