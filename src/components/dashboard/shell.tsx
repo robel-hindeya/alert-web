@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Sidebar } from "./sidebar";
 import { NotificationMenu } from "./notification-menu";
 import { AdminMenu } from "./admin-menu";
 import { MobileBottomNav } from "./bottom-nav";
+import { useAuthUser } from "@/lib/auth-session";
 import logo from "@/assets/alert-logo.png.asset.json";
 
 export function DashboardShell({
@@ -14,6 +15,25 @@ export function DashboardShell({
   bare?: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, ready } = useAuthUser();
+
+  useEffect(() => {
+    if (ready && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [ready, user, navigate]);
+
+  if (!ready || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-xs font-medium text-muted-foreground">Authenticating session...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (bare) {
     return (

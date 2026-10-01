@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Lock,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
 import { saveDeptSession } from "@/lib/dept-session";
-import { saveAuthUser } from "@/lib/auth-session";
+import { saveAuthUser, useAuthUser } from "@/lib/auth-session";
 import { departments } from "./departments.$slug";
 import { toast } from "sonner";
 
@@ -38,6 +38,15 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { user, ready } = useAuthUser();
+
+  // Redirect to main website if already authenticated
+  useEffect(() => {
+    if (ready && user) {
+      navigate({ to: "/" });
+    }
+  }, [ready, user, navigate]);
+
   const [selectedRole, setSelectedRole] = useState<"admin" | "superadmin" | "coordinator">("admin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -103,36 +112,20 @@ function LoginPage() {
         const u = data.user;
         saveAuthUser(u);
 
-        // Super Administrator -> Central Dashboard
-        if (u.role === "superadmin") {
-          toast.success(`Welcome back, ${u.name}!`);
-          navigate({ to: "/" });
-          return;
+        // Store active department context if selected
+        if (selectedDept) {
+          const dept = departments.find((d) => d.slug === selectedDept);
+          if (dept) {
+            saveDeptSession({
+              slug: dept.slug,
+              label: dept.label,
+            });
+          }
         }
 
-        // Coordinator -> Coordinators Portal
-        if (u.role === "coordinator") {
-          toast.success(`Signed in as Coordinator ${u.name}`);
-          navigate({ to: "/cordineters" });
-          return;
-        }
-
-        if (u.role === "qmt") {
-          navigate({ to: "/qmt-officer" });
-          return;
-        }
-
-        // Clinical Admin -> Direct to selected department workspace
-        const dept = departments.find((d) => d.slug === selectedDept) || departments[0]!;
-        saveDeptSession({
-          slug: dept.slug,
-          label: dept.label,
-        });
-        toast.success(`Signed in as ${u.name}. Opening ${dept.label}...`);
-        navigate({
-          to: "/departments/$slug",
-          params: { slug: dept.slug },
-        });
+        toast.success(`Welcome back, ${u.name}!`);
+        // All users see the website after identifying / logging in
+        navigate({ to: "/" });
         return;
       } else {
         setError("Unexpected response from server.");
