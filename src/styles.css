@@ -166,3 +166,29 @@
 @utility sidebar-surface {
   background-image: var(--gradient-sidebar);
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  aside,
+  header,
+  nav,
+  button,
+  input,
+  select,
+  [role="combobox"],
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card-soft {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    break-inside: avoid;
+  }
+}

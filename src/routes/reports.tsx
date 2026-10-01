@@ -22,10 +22,18 @@ import {
   AlertCircle,
   FileSpreadsheet,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -529,6 +537,226 @@ function ReportsPage() {
     return `${Math.round((completed / reports.length) * 100)}%`;
   }, [reports]);
 
+  // Export filtered clinical report data to Excel/Sheets compatible CSV
+  const handleExportCsv = () => {
+    if (filteredReports.length === 0) {
+      toast.error("No report data available to export in the current filter.");
+      return;
+    }
+
+    const headers = [
+      "Report ID",
+      "Title",
+      "Category",
+      "Department",
+      "Auditor / Author",
+      "Audit Date",
+      "Compliance Score",
+      "Verification Status",
+      "Executive Summary",
+    ];
+
+    const escapeCsv = (str: string | undefined | null) => {
+      if (!str) return '""';
+      const clean = String(str).replace(/"/g, '""');
+      return `"${clean}"`;
+    };
+
+    const rows = filteredReports.map((r) => [
+      escapeCsv(r.id),
+      escapeCsv(r.title),
+      escapeCsv(r.category),
+      escapeCsv(r.department),
+      escapeCsv(r.author),
+      escapeCsv(r.date),
+      escapeCsv(r.score),
+      escapeCsv(r.status),
+      escapeCsv(r.summary),
+    ]);
+
+    const csvContent = [headers.map((h) => `"${h}"`).join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `ALERT_Hospital_Reports_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${filteredReports.length} report records to CSV spreadsheet.`);
+  };
+
+  // Export filtered report records as structured JSON
+  const handleExportJson = () => {
+    if (filteredReports.length === 0) {
+      toast.error("No report data available to export in the current filter.");
+      return;
+    }
+
+    const exportData = {
+      hospital: "ALERT Comprehensive Specialized Hospital",
+      directorate: "Quality & Clinical Audit Directorate",
+      exportDate: new Date().toISOString(),
+      totalRecords: filteredReports.length,
+      activeDepartment: selectedDept === "all" ? "All Departments" : selectedDept,
+      activeCategory: selectedCategory,
+      activeStatus: selectedStatus,
+      reports: filteredReports,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `ALERT_Hospital_Reports_${timestamp}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${filteredReports.length} report records to JSON.`);
+  };
+
+  // Print formatted clinical data report document (not the web page UI)
+  const handlePrintAllData = () => {
+    if (filteredReports.length === 0) {
+      toast.error("No report data available to print in the current filter.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up blocked. Please allow pop-ups to print the report document.");
+      return;
+    }
+
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const activeDeptLabel =
+      selectedDept === "all"
+        ? "All Departments"
+        : departments.find((d) => d.slug === selectedDept)?.label || selectedDept;
+
+    const rowsHtml = filteredReports
+      .map(
+        (r, idx) => `
+        <tr>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-align: center; color: #64748b;">${idx + 1}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-family: monospace; font-weight: 700; color: #0284c7;">${r.id}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; font-weight: 600; color: #0f172a;">${r.title}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 500;">${r.category}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #334155;">${r.department}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">${r.author}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #64748b;">${r.date}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; font-weight: 700; color: #0284c7; text-align: right;">${r.score}</td>
+          <td style="padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 600; color: ${
+            r.status === "Completed" ? "#16a34a" : r.status === "Reviewed" ? "#0284c7" : "#ea580c"
+          };">${r.status}</td>
+        </tr>`,
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>ALERT Hospital - Clinical Quality Reports Registry</title>
+        <style>
+          @page { size: A4 landscape; margin: 15mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px 30px; color: #1e293b; background: #fff; line-height: 1.45; }
+          .header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid #0284c7; padding-bottom: 14px; margin-bottom: 18px; }
+          .hospital-title { font-size: 20px; font-weight: 800; color: #0284c7; margin: 0; }
+          .sub-title { font-size: 12px; color: #64748b; margin-top: 3px; }
+          .meta-bar { display: flex; flex-wrap: wrap; gap: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 12px; }
+          .meta-item { display: flex; gap: 5px; }
+          .meta-label { color: #64748b; font-weight: 600; }
+          .meta-value { color: #0f172a; font-weight: 700; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+          th { background: #f1f5f9; padding: 9px 10px; font-size: 11px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; }
+          tr:nth-child(even) td { background-color: #fbfcfe; }
+          .footer { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 14px; display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+          .sig-box { width: 220px; border-top: 1px solid #0f172a; text-align: center; padding-top: 6px; font-size: 11px; font-weight: 600; }
+          @media print {
+            body { padding: 10px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="hospital-title">ALERT Comprehensive Specialized Hospital</h1>
+            <div class="sub-title">Federal Ministry of Health · Quality & Clinical Audit Directorate</div>
+            <div style="font-size: 14px; font-weight: 700; margin-top: 6px; color: #0f172a;">Clinical & Operational Quality Audit Data Registry</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 9999px; display: inline-block;">OFFICIAL REGISTRY</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Date: ${dateStr}</div>
+          </div>
+        </div>
+
+        <div class="meta-bar">
+          <div class="meta-item"><span class="meta-label">Total Records:</span><span class="meta-value">${filteredReports.length}</span></div>
+          <div class="meta-item"><span class="meta-label">Department:</span><span class="meta-value">${activeDeptLabel}</span></div>
+          <div class="meta-item"><span class="meta-label">Category Filter:</span><span class="meta-value">${selectedCategory === "all" ? "All Categories" : selectedCategory}</span></div>
+          <div class="meta-item"><span class="meta-label">Avg Quality Score:</span><span class="meta-value">${averageScore}</span></div>
+          <div class="meta-item"><span class="meta-label">Generated:</span><span class="meta-value">${new Date().toLocaleTimeString()}</span></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: center; width: 36px;">#</th>
+              <th>Report ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Department</th>
+              <th>Auditor / Author</th>
+              <th>Date</th>
+              <th style="text-align: right;">Score</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">Quality Audit Directorate Head<br><span style="font-weight: 400; font-size: 10px; color: #64748b;">Review &amp; Verification</span></div>
+          <div class="sig-box">Chief Clinical / Medical Director<br><span style="font-weight: 400; font-size: 10px; color: #64748b;">Hospital Executive Approval</span></div>
+        </div>
+
+        <div class="footer">
+          <span>ALERT Hospital Continuous Quality Improvement & Audit Registry</span>
+          <span>Official Hospital Clinical Data Document</span>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <DashboardShell>
       <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">
@@ -554,16 +782,53 @@ function ReportsPage() {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <NotificationMenu />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              className="gap-1.5 shadow-xs"
-            >
-              <Printer className="size-4" />
-              <span className="hidden sm:inline">Print /</span> Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 shadow-xs font-semibold"
+                >
+                  <Download className="size-4 text-primary" />
+                  <span>Print / Export Data</span>
+                  <ChevronDown className="size-3.5 opacity-60 ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60 rounded-2xl p-1.5 shadow-xl border border-border">
+                <DropdownMenuItem
+                  onClick={handleExportCsv}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer"
+                >
+                  <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-foreground">Export Data to CSV</span>
+                    <span className="text-[10px] text-muted-foreground">Excel &amp; Google Sheets spreadsheet</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handlePrintAllData}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer"
+                >
+                  <Printer className="size-4 text-primary shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-foreground">Print Data Document</span>
+                    <span className="text-[10px] text-muted-foreground">Official formatted table (not UI)</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  onClick={handleExportJson}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer"
+                >
+                  <FileText className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-foreground">Export Data to JSON</span>
+                    <span className="text-[10px] text-muted-foreground">Structured hospital database</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               type="button"
