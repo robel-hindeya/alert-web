@@ -86,7 +86,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           headers: corsHeaders,
         });
       }
-      const stats = dbGetDashboardStats();
+      const stats = await dbGetDashboardStats();
       return new Response(JSON.stringify(stats), { status: 200, headers: corsHeaders });
     }
 
@@ -113,7 +113,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         });
       }
 
-      const authRes = dbAuthenticateUser(raw.username, raw.password);
+      const authRes = await dbAuthenticateUser(raw.username, raw.password);
       if (!authRes.success || !authRes.user) {
         const isBanned = authRes.banned;
         return new Response(
@@ -148,7 +148,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     // -------------------------------------------------------------------------
     if (pathname === "/api/users") {
       if (request.method === "GET") {
-        const users = dbGetUsers();
+        const users = await dbGetUsers();
         return new Response(JSON.stringify(users), { status: 200, headers: corsHeaders });
       }
 
@@ -170,7 +170,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         }
 
         try {
-          const newUser = dbAddUser({
+          const newUser = await dbAddUser({
             username: raw.username,
             password: raw.password,
             role: raw.role,
@@ -200,7 +200,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       const userId = decodeURIComponent(userMatch[1]).trim();
 
       if (request.method === "GET") {
-        const user = dbGetUserById(userId);
+        const user = await dbGetUserById(userId);
         if (!user) {
           return new Response(JSON.stringify({ error: "User not found" }), {
             status: 404,
@@ -229,7 +229,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         }
 
         try {
-          const updated = dbUpdateUser(userId, raw);
+          const updated = await dbUpdateUser(userId, raw);
           return new Response(JSON.stringify(updated), { status: 200, headers: corsHeaders });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Failed to update user";
@@ -242,7 +242,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
       if (request.method === "DELETE") {
         try {
-          const ok = dbDeleteUser(userId);
+          const ok = await dbDeleteUser(userId);
           if (!ok) {
             return new Response(JSON.stringify({ error: "User not found" }), {
               status: 404,
@@ -275,7 +275,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       if (request.method === "GET") {
         const dept = url.searchParams.get("dept")?.trim() || undefined;
         const limit = Number(url.searchParams.get("limit")) || 50;
-        const appts = dbGetAppointments(limit, dept);
+        const appts = await dbGetAppointments(limit, dept);
         return new Response(JSON.stringify(appts), { status: 200, headers: corsHeaders });
       }
 
@@ -308,7 +308,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           );
         }
 
-        const appt = dbAddAppointment({
+        const appt = await dbAddAppointment({
           patientName: String(b.patientName).trim().slice(0, 100),
           patientId: b.patientId ? String(b.patientId).trim().slice(0, 50) : undefined,
           doctorName: String(b.doctorName).trim().slice(0, 100),
@@ -348,7 +348,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
             headers: corsHeaders,
           });
         }
-        const updated = dbUpdateAppointmentStatus(apptId, rawBody.status);
+        const updated = await dbUpdateAppointmentStatus(apptId, rawBody.status);
         if (!updated) {
           return new Response(JSON.stringify({ error: "Appointment not found" }), {
             status: 404,
@@ -369,7 +369,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname === "/api/patients") {
       if (request.method === "GET") {
         const limit = Number(url.searchParams.get("limit")) || 100;
-        const patients = dbGetPatients(limit);
+        const patients = await dbGetPatients(limit);
         return new Response(JSON.stringify(patients), { status: 200, headers: corsHeaders });
       }
 
@@ -402,7 +402,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           );
         }
 
-        const patient = dbAddPatient({
+        const patient = await dbAddPatient({
           name: String(b.name).trim().slice(0, 100),
           mrn: b.mrn ? String(b.mrn).trim().slice(0, 50) : undefined,
           age: Number(b.age) || 30,
@@ -430,7 +430,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname === "/api/activities") {
       if (request.method === "GET") {
         const limit = Number(url.searchParams.get("limit")) || 20;
-        const activities = dbGetActivities(limit);
+        const activities = await dbGetActivities(limit);
         return new Response(JSON.stringify(activities), { status: 200, headers: corsHeaders });
       }
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -445,7 +445,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname === "/api/reports") {
       if (request.method === "GET") {
         const limit = Number(url.searchParams.get("limit")) || 100;
-        const reports = dbGetReports(limit);
+        const reports = await dbGetReports(limit);
         return new Response(JSON.stringify(reports), { status: 200, headers: corsHeaders });
       }
 
@@ -476,7 +476,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           });
         }
 
-        const report = dbAddReport({
+        const report = await dbAddReport({
           title: String(b.title).trim().slice(0, 200),
           category: b.category || "Audit",
           department: String(b.department).trim().slice(0, 100),
@@ -504,7 +504,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname.startsWith("/api/reports/")) {
       const id = decodeURIComponent(pathname.replace("/api/reports/", ""));
       if (request.method === "DELETE") {
-        dbDeleteReport(id);
+        await dbDeleteReport(id);
         return new Response(JSON.stringify({ success: true, id }), {
           status: 200,
           headers: corsHeaders,
@@ -530,7 +530,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       }
       const rawLimit = Number(url.searchParams.get("limit"));
       const limit = Number.isInteger(rawLimit) && rawLimit > 0 && rawLimit <= 500 ? rawLimit : 100;
-      const responses = dbGetAllResponses(limit);
+      const responses = await dbGetAllResponses(limit);
       return new Response(JSON.stringify(responses), { status: 200, headers: corsHeaders });
     }
 
@@ -538,7 +538,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     if (pathname === "/api/forms") {
       if (request.method === "GET") {
         const dept = url.searchParams.get("dept")?.trim() || undefined;
-        const forms = dbGetAllForms(dept);
+        const forms = await dbGetAllForms(dept);
         return new Response(JSON.stringify(forms), { status: 200, headers: corsHeaders });
       }
 
@@ -580,7 +580,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           updatedAt: new Date().toISOString(),
         };
 
-        const saved = dbUpsertForm(sanitizedForm);
+        const saved = await dbUpsertForm(sanitizedForm);
         return new Response(JSON.stringify(saved), { status: 200, headers: corsHeaders });
       }
 
@@ -596,12 +596,12 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       const formId = decodeURIComponent(matchResponses[1]).trim().slice(0, 128);
 
       if (request.method === "GET") {
-        const responses = dbGetResponses(formId);
+        const responses = await dbGetResponses(formId);
         return new Response(JSON.stringify(responses), { status: 200, headers: corsHeaders });
       }
 
       if (request.method === "POST") {
-        const form = dbGetFormById(formId);
+        const form = await dbGetFormById(formId);
         if (!form) {
           return new Response(JSON.stringify({ error: "Target form does not exist" }), {
             status: 404,
@@ -620,7 +620,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           submittedAt: new Date().toISOString(),
           answers: body.answers && typeof body.answers === "object" ? body.answers : {},
         };
-        const saved = dbSaveResponse(newResponse);
+        const saved = await dbSaveResponse(newResponse);
         return new Response(JSON.stringify(saved), { status: 201, headers: corsHeaders });
       }
 
@@ -636,7 +636,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       const formId = decodeURIComponent(matchSingle[1]).trim().slice(0, 128);
 
       if (request.method === "GET") {
-        const form = dbGetFormById(formId);
+        const form = await dbGetFormById(formId);
         if (!form) {
           return new Response(JSON.stringify({ error: "Form not found" }), {
             status: 404,
@@ -647,14 +647,14 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       }
 
       if (request.method === "DELETE") {
-        const form = dbGetFormById(formId);
+        const form = await dbGetFormById(formId);
         if (!form) {
           return new Response(JSON.stringify({ error: "Form not found" }), {
             status: 404,
             headers: corsHeaders,
           });
         }
-        dbDeleteForm(formId);
+        await dbDeleteForm(formId);
         return new Response(JSON.stringify({ success: true, id: formId }), {
           status: 200,
           headers: corsHeaders,
