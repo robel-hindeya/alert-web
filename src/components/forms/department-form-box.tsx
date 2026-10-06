@@ -50,12 +50,16 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
     setResponsesOpen(true);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this form and all its responses?")) {
-      deleteForm(id);
-      refresh();
-      toast.success("Form deleted");
+      const ok = await deleteForm(id);
+      if (ok) {
+        refresh();
+        toast.success("Form deleted from database");
+      } else {
+        toast.error("Failed to delete form from database");
+      }
     }
   };
 

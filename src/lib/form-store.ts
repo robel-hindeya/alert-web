@@ -545,24 +545,27 @@ export function saveForm(form: CustomForm): void {
   }
 }
 
-export function deleteForm(id: string): void {
-  if (typeof window === "undefined") return;
+export async function deleteForm(id: string): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   try {
+    // Delete from real Supabase database
+    const res = await fetch(`/api/forms/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      console.warn("Failed to delete form from database:", res.statusText);
+      return false;
+    }
+
     const all = getAllForms();
     const updated = all.filter((f) => f.id !== id);
     window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("alert-forms-updated"));
-
-    // Delete from real database
-    fetch(`/api/forms/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    })
-      .then((res) => {
-        if (!res.ok) console.warn("Failed to delete form from DB:", res.statusText);
-      })
-      .catch((err) => console.warn("Network error deleting form from DB:", err));
+    return true;
   } catch (err) {
-    console.error("Failed to delete form from localStorage", err);
+    console.error("Failed to delete form from database", err);
+    return false;
   }
 }
 

@@ -11,6 +11,8 @@ import {
   dbGetAppointments,
   dbAddAppointment,
   dbUpdateAppointmentStatus,
+  dbDeleteAppointment,
+  dbDeletePatient,
   dbGetActivities,
   dbGetReports,
   dbAddReport,
@@ -373,6 +375,19 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       });
     }
 
+    // DELETE /api/appointments/:id
+    const matchApptDelete = pathname.match(/^\/api\/appointments\/([^/]+)$/);
+    if (matchApptDelete && matchApptDelete[1]) {
+      const apptId = decodeURIComponent(matchApptDelete[1]);
+      if (request.method === "DELETE") {
+        await dbDeleteAppointment(apptId);
+        return new Response(JSON.stringify({ success: true, id: apptId }), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
+    }
+
     // -------------------------------------------------------------------------
     // PATIENTS: /api/patients
     // -------------------------------------------------------------------------
@@ -432,6 +447,19 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         status: 405,
         headers: corsHeaders,
       });
+    }
+
+    // DELETE /api/patients/:id
+    const matchPatientDelete = pathname.match(/^\/api\/patients\/([^/]+)$/);
+    if (matchPatientDelete && matchPatientDelete[1]) {
+      const patientId = decodeURIComponent(matchPatientDelete[1]);
+      if (request.method === "DELETE") {
+        await dbDeletePatient(patientId);
+        return new Response(JSON.stringify({ success: true, id: patientId }), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
     }
 
     // -------------------------------------------------------------------------

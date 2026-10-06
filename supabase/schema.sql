@@ -1,5 +1,5 @@
 -- =============================================================================
--- ALERT Hospital Management System - Supabase PostgreSQL Schema
+-- ALERT Hospital Quality Management System - Supabase PostgreSQL Schema
 -- =============================================================================
 
 -- Enable pgcrypto for UUID generation if needed
@@ -128,11 +128,23 @@ BEGIN
   DROP POLICY IF EXISTS "Public forms read" ON public.forms;
   DROP POLICY IF EXISTS "Service role forms full access" ON public.forms;
   DROP POLICY IF EXISTS "Public form_responses insert" ON public.form_responses;
+  DROP POLICY IF EXISTS "Public form_responses select" ON public.form_responses;
   DROP POLICY IF EXISTS "Service role form_responses full access" ON public.form_responses;
+  DROP POLICY IF EXISTS "Public patients select" ON public.patients;
+  DROP POLICY IF EXISTS "Public patients insert" ON public.patients;
   DROP POLICY IF EXISTS "Service role patients full access" ON public.patients;
+  DROP POLICY IF EXISTS "Public appointments select" ON public.appointments;
+  DROP POLICY IF EXISTS "Public appointments insert" ON public.appointments;
+  DROP POLICY IF EXISTS "Public appointments update" ON public.appointments;
   DROP POLICY IF EXISTS "Service role appointments full access" ON public.appointments;
+  DROP POLICY IF EXISTS "Public activities select" ON public.activities;
+  DROP POLICY IF EXISTS "Public activities insert" ON public.activities;
   DROP POLICY IF EXISTS "Service role activities full access" ON public.activities;
+  DROP POLICY IF EXISTS "Public reports select" ON public.reports;
+  DROP POLICY IF EXISTS "Public reports insert" ON public.reports;
+  DROP POLICY IF EXISTS "Public reports delete" ON public.reports;
   DROP POLICY IF EXISTS "Service role reports full access" ON public.reports;
+  DROP POLICY IF EXISTS "Public users select" ON public.users;
   DROP POLICY IF EXISTS "Service role users full access" ON public.users;
 EXCEPTION
   WHEN undefined_object THEN NULL;

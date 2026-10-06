@@ -209,3 +209,36 @@ export async function registerPatient(data: {
     return null;
   }
 }
+
+export async function deleteAppointment(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/appointments/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete appointment");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("alert-dashboard-updated"));
+    }
+    return true;
+  } catch (err) {
+    console.error("deleteAppointment error:", err);
+    return false;
+  }
+}
+
+export async function deletePatient(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/patients/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete patient");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("alert-dashboard-updated"));
+    }
+    return true;
+  } catch (err) {
+    console.error("deletePatient error:", err);
+    return false;
+  }
+}
+
