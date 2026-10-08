@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CoordinatorPortal } from "@/components/coordinators/coordinator-portal";
+import { useAuthUser } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/cordineters")({
   head: () => ({
@@ -17,5 +19,22 @@ export const Route = createFileRoute("/cordineters")({
       },
     ],
   }),
-  component: CoordinatorPortal,
+  component: CordinetersRoutePage,
 });
+
+function CordinetersRoutePage() {
+  const navigate = useNavigate();
+  const { user, ready } = useAuthUser();
+
+  useEffect(() => {
+    if (ready && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [ready, user, navigate]);
+
+  if (!ready || !user) {
+    return null;
+  }
+
+  return <CoordinatorPortal />;
+}

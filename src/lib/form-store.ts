@@ -505,57 +505,59 @@ export function getFormById(id: string, deptSlug?: string): CustomForm | undefin
   return synthesized;
 }
 
-export function saveForm(form: CustomForm): void {
-  if (typeof window === "undefined") return;
+export async function saveForm(form: CustomForm): Promise<CustomForm> {
+  if (typeof window === "undefined") return form;
   try {
     const all = getAllForms();
     const existingIndex = all.findIndex((f) => f.id === form.id);
+    const now = new Date().toISOString();
+    const prepared: CustomForm = {
+      ...form,
+      createdAt: form.createdAt || now,
+      updatedAt: now,
+    };
+
     let updated: CustomForm[];
     if (existingIndex >= 0) {
       updated = [...all];
-      updated[existingIndex] = {
-        ...form,
-        updatedAt: new Date().toISOString(),
-      };
+      updated[existingIndex] = prepared;
     } else {
-      updated = [
-        {
-          ...form,
-          createdAt: form.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        ...all,
-      ];
+      updated = [prepared, ...all];
     }
     window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("alert-forms-updated"));
 
-    // Save to real database
-    fetch("/api/forms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-      .then((res) => {
-        if (!res.ok) console.warn("Failed to persist form to DB:", res.statusText);
-      })
-      .catch((err) => console.warn("Network error persisting form to DB:", err));
+    // Persist to database API
+    try {
+      const res = await fetch("/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(prepared),
+      });
+      if (res.ok) {
+        const savedDb = (await res.json()) as CustomForm;
+        return savedDb;
+      }
+    } catch (apiErr) {
+      console.warn("Notice: Saved form to local storage while server syncs:", apiErr);
+    }
+    return prepared;
   } catch (err) {
     console.error("Failed to save form to localStorage", err);
+    return form;
   }
 }
 
 export async function deleteForm(id: string): Promise<boolean> {
   if (typeof window === "undefined") return false;
   try {
-    // Delete from real Supabase database
-    const res = await fetch(`/api/forms/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
-
-    if (!res.ok) {
-      console.warn("Failed to delete form from database:", res.statusText);
-      return false;
+    // Delete from real database
+    try {
+      await fetch(`/api/forms/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // ignore
     }
 
     const all = getAllForms();
@@ -569,7 +571,7 @@ export async function deleteForm(id: string): Promise<boolean> {
   }
 }
 
-export function saveFormResponse(formId: string, answers: Record<string, unknown>): FormResponse {
+export async function saveFormResponse(formId: string, answers: Record<string, unknown>): Promise<FormResponse> {
   const response: FormResponse = {
     id: `RESP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     formId,
@@ -584,16 +586,16 @@ export function saveFormResponse(formId: string, answers: Record<string, unknown
       window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify([response, ...existing]));
       window.dispatchEvent(new Event("alert-form-responses-updated"));
 
-      // Persist to real database
-      fetch(`/api/forms/${encodeURIComponent(formId)}/responses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
-      })
-        .then((res) => {
-          if (!res.ok) console.warn("Failed to save response to DB:", res.statusText);
-        })
-        .catch((err) => console.warn("Network error saving response to DB:", err));
+      // Persist to database
+      try {
+        await fetch(`/api/forms/${encodeURIComponent(formId)}/responses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers }),
+        });
+      } catch (err) {
+        console.warn("Notice: Saved response to local storage while server syncs:", err);
+      }
     } catch (err) {
       console.error("Failed to save form response", err);
     }
@@ -629,7 +631,7 @@ export function useDepartmentForms(deptSlug: string) {
 
     sync();
 
-    // Fetch latest from real database API
+    // Fetch latest from database API without wiping locally saved forms
     fetch(`/api/forms?dept=${encodeURIComponent(deptSlug)}`)
       .then(async (res) => {
         if (!res.ok) return null;
@@ -637,14 +639,22 @@ export function useDepartmentForms(deptSlug: string) {
       })
       .then((dbForms) => {
         if (!isMounted || !dbForms) return;
-        if (Array.isArray(dbForms)) {
+        if (Array.isArray(dbForms) && dbForms.length > 0) {
           const cleaned = dbForms.filter((f) => !STATIC_DEPRECATED_FORM_IDS.has(f.id));
-          // Merge with localStorage
           const all = getAllForms();
+          // Merge db forms with any locally saved forms that might not be in db yet
+          const map = new Map<string, CustomForm>();
+          for (const f of cleaned) map.set(f.id, f);
+          for (const f of all) {
+            if (f.departmentSlug === deptSlug && !map.has(f.id) && !STATIC_DEPRECATED_FORM_IDS.has(f.id)) {
+              map.set(f.id, f);
+            }
+          }
+          const currentDeptForms = Array.from(map.values());
           const otherDepts = all.filter((f) => f.departmentSlug !== deptSlug);
-          const merged = [...cleaned, ...otherDepts];
+          const merged = [...currentDeptForms, ...otherDepts];
           window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(merged));
-          setForms(cleaned);
+          setForms(currentDeptForms);
         }
       })
       .catch((err) => console.warn("Could not fetch forms from DB API:", err));

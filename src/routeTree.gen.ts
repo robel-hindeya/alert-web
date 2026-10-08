@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CoordinatorsRouteImport } from './routes/coordinators'
 import { Route as CordinetersRouteImport } from './routes/cordineters'
 import { Route as DepartmentsRouteImport } from './routes/departments'
@@ -19,6 +20,7 @@ import { Route as QmtOfficerRouteImport } from './routes/qmt-officer'
 import { Route as QmtOfficersRouteImport } from './routes/qmt-officers'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SuperadminRouteImport } from './routes/superadmin'
 import { Route as DepartmentsIndexRouteImport } from './routes/departments.index'
 import { Route as DepartmentsSlugRouteImport } from './routes/departments.$slug'
 import { Route as FormsFormIdRouteImport } from './routes/forms.$formId'
@@ -26,6 +28,11 @@ import { Route as FormsFormIdRouteImport } from './routes/forms.$formId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoordinatorsRoute = CoordinatorsRouteImport.update({
@@ -73,6 +80,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperadminRoute = SuperadminRouteImport.update({
+  id: '/superadmin',
+  path: '/superadmin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepartmentsIndexRoute = DepartmentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -91,6 +103,7 @@ const FormsFormIdRoute = FormsFormIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/coordinators': typeof CoordinatorsRoute
   '/cordineters': typeof CordinetersRoute
   '/departments': typeof DepartmentsRouteWithChildren
@@ -100,12 +113,14 @@ export interface FileRoutesByFullPath {
   '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/superadmin': typeof SuperadminRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments/': typeof DepartmentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/coordinators': typeof CoordinatorsRoute
   '/cordineters': typeof CordinetersRoute
   '/doctors': typeof DoctorsRoute
@@ -114,6 +129,7 @@ export interface FileRoutesByTo {
   '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/superadmin': typeof SuperadminRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments': typeof DepartmentsIndexRoute
@@ -121,6 +137,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/coordinators': typeof CoordinatorsRoute
   '/cordineters': typeof CordinetersRoute
   '/departments': typeof DepartmentsRouteWithChildren
@@ -130,6 +147,7 @@ export interface FileRoutesById {
   '/qmt-officers': typeof QmtOfficersRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/superadmin': typeof SuperadminRoute
   '/departments/$slug': typeof DepartmentsSlugRoute
   '/forms/$formId': typeof FormsFormIdRoute
   '/departments/': typeof DepartmentsIndexRoute
@@ -138,6 +156,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/coordinators'
     | '/cordineters'
     | '/departments'
@@ -147,12 +166,14 @@ export interface FileRouteTypes {
     | '/qmt-officers'
     | '/reports'
     | '/settings'
+    | '/superadmin'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/coordinators'
     | '/cordineters'
     | '/doctors'
@@ -161,12 +182,14 @@ export interface FileRouteTypes {
     | '/qmt-officers'
     | '/reports'
     | '/settings'
+    | '/superadmin'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/coordinators'
     | '/cordineters'
     | '/departments'
@@ -176,6 +199,7 @@ export interface FileRouteTypes {
     | '/qmt-officers'
     | '/reports'
     | '/settings'
+    | '/superadmin'
     | '/departments/$slug'
     | '/forms/$formId'
     | '/departments/'
@@ -183,6 +207,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   CoordinatorsRoute: typeof CoordinatorsRoute
   CordinetersRoute: typeof CordinetersRoute
   DepartmentsRoute: typeof DepartmentsRouteWithChildren
@@ -192,6 +217,7 @@ export interface RootRouteChildren {
   QmtOfficersRoute: typeof QmtOfficersRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
+  SuperadminRoute: typeof SuperadminRoute
   FormsFormIdRoute: typeof FormsFormIdRoute
 }
 
@@ -202,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coordinators': {
@@ -267,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/superadmin': {
+      id: '/superadmin'
+      path: '/superadmin'
+      fullPath: '/superadmin'
+      preLoaderRoute: typeof SuperadminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/departments/': {
       id: '/departments/'
       path: '/'
@@ -307,6 +347,7 @@ const DepartmentsRouteWithChildren = DepartmentsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   CoordinatorsRoute: CoordinatorsRoute,
   CordinetersRoute: CordinetersRoute,
   DepartmentsRoute: DepartmentsRouteWithChildren,
@@ -316,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   QmtOfficersRoute: QmtOfficersRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
+  SuperadminRoute: SuperadminRoute,
   FormsFormIdRoute: FormsFormIdRoute,
 }
 export const routeTree = rootRouteImport

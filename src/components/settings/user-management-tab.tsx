@@ -59,7 +59,7 @@ export function UserManagementTab() {
   const [newUserName, setNewUserName] = useState("");
   const [newUserUsername, setNewUserUsername] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState<UserRole>("coordinator");
+  const [newUserRole, setNewUserRole] = useState<UserRole>("admin");
   const [newUserDept, setNewUserDept] = useState("emergency-corridor");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
@@ -96,13 +96,8 @@ export function UserManagementTab() {
     return users.filter((u) => {
       // Role filter
       if (roleFilter === "admin" && u.role !== "admin") return false;
-      if (roleFilter === "coordinator" && u.role !== "coordinator") return false;
+      if (roleFilter === "qmt" && u.role !== "qmt" && u.role !== "coordinator") return false;
       if (roleFilter === "banned" && u.status !== "banned") return false;
-      if (
-        roleFilter === "other" &&
-        (u.role === "admin" || u.role === "coordinator" || u.role === "superadmin")
-      )
-        return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -123,7 +118,7 @@ export function UserManagementTab() {
     return {
       total: users.length,
       admins: users.filter((u) => u.role === "admin").length,
-      coordinators: users.filter((u) => u.role === "coordinator").length,
+      qmt: users.filter((u) => u.role === "qmt" || u.role === "coordinator").length,
       banned: users.filter((u) => u.status === "banned").length,
       superadmin: users.filter((u) => u.role === "superadmin").length,
     };
@@ -133,7 +128,7 @@ export function UserManagementTab() {
   const handleOpenEditCredentials = (u: UserAccount) => {
     setEditingUser(u);
     setEditUsername(u.username);
-    setEditPassword(u.password || "");
+    setEditPassword(""); // Password box starts clean and empty
     setShowEditPassword(false);
   };
 
@@ -225,8 +220,7 @@ export function UserManagementTab() {
     setAddSaving(true);
     try {
       const deptObj = departments.find((d) => d.slug === newUserDept);
-      const isDeptRole =
-        newUserRole === "coordinator" || newUserRole === "doctor" || newUserRole === "staff";
+      const isDeptRole = newUserRole === "admin" && Boolean(newUserDept);
 
       const res = await fetch("/api/users", {
         method: "POST",
@@ -300,7 +294,7 @@ export function UserManagementTab() {
       case "admin":
         return (
           <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 gap-1 font-semibold text-[11px]">
-            <ShieldCheck className="size-3" /> Clinical Admin
+            <ShieldCheck className="size-3" /> Admin
           </Badge>
         );
       case "coordinator":
@@ -389,10 +383,10 @@ export function UserManagementTab() {
           </div>
           <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-              Coordinators
+              QMT Officers
             </span>
-            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              {counts.coordinators}
+            <p className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-0.5">
+              {counts.qmt}
             </p>
           </div>
           <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
@@ -431,12 +425,12 @@ export function UserManagementTab() {
           </Button>
           <Button
             type="button"
-            variant={roleFilter === "coordinator" ? "default" : "outline"}
+            variant={roleFilter === "qmt" ? "default" : "outline"}
             size="sm"
-            onClick={() => setRoleFilter("coordinator")}
+            onClick={() => setRoleFilter("qmt")}
             className="text-xs h-8 rounded-lg"
           >
-            Coordinators ({counts.coordinators})
+            QMT Officers ({counts.qmt})
           </Button>
           <Button
             type="button"
@@ -547,22 +541,35 @@ export function UserManagementTab() {
                     )}
                   </div>
 
-                  {/* Password Preview Row */}
-                  <div className="mt-3 rounded-lg bg-muted/40 p-2.5 flex items-center justify-between text-xs font-mono">
+                  {/* Password Preview Row with Eye Icon */}
+                  <div className="mt-3 rounded-lg bg-muted/40 p-2.5 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       <KeyRound className="size-3.5 text-muted-foreground shrink-0" />
                       <span className="text-muted-foreground text-[11px]">Password:</span>
-                      <span className="font-semibold text-foreground truncate">
-                        {isRevealed ? u.password || "••••••••" : "••••••••••••"}
+                      <span className="font-mono font-semibold text-foreground tracking-wider truncate">
+                        {isRevealed
+                          ? u.password || (isRootSuperadmin ? "Habtamu5645" : "••••••••")
+                          : "••••••••••••"}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleRevealPassword(u.id)}
-                      className="text-muted-foreground hover:text-foreground text-[11px] shrink-0 ml-2"
+                      className="text-muted-foreground hover:text-foreground text-[11px] shrink-0 ml-2 p-1 rounded-md hover:bg-background/80 transition-colors flex items-center gap-1"
                       title={isRevealed ? "Hide Password" : "Show Password"}
+                      aria-label={isRevealed ? "Hide Password" : "Show Password"}
                     >
-                      {isRevealed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                      {isRevealed ? (
+                        <>
+                          <EyeOff className="size-3.5 text-primary" />
+                          <span className="text-[10px] text-primary font-medium">Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="size-3.5" />
+                          <span className="text-[10px] font-medium">Show</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -717,7 +724,7 @@ export function UserManagementTab() {
               Create New Role Account
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Add a new account for an Admin, Coordinator, or clinical team member.
+              Add a new account for an Admin or QMT Officer.
             </DialogDescription>
           </DialogHeader>
 
@@ -731,11 +738,18 @@ export function UserManagementTab() {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">🛡️ Clinical Admin</SelectItem>
-                  <SelectItem value="coordinator">📋 Department Coordinator</SelectItem>
-                  <SelectItem value="qmt">📊 QMT Officer</SelectItem>
-                  <SelectItem value="doctor">🩺 Doctor / Clinician</SelectItem>
-                  <SelectItem value="staff">🏥 Department Staff</SelectItem>
+                  <SelectItem value="admin">
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck className="size-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span>Admin</span>
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="qmt">
+                    <span className="flex items-center gap-2">
+                      <UserCog className="size-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                      <span>QMT Officer</span>
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -754,12 +768,10 @@ export function UserManagementTab() {
               />
             </div>
 
-            {(newUserRole === "coordinator" ||
-              newUserRole === "doctor" ||
-              newUserRole === "staff") && (
+            {newUserRole === "admin" && (
               <div className="space-y-1.5">
                 <Label htmlFor="new-dept" className="text-xs font-semibold">
-                  Assigned Department
+                  Department Focus (Optional)
                 </Label>
                 <Select value={newUserDept} onValueChange={setNewUserDept}>
                   <SelectTrigger id="new-dept" className="text-xs h-9">

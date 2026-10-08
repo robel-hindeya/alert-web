@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Settings, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
+import { Settings, LogOut, ChevronDown, ShieldCheck, LayoutDashboard } from "lucide-react";
 import { useAuthUser } from "@/lib/auth-session";
 
 export function AdminMenu({ compact = false }: { compact?: boolean }) {
@@ -8,9 +8,17 @@ export function AdminMenu({ compact = false }: { compact?: boolean }) {
   const { user, logout } = useAuthUser();
 
   // Strip redundant role suffixes from display name if already present in user.name (e.g. "Habtamu (Super Administrator)")
-  const rawName = user?.name || "Habtamu";
+  const rawName =
+    user?.name ||
+    (user?.role === "coordinator"
+      ? "Dr. Alem Tesfaye"
+      : user?.role === "admin"
+        ? "Hospital Admin"
+        : user?.role === "qmt"
+          ? "Dr. Roman Sisay"
+          : "User");
   const cleanName = rawName
-    .replace(/\s*\((Superadmin|Super Administrator|Admin|Hospital Admin|Administrator)\)/i, "")
+    .replace(/\s*\((Superadmin|Super Administrator|Admin|Hospital Admin|Administrator|Clinical Coordinator|QMT Officer)\)/i, "")
     .trim();
 
   const isSuper = user?.role === "superadmin";
@@ -22,9 +30,9 @@ export function AdminMenu({ compact = false }: { compact?: boolean }) {
         ? "Clinical Coordinator"
         : user?.role === "qmt"
           ? "QMT Officer"
-          : "Administrator";
+          : "Staff Member";
 
-  const initial = (cleanName || "H").charAt(0).toUpperCase();
+  const initial = (cleanName || "U").charAt(0).toUpperCase();
 
   return (
     <div className="relative shrink-0">
@@ -44,7 +52,7 @@ export function AdminMenu({ compact = false }: { compact?: boolean }) {
               {cleanName}
             </span>
             <span className="block text-[10px] text-muted-foreground leading-none capitalize">
-              {user?.role || "superadmin"}
+              {user?.role ? displayRole : "Guest"}
             </span>
           </div>
         )}
@@ -66,17 +74,48 @@ export function AdminMenu({ compact = false }: { compact?: boolean }) {
                     Super
                   </span>
                 )}
+                {user?.role === "coordinator" && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
+                    Coordinator
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-primary font-medium mt-0.5">{displayRole}</p>
+              {user?.departmentLabel && (
+                <p className="text-[10px] text-muted-foreground truncate">{user.departmentLabel}</p>
+              )}
             </div>
-            <Link
-              to="/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <Settings className="size-4 text-primary" />
-              Settings &amp; Role Accounts
-            </Link>
+
+            {/* Role-based navigation actions */}
+            {user?.role === "coordinator" || user?.role === "qmt" ? (
+              <Link
+                to="/coordinators"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <ShieldCheck className="size-4 text-primary" />
+                Coordinator Portal
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <LayoutDashboard className="size-4 text-primary" />
+                  Admin Overview
+                </Link>
+                <Link
+                  to="/settings"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <Settings className="size-4 text-primary" />
+                  Settings &amp; Role Accounts
+                </Link>
+              </>
+            )}
             <button
               type="button"
               onClick={() => {

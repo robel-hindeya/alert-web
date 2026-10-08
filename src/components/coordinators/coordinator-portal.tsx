@@ -36,8 +36,10 @@ import {
   Info,
   CalendarDays,
   LogOut,
+  Pencil,
 } from "lucide-react";
-import { clearAuthUser } from "@/lib/auth-session";
+import { performLogout, useAuthUser } from "@/lib/auth-session";
+import { FormBuilderDialog } from "@/components/forms/form-builder-dialog";
 import { toast } from "sonner";
 import logo from "@/assets/alert-logo.png.asset.json";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
@@ -122,6 +124,10 @@ const PROFILE_STORAGE_KEY = "alert_coordinator_profile";
 export function CoordinatorPortal() {
   const [activeTab, setActiveTab] = useState<NavTab>("home");
   const { session } = useDeptSession();
+  const { user } = useAuthUser();
+
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
 
   // Coordinator Profile state
   const [profile, setProfile] = useState<CoordinatorProfile>(() => {
@@ -135,9 +141,26 @@ export function CoordinatorPortal() {
     return DEFAULT_PROFILE;
   });
 
+  // Sync profile when authenticated coordinator or QMT officer user loads
+  useEffect(() => {
+    if (user && (user.role === "coordinator" || user.role === "qmt")) {
+      setProfile((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        role: user.role === "qmt" ? "Quality Management Officer" : prev.role,
+        department: user.departmentLabel || (user.role === "qmt" ? "Quality Management Directorate" : prev.department),
+        departmentSlug: user.departmentSlug || prev.departmentSlug,
+      }));
+      if (user.departmentSlug) {
+        setSelectedDeptSlug(user.departmentSlug);
+      }
+    }
+  }, [user]);
+
   // Active department for viewing forms
   const [selectedDeptSlug, setSelectedDeptSlug] = useState<string>(() => {
-    return session?.slug || profile.departmentSlug || "emergency-corridor";
+    return user?.departmentSlug || session?.slug || profile.departmentSlug || "emergency-corridor";
   });
 
   // Find department label
@@ -432,10 +455,9 @@ export function CoordinatorPortal() {
           <button
             type="button"
             onClick={() => {
-              clearAuthUser();
-              window.location.href = "/login";
+              performLogout();
             }}
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-border/60"
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors border border-border/60 cursor-pointer"
           >
             <LogOut className="size-3.5" />
             <span>Sign Out</span>
@@ -481,10 +503,9 @@ export function CoordinatorPortal() {
             <button
               type="button"
               onClick={() => {
-                clearAuthUser();
-                window.location.href = "/login";
+                performLogout();
               }}
-              className="grid size-7 place-items-center rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="grid size-7 place-items-center rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="size-3.5" />
@@ -673,15 +694,27 @@ export function CoordinatorPortal() {
                         </div>
                       </div>
 
-                      {/* Card Footer: Fill Form Button */}
-                      <div className="pt-4 mt-3 border-t border-border/70">
+                      {/* Card Footer: Actions */}
+                      <div className="pt-3 mt-3 border-t border-border/70 flex items-center gap-2">
                         <Button
                           onClick={() => handleOpenFill(form)}
                           size="sm"
-                          className="w-full gap-1.5 text-xs font-semibold rounded-xl bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+                          className="flex-1 gap-1.5 text-xs font-semibold rounded-xl bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
                         >
                           <Send className="size-3.5" />
-                          <span>Fill & Submit Form</span>
+                          <span>Fill Form</span>
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setEditingForm(form);
+                            setBuilderOpen(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs rounded-xl"
+                          title="Edit Questions"
+                        >
+                          <Pencil className="size-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -1340,6 +1373,16 @@ export function CoordinatorPortal() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Form Builder Dialog for Coordinators */}
+      <FormBuilderDialog
+        open={builderOpen}
+        onOpenChange={setBuilderOpen}
+        departmentSlug={selectedDeptSlug}
+        departmentLabel={activeDept.label}
+        initialForm={editingForm}
+        onSaved={() => refreshForms()}
+      />
     </div>
   );
 }

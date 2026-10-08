@@ -15,6 +15,7 @@ import {
   HeartPulse,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -136,7 +137,7 @@ function StandaloneFormView() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate required questions
@@ -166,8 +167,9 @@ function StandaloneFormView() {
     }
 
     // Save response
-    saveFormResponse(form.id, answers);
+    await saveFormResponse(form.id, answers);
     setIsSubmitted(true);
+    toast.success("Form response recorded successfully!");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

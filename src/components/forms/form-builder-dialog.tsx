@@ -346,25 +346,25 @@ export function FormBuilderDialog({
     };
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       toast.error("Please enter a Form Title before saving.");
       return;
     }
     const form = buildFormObject();
-    saveForm(form);
+    await saveForm(form);
     if (onSaved) onSaved(form);
     toast.success("Form saved successfully to database!");
     onOpenChange(false);
   };
 
-  const handleSaveAndView = () => {
+  const handleSaveAndView = async () => {
     if (!title.trim()) {
       toast.error("Please enter a Form Title before saving.");
       return;
     }
     const form = buildFormObject();
-    saveForm(form);
+    await saveForm(form);
     if (onSaved) onSaved(form);
     toast.success("Form saved! Opening public view...");
     onOpenChange(false);

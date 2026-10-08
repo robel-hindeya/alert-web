@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -9,16 +9,11 @@ import {
   Settings,
   HeartPulse,
   X,
+  ClipboardCheck,
+  Briefcase,
 } from "lucide-react";
 import logo from "@/assets/alert-logo.png.asset.json";
-
-const items: { label: string; icon: LucideIcon; to?: string }[] = [
-  { label: "QMT", icon: LayoutDashboard, to: "/" as const },
-  { label: "QMT Officer", icon: UserCheck, to: "/qmt-officer" as const },
-  { label: "QMT Audits", icon: Building2, to: "/departments" as const },
-  { label: "Reports", icon: BarChart3, to: "/reports" as const },
-  { label: "Settings", icon: Settings, to: "/settings" as const },
-];
+import { useAuthUser } from "@/lib/auth-session";
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -29,9 +24,37 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = mobileOpen !== undefined ? mobileOpen : internalOpen;
   const setIsOpen = onMobileOpenChange || setInternalOpen;
+  const { user } = useAuthUser();
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [active, setActive] = useState("");
+
+  interface NavItem {
+    label: string;
+    icon: LucideIcon;
+    to?: string;
+  }
+
+  const items: NavItem[] = useMemo(() => {
+    if (user?.role === "qmt" || user?.role === "coordinator") {
+      const myDeptSlug = user.departmentSlug || "emergency-corridor";
+      return [
+        { label: "Coordinator Portal", icon: ClipboardCheck, to: "/coordinators" },
+        { label: "Department Workspace", icon: Briefcase, to: `/departments/${myDeptSlug}` },
+        { label: "Department Audits", icon: Building2, to: "/departments" },
+        { label: "Reports & Logs", icon: BarChart3, to: "/reports" },
+      ];
+    }
+
+    // superadmin and admin
+    return [
+      { label: "Admin Overview", icon: LayoutDashboard, to: "/" },
+      { label: "Coordinator Portal", icon: ClipboardCheck, to: "/coordinators" },
+      { label: "QMT Audits", icon: Building2, to: "/departments" },
+      { label: "Reports & Logs", icon: BarChart3, to: "/reports" },
+      { label: "Settings", icon: Settings, to: "/settings" },
+    ];
+  }, [user]);
 
   const nav = (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
@@ -48,7 +71,7 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
           return (
             <Link
               key={label}
-              to={to}
+              to={to as any}
               activeOptions={{ exact: to === "/" }}
               className={`${base} ${isActive ? activeCls : idleCls}`}
               onClick={() => setIsOpen(false)}
@@ -73,13 +96,15 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
     </nav>
   );
 
+  const homeLink = user?.role === "qmt" || user?.role === "coordinator" ? "/coordinators" : "/";
+
   return (
     <>
       {/* Desktop fixed sidebar */}
       <aside className="sidebar-surface fixed inset-y-0 left-0 z-40 hidden w-64 flex-col lg:flex">
         <div className="border-b border-sidebar-border/70 bg-card/90 px-3.5 py-4">
           <Link
-            to="/"
+            to={homeLink as any}
             className="group block transition-transform active:scale-98"
             title="ALERT Comprehensive Specialized Hospital"
           >
@@ -115,7 +140,7 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
           />
           <aside className="sidebar-surface absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col shadow-2xl transition-transform">
             <div className="flex items-center justify-between border-b border-sidebar-border/70 bg-card/95 px-4 py-3">
-              <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2">
+              <Link to={homeLink as any} onClick={() => setIsOpen(false)} className="flex items-center gap-2">
                 <div className="rounded-lg bg-white p-1.5 shadow-xs border border-border/40">
                   <img
                     src={logo.url || "/alert-logo.png"}

@@ -80,7 +80,10 @@ export function DashboardShell({
         {/* Mobile top bar (sticky on < lg viewports) */}
         <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card/95 px-3.5 backdrop-blur-sm sm:px-5 lg:hidden">
           <div className="flex items-center gap-2.5">
-            <Link to="/" className="flex items-center gap-2">
+            <Link
+              to={(user?.role === "qmt" || user?.role === "coordinator" ? "/coordinators" : "/") as any}
+              className="flex items-center gap-2"
+            >
               <div className="rounded-lg bg-white p-1 border border-border/50 shadow-xs">
                 <img
                   src={logo.url || "/alert-logo.png"}
@@ -96,7 +99,9 @@ export function DashboardShell({
                   ALERT Hospital
                 </span>
                 <span className="block text-[10px] text-muted-foreground leading-none truncate">
-                  QMT System
+                  {user?.role === "qmt" || user?.role === "coordinator"
+                    ? "Coordinator Portal"
+                    : "QMT System"}
                 </span>
               </div>
             </Link>

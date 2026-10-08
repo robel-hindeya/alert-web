@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useMemo, useEffect } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Search,
   Bell,
@@ -155,9 +155,33 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
   },
 ];
 
-function Dashboard() {
+export function Dashboard() {
+  const { user, ready } = useAuthUser();
+  const navigate = useNavigate();
   const { stats, loading, refresh } = useDashboardData();
   const [search, setSearch] = useState("");
+
+  // QMT Officers and Coordinators see coordinator page (/coordinators)
+  useEffect(() => {
+    if (ready && user && (user.role === "qmt" || user.role === "coordinator")) {
+      navigate({ to: "/coordinators" });
+    }
+  }, [ready, user, navigate]);
+
+  if (ready && user && (user.role === "qmt" || user.role === "coordinator")) {
+    return (
+      <DashboardShell>
+        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-xs font-medium text-muted-foreground">
+              Redirecting to Coordinator Portal...
+            </span>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   // Book Appointment Dialog
   const [bookModalOpen, setBookModalOpen] = useState(false);

@@ -20,6 +20,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthUser } from "@/lib/auth-session";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
 import { UserManagementTab } from "@/components/settings/user-management-tab";
@@ -90,11 +91,22 @@ const defaultSettings = {
 };
 
 function SettingsPage() {
+  const { user, ready } = useAuthUser();
   const [settings, setSettings] = useState(defaultSettings);
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState("Today, 03:00 AM");
+
+  // Protect Settings: only superadmin and admin can access
+  useEffect(() => {
+    if (ready && user) {
+      if (user.role === "coordinator" || user.role === "qmt") {
+        toast.error("Access restricted: Settings is reserved for Hospital Administrators.");
+        window.location.href = "/coordinators";
+      }
+    }
+  }, [ready, user]);
 
   // Password change state
   const [currentPw, setCurrentPw] = useState("");
@@ -147,7 +159,7 @@ function SettingsPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "habtamu", password: currentPw }),
+        body: JSON.stringify({ username: user?.username || "habtamu", password: currentPw }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -204,6 +216,21 @@ function SettingsPage() {
     URL.revokeObjectURL(url);
     toast.success("Settings exported as JSON.");
   };
+
+  if (ready && user && (user.role === "coordinator" || user.role === "qmt")) {
+    return (
+      <DashboardShell>
+        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-xs font-medium text-muted-foreground">
+              Redirecting to Coordinator Portal...
+            </span>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>

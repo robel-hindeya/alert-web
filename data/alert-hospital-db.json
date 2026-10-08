@@ -1,0 +1,533 @@
+{
+  "users": [
+    {
+      "id": "usr-superadmin-habtamu",
+      "username": "habtamu",
+      "email": "habtamu@alert.gov.et",
+      "password": "scrypt:e4372fc0500cc766ea5dd51d1a4d138f:ac301f575c5e5f0566c2d80a194deafaa3f4fd3d51a5b5f65a52a6bce4a2b155634c75d93b9005b93ecc029de3fc9246a5e4055925f6ee7dbea2dc48cfa2bc97",
+      "displayPassword": "Habtamu5645",
+      "role": "superadmin",
+      "name": "Habtamu (Super Administrator)",
+      "departmentSlug": null,
+      "departmentLabel": null,
+      "status": "active",
+      "createdAt": "2026-10-08T09:12:07.407Z",
+      "updatedAt": "2026-10-08T09:12:07.408Z"
+    },
+    {
+      "id": "usr-1791456040967-v49t",
+      "username": "dr.q",
+      "email": "dr.q@alert.gov.et",
+      "password": "scrypt:be3ccdc69df5aac685a138228bc4fae1:f3559a95e71090a818950f584e5449e3e0cbe881980805d01d8377d57f9c5c2f8a990eb4378ebc29bde69d1d1bb2455c97ed8e5132da1678dc33c973044c3529",
+      "displayPassword": "1234",
+      "role": "admin",
+      "name": "Dr.q",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "status": "active",
+      "createdAt": "2026-10-08T10:40:40.967Z",
+      "updatedAt": "2026-10-08T10:40:40.967Z"
+    }
+  ],
+  "forms": [
+    {
+      "id": "frm-operating-theatre-sterility-hygiene-audit-muzc80jz",
+      "departmentSlug": "surgical-department",
+      "departmentLabel": "Surgical Department",
+      "title": "Operating Theatre Sterility & Hygiene Audit",
+      "description": "Daily and weekly checklist for surgical equipment and airflow standards",
+      "questions": [
+        {
+          "id": "q1",
+          "title": "Are autoclave cycle parameters within safe limits?",
+          "type": "yesno",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q2",
+          "title": "Pre-op surgical scrub log signed?",
+          "type": "yesno",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q3",
+          "title": "Operating room temperature (°C)",
+          "type": "number",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q4",
+          "title": "Observations and corrective notes",
+          "type": "text",
+          "required": false,
+          "options": []
+        }
+      ],
+      "createdAt": "2026-10-08T09:32:05.711Z",
+      "updatedAt": "2026-10-08T09:32:05.711Z"
+    },
+    {
+      "id": "frm-operating-theatre-sterility-hygiene-audit-muzc6zqd",
+      "departmentSlug": "surgical-department",
+      "departmentLabel": "Surgical Department",
+      "title": "Operating Theatre Sterility & Hygiene Audit",
+      "description": "Daily and weekly checklist for surgical equipment and airflow standards",
+      "questions": [
+        {
+          "id": "q1",
+          "title": "Are autoclave cycle parameters within safe limits?",
+          "type": "yesno",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q2",
+          "title": "Pre-op surgical scrub log signed?",
+          "type": "yesno",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q3",
+          "title": "Operating room temperature (°C)",
+          "type": "number",
+          "required": true,
+          "options": []
+        },
+        {
+          "id": "q4",
+          "title": "Observations and corrective notes",
+          "type": "text",
+          "required": false,
+          "options": []
+        }
+      ],
+      "createdAt": "2026-10-08T09:31:17.989Z",
+      "updatedAt": "2026-10-08T09:31:17.989Z"
+    },
+    {
+      "id": "frm-test-audit-1791451443358",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "title": "Emergency Resuscitation Protocol Checklist",
+      "description": "Protocol audit for resuscitation bay quality",
+      "questions": [
+        {
+          "id": "q-test-1",
+          "title": "Defibrillator Checked and Ready?",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Yes",
+            "No"
+          ]
+        }
+      ],
+      "createdAt": "2026-10-08T09:24:03.371Z",
+      "updatedAt": "2026-10-08T09:24:03.371Z"
+    },
+    {
+      "id": "frm-emergency-triage-audit",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "title": "Emergency Triage & Clinical Assessment Audit",
+      "description": "Standardized quality audit protocol for emergency intake, patient acuity scoring, and critical intervention timing at ALERT Hospital.",
+      "bannerUrl": "linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #0d9488 100%)",
+      "createdAt": "2026-10-08T09:12:07.483Z",
+      "updatedAt": "2026-10-08T09:12:07.483Z",
+      "questions": [
+        {
+          "id": "q-patient-name",
+          "title": "Patient Full Legal Name",
+          "type": "text",
+          "required": true,
+          "options": [],
+          "placeholder": "e.g. Abebech Tadesse"
+        },
+        {
+          "id": "q-mrn",
+          "title": "Medical Record Number (MRN)",
+          "type": "text",
+          "required": true,
+          "options": [],
+          "placeholder": "e.g. MRN-EM-2026-8819"
+        },
+        {
+          "id": "q-triage-level",
+          "title": "Emergency Acuity Category (ESI Triage Scale)",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Red (Resuscitation / Immediate)",
+            "Orange (Emergent / Very Urgent)",
+            "Yellow (Urgent / Multi-resource)",
+            "Green (Less Urgent / Single resource)",
+            "Blue (Non-Urgent)"
+          ]
+        },
+        {
+          "id": "q-vitals-complete",
+          "title": "Vital Signs Completeness Verification",
+          "type": "checkboxes",
+          "required": true,
+          "options": [
+            "Blood Pressure (Systolic & Diastolic Recorded)",
+            "Pulse Rate & Rhythm documented",
+            "Respiratory Rate & SpO2 documented",
+            "Core Body Temperature recorded",
+            "Glasgow Coma Scale (GCS) or AVPU verified"
+          ]
+        },
+        {
+          "id": "q-time-to-doctor",
+          "title": "Time from Arrival to Physician Evaluation (Minutes)",
+          "type": "number",
+          "required": true,
+          "options": [],
+          "placeholder": "e.g. 12"
+        },
+        {
+          "id": "q-clinical-notes",
+          "title": "Coordinator Audit Findings & Clinical Observations",
+          "type": "paragraph",
+          "required": false,
+          "options": [],
+          "placeholder": "Detail any protocol compliance gaps, delays in consultation, or immediate corrective actions taken..."
+        }
+      ]
+    },
+    {
+      "id": "frm-inpatient-ward-audit",
+      "departmentSlug": "inpatient",
+      "departmentLabel": "Inpatient",
+      "title": "Inpatient Ward Daily Clinical Round & Safety Checklist",
+      "description": "Daily clinical audit for admitted patients: medication reconciliation, IV access surveillance, and chart completeness.",
+      "bannerUrl": "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 60%, #2563eb 100%)",
+      "createdAt": "2026-10-08T09:12:07.483Z",
+      "updatedAt": "2026-10-08T09:12:07.483Z",
+      "questions": [
+        {
+          "id": "q-ward-bed",
+          "title": "Ward Name & Bed Identifier",
+          "type": "text",
+          "required": true,
+          "options": [],
+          "placeholder": "e.g. Ward 3B - Bed 14"
+        },
+        {
+          "id": "q-med-reconciliation",
+          "title": "Medication Charting & Administration Compliance",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Fully Compliant (100% charted and signed)",
+            "Minor Gap (Resolved bedside during audit)",
+            "Non-Compliant (Escalated to Head Nurse)"
+          ]
+        },
+        {
+          "id": "q-safety-checks",
+          "title": "Patient Safety Affirmations",
+          "type": "checkboxes",
+          "required": true,
+          "options": [
+            "Patient ID Wristband verified and legible",
+            "Fall Risk assessment updated in past 24 hours",
+            "IV cannula site inspected and dressed cleanly",
+            "Informed consent present for active treatment plan"
+          ]
+        },
+        {
+          "id": "q-coordinator-rating",
+          "title": "Overall Department Quality Compliance Score (1-5)",
+          "type": "rating",
+          "required": true,
+          "options": []
+        }
+      ]
+    },
+    {
+      "id": "frm-surgical-safety-checklist",
+      "departmentSlug": "surgical-service",
+      "departmentLabel": "Surgical Service",
+      "title": "WHO Surgical Safety Checklist Verification",
+      "description": "Surgical quality audit assessing adherence to Sign-in, Time-out, and Sign-out procedures in operating theatres.",
+      "bannerUrl": "linear-gradient(135deg, #991b1b 0%, #ef4444 60%, #b91c1c 100%)",
+      "createdAt": "2026-10-08T09:12:07.483Z",
+      "updatedAt": "2026-10-08T09:12:07.483Z",
+      "questions": [
+        {
+          "id": "q-or-number",
+          "title": "Operating Room (OR Number)",
+          "type": "dropdown",
+          "required": true,
+          "options": [
+            "OR 1 (Main General)",
+            "OR 2 (Orthopedics)",
+            "OR 3 (Trauma)",
+            "OR 4 (Plastic & Reconstructive)",
+            "OR 5 (Obstetric Emergency)"
+          ]
+        },
+        {
+          "id": "q-who-timeout",
+          "title": "WHO Time-Out Performed Verbally Before Incision?",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Yes — Full Team Participation",
+            "Partial — Completed with Gaps",
+            "No — Checklist Omitted"
+          ]
+        },
+        {
+          "id": "q-sponge-count",
+          "title": "Sponge, Needle & Instrument Count Verified Correct",
+          "type": "checkboxes",
+          "required": true,
+          "options": [
+            "Initial count recorded prior to surgery",
+            "Second count verified during cavity closure",
+            "Final count confirmed before wound dressing",
+            "Specimen labeling verified by circulator & surgeon"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "frm-mch-triage-survey",
+      "departmentSlug": "mch",
+      "departmentLabel": "MCH",
+      "title": "Maternal & Child Health Triage Quality Audit",
+      "description": "Quality monitoring of maternal admissions, neonatal stabilization, and emergency obstetric care pathways.",
+      "bannerUrl": "linear-gradient(135deg, #78350f 0%, #f59e0b 60%, #d97706 100%)",
+      "createdAt": "2026-10-08T09:12:07.483Z",
+      "updatedAt": "2026-10-08T09:12:07.483Z",
+      "questions": [
+        {
+          "id": "q-patient-name",
+          "title": "Mother Full Legal Name",
+          "type": "text",
+          "required": true,
+          "options": [],
+          "placeholder": "e.g. Almaz Bekele"
+        },
+        {
+          "id": "q-admission-status",
+          "title": "Obstetric Admission Category",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Active Labor (Term)",
+            "High-Risk Pregnancy Evaluation",
+            "Postnatal Monitoring",
+            "Emergency Obstetric Complication"
+          ]
+        },
+        {
+          "id": "q-partograph",
+          "title": "Partograph Documentation Up to Date",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Yes — Active & Plotted",
+            "Not Applicable (Elective C-Section)",
+            "Pending Update"
+          ]
+        }
+      ]
+    }
+  ],
+  "responses": [
+    {
+      "id": "RESP-1791451926522-5cai",
+      "formId": "frm-operating-theatre-sterility-hygiene-audit-muzc80jz",
+      "submittedAt": "2026-10-08T09:32:06.522Z",
+      "answers": {
+        "q1": "yes",
+        "q2": "yes",
+        "q3": 20.5,
+        "q4": "All surgical suites verified sterile and operational."
+      }
+    },
+    {
+      "id": "RESP-1791451526272-wcd7",
+      "formId": "frm-test-audit-1791451443358",
+      "submittedAt": "2026-10-08T09:25:26.272Z",
+      "answers": {
+        "test": "value"
+      }
+    },
+    {
+      "id": "RESP-1791451444151-ispw",
+      "formId": "frm-test-audit-1791451443358",
+      "submittedAt": "2026-10-08T09:24:04.151Z",
+      "answers": {
+        "q-test-1": "Yes"
+      }
+    }
+  ],
+  "patients": [
+    {
+      "id": "PAT-001",
+      "name": "Almaz Bekele",
+      "mrn": "MRN-2026-0041",
+      "age": 34,
+      "gender": "Female",
+      "phone": "+251 911 234 567",
+      "departmentSlug": "mch",
+      "departmentLabel": "MCH",
+      "registeredAt": "2026-10-08T05:12:07.483Z",
+      "status": "Active"
+    },
+    {
+      "id": "PAT-002",
+      "name": "Dawit Haile",
+      "mrn": "MRN-2026-0092",
+      "age": 48,
+      "gender": "Male",
+      "phone": "+251 912 345 678",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "registeredAt": "2026-10-08T01:12:07.483Z",
+      "status": "Active"
+    },
+    {
+      "id": "PAT-003",
+      "name": "Fatima Mohammed",
+      "mrn": "MRN-2026-0115",
+      "age": 27,
+      "gender": "Female",
+      "phone": "+251 913 456 789",
+      "departmentSlug": "surgical-service",
+      "departmentLabel": "Surgical Service",
+      "registeredAt": "2026-10-07T15:12:07.483Z",
+      "status": "Admitted"
+    },
+    {
+      "id": "PAT-004",
+      "name": "Kassahun Tilahun",
+      "mrn": "MRN-2026-0204",
+      "age": 62,
+      "gender": "Male",
+      "phone": "+251 914 567 890",
+      "departmentSlug": "inpatient",
+      "departmentLabel": "Inpatient",
+      "registeredAt": "2026-10-07T09:12:07.483Z",
+      "status": "Active"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "APT-101",
+      "patientName": "Dawit Haile",
+      "patientId": "PAT-002",
+      "doctorName": "Dr. Alemu Tesfaye",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "time": "09:30 AM",
+      "date": "Today",
+      "status": "Completed",
+      "createdAt": "2026-10-08T04:12:07.483Z"
+    },
+    {
+      "id": "APT-102",
+      "patientName": "Fatima Mohammed",
+      "patientId": "PAT-003",
+      "doctorName": "Dr. Selamawit Desta",
+      "departmentSlug": "surgical-service",
+      "departmentLabel": "Surgical Service",
+      "time": "11:00 AM",
+      "date": "Today",
+      "status": "In Progress",
+      "createdAt": "2026-10-08T06:12:07.483Z"
+    },
+    {
+      "id": "APT-103",
+      "patientName": "Almaz Bekele",
+      "patientId": "PAT-001",
+      "doctorName": "Dr. Roman Sisay",
+      "departmentSlug": "mch",
+      "departmentLabel": "MCH",
+      "time": "02:00 PM",
+      "date": "Today",
+      "status": "Confirmed",
+      "createdAt": "2026-10-08T07:12:07.483Z"
+    }
+  ],
+  "activities": [
+    {
+      "id": "ACT-725779",
+      "type": "form_submitted",
+      "title": "Clinical audit response submitted",
+      "meta": "Operating Theatre Sterility & Hygiene Audit (Surgical Department)",
+      "time": "2:32 AM"
+    },
+    {
+      "id": "ACT-682340",
+      "type": "form_submitted",
+      "title": "Clinical audit response submitted",
+      "meta": "Emergency Resuscitation Protocol Checklist (Emergency Corridor)",
+      "time": "2:25 AM"
+    },
+    {
+      "id": "ACT-470456",
+      "type": "form_submitted",
+      "title": "Clinical audit response submitted",
+      "meta": "Emergency Resuscitation Protocol Checklist (Emergency Corridor)",
+      "time": "2:24 AM"
+    },
+    {
+      "id": "ACT-001",
+      "type": "form_submitted",
+      "title": "Clinical audit response submitted",
+      "meta": "Emergency Triage & Clinical Assessment Audit (Emergency Corridor)",
+      "time": "08:45 AM"
+    },
+    {
+      "id": "ACT-002",
+      "type": "appointment_booked",
+      "title": "New appointment booked",
+      "meta": "Almaz Bekele with Dr. Roman Sisay (02:00 PM)",
+      "time": "09:15 AM"
+    },
+    {
+      "id": "ACT-003",
+      "type": "appointment_status",
+      "title": "Appointment status updated to Completed",
+      "meta": "Dawit Haile (Dr. Alemu Tesfaye)",
+      "time": "10:30 AM"
+    }
+  ],
+  "reports": [
+    {
+      "id": "REP-001",
+      "title": "Emergency Corridor Clinical Triage Weekly Audit",
+      "category": "Audit",
+      "department": "Emergency Corridor",
+      "departmentSlug": "emergency-corridor",
+      "author": "Dr. Alem Tesfaye",
+      "date": "Oct 6, 2026",
+      "score": "96.4%",
+      "status": "Completed",
+      "summary": "Comprehensive triage protocol compliance verified across 142 emergency intakes.",
+      "createdAt": "2026-10-06T09:12:07.483Z"
+    },
+    {
+      "id": "REP-002",
+      "title": "WHO Surgical Safety Sign-In Audit Review",
+      "category": "Checklist",
+      "department": "Surgical Service",
+      "departmentSlug": "surgical-service",
+      "author": "Dr. Selamawit Desta",
+      "date": "Oct 7, 2026",
+      "score": "98.2%",
+      "status": "Reviewed",
+      "summary": "Operating theatre checklist compliance monitored across 38 surgical interventions.",
+      "createdAt": "2026-10-07T09:12:07.483Z"
+    }
+  ]
+}
