@@ -9,6 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS public.users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
+  email TEXT,
   password TEXT NOT NULL,
   role TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -113,6 +114,27 @@ CREATE TABLE IF NOT EXISTS public.reports (
 CREATE INDEX IF NOT EXISTS idx_reports_dept ON public.reports (department_slug);
 CREATE INDEX IF NOT EXISTS idx_reports_created ON public.reports (created_at DESC);
 
+-- 8. Officers & Coordinators Table
+CREATE TABLE IF NOT EXISTS public.officers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  department TEXT NOT NULL,
+  department_slug TEXT,
+  type TEXT NOT NULL DEFAULT 'QMT Officer',
+  base_audits INTEGER NOT NULL DEFAULT 0,
+  compliance_rate TEXT NOT NULL DEFAULT '98.0%',
+  rating NUMERIC(3, 1) NOT NULL DEFAULT 5.0,
+  status TEXT NOT NULL DEFAULT 'Active',
+  email TEXT,
+  phone TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_officers_type ON public.officers (type);
+CREATE INDEX IF NOT EXISTS idx_officers_status ON public.officers (status);
+
 -- Row Level Security (RLS) Setup
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.forms ENABLE ROW LEVEL SECURITY;
@@ -121,58 +143,99 @@ ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.officers ENABLE ROW LEVEL SECURITY;
 
 -- Clean existing policies if re-running
 DO $$
 BEGIN
+  -- Forms
   DROP POLICY IF EXISTS "Public forms read" ON public.forms;
+  DROP POLICY IF EXISTS "Public forms all" ON public.forms;
   DROP POLICY IF EXISTS "Service role forms full access" ON public.forms;
+
+  -- Form Responses
   DROP POLICY IF EXISTS "Public form_responses insert" ON public.form_responses;
+  DROP POLICY IF EXISTS "Public form_responses select" ON public.form_responses;
+  DROP POLICY IF EXISTS "Public form_responses all" ON public.form_responses;
   DROP POLICY IF EXISTS "Service role form_responses full access" ON public.form_responses;
+
+  -- Patients
+  DROP POLICY IF EXISTS "Public patients select" ON public.patients;
+  DROP POLICY IF EXISTS "Public patients insert" ON public.patients;
+  DROP POLICY IF EXISTS "Public patients all" ON public.patients;
   DROP POLICY IF EXISTS "Service role patients full access" ON public.patients;
+
+  -- Appointments
+  DROP POLICY IF EXISTS "Public appointments select" ON public.appointments;
+  DROP POLICY IF EXISTS "Public appointments insert" ON public.appointments;
+  DROP POLICY IF EXISTS "Public appointments update" ON public.appointments;
+  DROP POLICY IF EXISTS "Public appointments all" ON public.appointments;
   DROP POLICY IF EXISTS "Service role appointments full access" ON public.appointments;
+
+  -- Activities
+  DROP POLICY IF EXISTS "Public activities select" ON public.activities;
+  DROP POLICY IF EXISTS "Public activities insert" ON public.activities;
+  DROP POLICY IF EXISTS "Public activities all" ON public.activities;
   DROP POLICY IF EXISTS "Service role activities full access" ON public.activities;
+
+  -- Reports
+  DROP POLICY IF EXISTS "Public reports select" ON public.reports;
+  DROP POLICY IF EXISTS "Public reports insert" ON public.reports;
+  DROP POLICY IF EXISTS "Public reports delete" ON public.reports;
+  DROP POLICY IF EXISTS "Public reports all" ON public.reports;
   DROP POLICY IF EXISTS "Service role reports full access" ON public.reports;
+
+  -- Officers
+  DROP POLICY IF EXISTS "Public officers select" ON public.officers;
+  DROP POLICY IF EXISTS "Public officers insert" ON public.officers;
+  DROP POLICY IF EXISTS "Public officers update" ON public.officers;
+  DROP POLICY IF EXISTS "Public officers all" ON public.officers;
+  DROP POLICY IF EXISTS "Service role officers full access" ON public.officers;
+
+  -- Users
+  DROP POLICY IF EXISTS "Public users select" ON public.users;
+  DROP POLICY IF EXISTS "Public users all" ON public.users;
   DROP POLICY IF EXISTS "Service role users full access" ON public.users;
 EXCEPTION
   WHEN undefined_object THEN NULL;
 END $$;
 
--- Policies for public and service role access
-CREATE POLICY "Public forms read" ON public.forms FOR SELECT USING (true);
-CREATE POLICY "Service role forms full access" ON public.forms FOR ALL USING (true);
+-- Policies allowing full API CRUD access
+CREATE POLICY "Public forms all" ON public.forms FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public form_responses all" ON public.form_responses FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public patients all" ON public.patients FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public appointments all" ON public.appointments FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public activities all" ON public.activities FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public reports all" ON public.reports FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public officers all" ON public.officers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public users all" ON public.users FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Public form_responses insert" ON public.form_responses FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public form_responses select" ON public.form_responses FOR SELECT USING (true);
-CREATE POLICY "Service role form_responses full access" ON public.form_responses FOR ALL USING (true);
-
-CREATE POLICY "Public patients select" ON public.patients FOR SELECT USING (true);
-CREATE POLICY "Public patients insert" ON public.patients FOR INSERT WITH CHECK (true);
-CREATE POLICY "Service role patients full access" ON public.patients FOR ALL USING (true);
-
-CREATE POLICY "Public appointments select" ON public.appointments FOR SELECT USING (true);
-CREATE POLICY "Public appointments insert" ON public.appointments FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public appointments update" ON public.appointments FOR UPDATE USING (true);
-CREATE POLICY "Service role appointments full access" ON public.appointments FOR ALL USING (true);
-
-CREATE POLICY "Public activities select" ON public.activities FOR SELECT USING (true);
-CREATE POLICY "Public activities insert" ON public.activities FOR INSERT WITH CHECK (true);
-CREATE POLICY "Service role activities full access" ON public.activities FOR ALL USING (true);
-
-CREATE POLICY "Public reports select" ON public.reports FOR SELECT USING (true);
-CREATE POLICY "Public reports insert" ON public.reports FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public reports delete" ON public.reports FOR DELETE USING (true);
-CREATE POLICY "Service role reports full access" ON public.reports FOR ALL USING (true);
-
-CREATE POLICY "Public users select" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Service role users full access" ON public.users FOR ALL USING (true);
-
--- Seed initial Super Administrator and essential administrative staff accounts
-INSERT INTO public.users (id, username, password, role, name, department_slug, department_label, status, created_at, updated_at)
+-- Seed initial Super Administrator account
+INSERT INTO public.users (id, username, email, password, role, name, department_slug, department_label, status, created_at, updated_at)
 VALUES
-  ('usr-superadmin-habtamu', 'habtamu', 'scrypt:2a9d82f7e01b4c3e8a1d7f6c5b4a3928:77e8a93e5a5fbc40d24f0c4c478a8bc8fbe84e9c3e9a59bc84b912f27b9c02d137ca25da95191c956950fbc05c93d90fbdc714c77ef1be25c8eb3ad90dcf3f08', 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', now(), now()),
-  ('usr-admin-default', 'admin', 'scrypt:81d0e5170d10c8c366ff40cf6112d7c9:2fa02dc7b00ea3c2ca98ef9f8724d2cf9ea1496a928ba57008316f731a5be02334861214309a47d2eb22424fa7aa9369bd65a91eece1dfd9a4641973b0fcadfc', 'admin', 'Hospital Administrator', NULL, NULL, 'active', now(), now()),
-  ('usr-coordinator-default', 'coordinator', 'scrypt:d314050dca0fcfa0b7d72856f6ba3a8c:6ad85d95fa72c2196fb995648f5da0e7193b04c818b2c4e61aa6189bf718cb6c1737be704ec327e57c6b453e920d3d526274431f47f23c945fa6bf85d8bb63a7', 'coordinator', 'Emergency Clinical Coordinator', 'emergency-corridor', 'Emergency Corridor', 'active', now(), now()),
-  ('usr-qmt-default', 'qmt', 'scrypt:989df03d3c8c734b07da702bdf6c7eb2:b8a4f653457a3e75a6113c59cfaf443ecb0ec9c33965db0118596660f588c7f39845db884b6f131a40306122d25089c890776bdfa66699195b0577ad45e7f09d', 'qmt', 'Dr. Roman Sisay (QMT Officer)', NULL, NULL, 'active', now(), now())
+  ('usr-superadmin-habtamu', 'habtamu', 'habtamu@alert.gov.et', 'scrypt:2a9d82f7e01b4c3e8a1d7f6c5b4a3928:77e8a93e5a5fbc40d24f0c4c478a8bc8fbe84e9c3e9a59bc84b912f27b9c02d137ca25da95191c956950fbc05c93d90fbdc714c77ef1be25c8eb3ad90dcf3f08', 'superadmin', 'Habtamu (Super Administrator)', NULL, NULL, 'active', now(), now())
 ON CONFLICT (username) DO UPDATE
-SET role = EXCLUDED.role, status = 'active', updated_at = now();
+SET role = 'superadmin', email = EXCLUDED.email, status = 'active', updated_at = now();
+
+-- Seed initial Top 5 QMT Officers & Coordinators
+INSERT INTO public.officers (id, name, role, department, department_slug, type, base_audits, compliance_rate, rating, status, email, phone, created_at, updated_at)
+VALUES
+  ('top-1', 'Dr. Habtamu Girma', 'Lead QMT Quality Director', 'Emergency & Triage Corridor', 'emergency-corridor', 'QMT Officer', 384, '99.4%', 5.0, 'Active', 'dr.girma@alert.et', '+251 911 23 4567', now(), now()),
+  ('top-2', 'Sr. Tigist Alemu', 'Senior Clinical Audit Coordinator', 'Intensive Care Unit (ICU)', 'icu', 'Coordinator', 326, '98.7%', 4.9, 'In Audit', 'sr.alemu@alert.et', '+251 911 34 5678', now(), now()),
+  ('top-3', 'Dr. Yonas Bekele', 'Surgical Safety Audit Officer', 'Major Surgical Theatre', 'surgical-service', 'QMT Officer', 295, '98.2%', 4.9, 'Active', 'dr.bekele@alert.et', '+251 911 45 6789', now(), now()),
+  ('top-4', 'Sr. Meron Haile', 'Inpatient Care Coordinator', 'Inpatient Medical Ward', 'inpatient', 'Coordinator', 258, '97.6%', 4.8, 'Active', 'sr.haile@alert.et', '+251 911 56 7890', now(), now()),
+  ('top-5', 'Dr. Dawit Abebe', 'Pharmacovigilance Audit Officer', 'Central Pharmacy & OPD', 'opd', 'QMT Officer', 231, '97.1%', 4.8, 'Reviewing', 'dr.abebe@alert.et', '+251 911 67 8901', now(), now())
+ON CONFLICT (id) DO UPDATE
+SET
+  name = EXCLUDED.name,
+  role = EXCLUDED.role,
+  department = EXCLUDED.department,
+  department_slug = EXCLUDED.department_slug,
+  type = EXCLUDED.type,
+  compliance_rate = EXCLUDED.compliance_rate,
+  rating = EXCLUDED.rating,
+  status = EXCLUDED.status,
+  updated_at = now();
+
+-- Refresh PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

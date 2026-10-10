@@ -34,6 +34,21 @@ export interface ActivityItem {
   time: string;
 }
 
+export interface TopOfficerLeader {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  departmentSlug?: string | undefined;
+  type: "QMT Officer" | "Coordinator";
+  auditsCompleted: number;
+  complianceRate: string;
+  rating: number;
+  status: "Active" | "In Audit" | "Reviewing";
+  email?: string | undefined;
+  phone?: string | undefined;
+}
+
 export interface DashboardStats {
   totalPatients: number;
   totalPatientsDelta: string;
@@ -48,6 +63,7 @@ export interface DashboardStats {
   appointments: Appointment[];
   patients: Patient[];
   activities: ActivityItem[];
+  topOfficers?: TopOfficerLeader[];
 }
 
 const DASHBOARD_CACHE_KEY = "alert_dashboard_stats_cache";
@@ -74,6 +90,7 @@ export const DEFAULT_DASHBOARD_STATS: DashboardStats = {
   appointments: [],
   patients: [],
   activities: [],
+  topOfficers: [],
 };
 
 export function getCachedDashboardStats(): DashboardStats {

@@ -18,6 +18,10 @@ import {
   dbAddReport,
   dbDeleteReport,
   dbGetDashboardStats,
+  dbGetTopOfficers,
+  dbAddOfficer,
+  dbUpdateOfficerStatus,
+  type TopOfficerLeader,
   dbGetUsers,
   dbGetUserById,
   dbGetUserByUsername,
@@ -90,6 +94,82 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       }
       const stats = await dbGetDashboardStats();
       return new Response(JSON.stringify(stats), { status: 200, headers: corsHeaders });
+    }
+
+    // -------------------------------------------------------------------------
+    // TOP OFFICERS LEADERBOARD: GET /api/leaderboard/top-officers OR /api/officers
+    // -------------------------------------------------------------------------
+    if (pathname === "/api/leaderboard/top-officers" || pathname === "/api/officers") {
+      if (request.method === "GET") {
+        const limitParam = url.searchParams.get("limit");
+        const limit = limitParam ? parseInt(limitParam, 10) : 10;
+        const top = await dbGetTopOfficers(Number.isNaN(limit) ? 10 : limit);
+        return new Response(JSON.stringify(top), { status: 200, headers: corsHeaders });
+      }
+
+      if (request.method === "POST") {
+        const body = (await request.json().catch(() => null)) as {
+          name?: string;
+          role?: string;
+          department?: string;
+          departmentSlug?: string;
+          type?: "QMT Officer" | "Coordinator";
+          auditsCompleted?: number;
+          complianceRate?: string;
+          rating?: number;
+          status?: "Active" | "In Audit" | "Reviewing";
+          email?: string;
+          phone?: string;
+        } | null;
+
+        if (!body || !body.name || !body.department) {
+          return new Response(
+            JSON.stringify({ error: "Name and department are required." }),
+            { status: 400, headers: corsHeaders },
+          );
+        }
+
+        const created = await dbAddOfficer({
+          name: body.name,
+          role: body.role || "Quality Management Officer",
+          department: body.department,
+          departmentSlug: body.departmentSlug,
+          type: body.type || "QMT Officer",
+          auditsCompleted: body.auditsCompleted,
+          complianceRate: body.complianceRate,
+          rating: body.rating,
+          status: body.status || "Active",
+          email: body.email,
+          phone: body.phone,
+        });
+
+        return new Response(JSON.stringify(created), { status: 201, headers: corsHeaders });
+      }
+
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: corsHeaders,
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // OFFICER STATUS / UPDATE: PATCH /api/officers/:id
+    // -------------------------------------------------------------------------
+    if (pathname.startsWith("/api/officers/") && request.method === "PATCH") {
+      const officerId = pathname.slice("/api/officers/".length);
+      const body = (await request.json().catch(() => null)) as {
+        status?: "Active" | "In Audit" | "Reviewing";
+      } | null;
+
+      if (!body || !body.status) {
+        return new Response(
+          JSON.stringify({ error: "Status is required." }),
+          { status: 400, headers: corsHeaders },
+        );
+      }
+
+      const ok = await dbUpdateOfficerStatus(officerId, body.status);
+      return new Response(JSON.stringify({ success: ok }), { status: 200, headers: corsHeaders });
     }
 
     // -------------------------------------------------------------------------

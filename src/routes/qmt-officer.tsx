@@ -63,7 +63,7 @@ export type QmtOfficer = {
   dept: string;
   exp: number;
   rating: number;
-  status: "Active" | "In Audit" | "On Leave";
+  status: "Active" | "In Audit" | "On Leave" | "Reviewing";
   email: string;
   phone: string;
 };
@@ -74,7 +74,44 @@ const statusStyles: Record<string, string> = {
   Active: "bg-success/12 text-success",
   "In Audit": "bg-primary/12 text-primary",
   "On Leave": "bg-warning/15 text-warning",
+  Reviewing: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
 };
+
+const DEFAULT_QMT_OFFICERS: QmtOfficer[] = [
+  {
+    id: "top-1",
+    name: "Dr. Habtamu Girma",
+    specialty: "Lead QMT Quality Director",
+    dept: "Emergency & Triage Corridor",
+    status: "Active",
+    exp: 10,
+    rating: 5.0,
+    email: "dr.girma@alert.et",
+    phone: "+251 911 23 4567",
+  },
+  {
+    id: "top-3",
+    name: "Dr. Yonas Bekele",
+    specialty: "Surgical Safety Audit Officer",
+    dept: "Major Surgical Theatre",
+    status: "Active",
+    exp: 8,
+    rating: 4.9,
+    email: "dr.bekele@alert.et",
+    phone: "+251 911 45 6789",
+  },
+  {
+    id: "top-5",
+    name: "Dr. Dawit Abebe",
+    specialty: "Pharmacovigilance Audit Officer",
+    dept: "Central Pharmacy & OPD",
+    status: "Reviewing",
+    exp: 6,
+    rating: 4.8,
+    email: "dr.abebe@alert.et",
+    phone: "+251 911 67 8901",
+  },
+];
 
 const emptyDraft = {
   name: "",
@@ -87,27 +124,76 @@ const emptyDraft = {
 };
 
 function QmtOfficerPage() {
-  const [officers, setOfficers] = useState<QmtOfficer[]>([]);
+  const [officers, setOfficers] = useState<QmtOfficer[]>(() => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return DEFAULT_QMT_OFFICERS;
+  });
   const [search, setSearch] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [formDraft, setFormDraft] = useState(emptyDraft);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setOfficers(parsed);
+    // Sync with backend API
+    fetch("/api/officers")
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as Array<{
+          id: string;
+          name: string;
+          role: string;
+          department: string;
+          status: string;
+          rating?: number;
+          email?: string;
+          phone?: string;
+          type?: string;
+        }>;
+      })
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          const qmtOnly = data
+            .filter((o) => !o.type || o.type === "QMT Officer")
+            .map((o, idx) => ({
+              id: o.id,
+              name: o.name,
+              specialty: o.role,
+              dept: o.department,
+              status:
+                o.status === "In Audit"
+                  ? ("In Audit" as const)
+                  : o.status === "Reviewing"
+                    ? ("Reviewing" as const)
+                    : o.status === "On Leave"
+                      ? ("On Leave" as const)
+                      : ("Active" as const),
+              exp: 5 + (idx % 5),
+              rating: o.rating || 5.0,
+              email: o.email || `${o.name.toLowerCase().replace(/[^a-z0-9]/g, ".")}@alert.et`,
+              phone: o.phone || "+251 911 00 0000",
+            }));
+          if (qmtOnly.length > 0) {
+            setOfficers(qmtOnly);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(qmtOnly));
+            } catch {
+              // ignore
+            }
+          }
         }
-      }
-    } catch {
-      // ignore JSON parse or storage errors
-    }
+      })
+      .catch((err) => console.warn("Notice: Fetching officers from API:", err));
   }, []);
 
-  const handleSaveOfficer = (e: React.FormEvent) => {
+  const handleSaveOfficer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formDraft.name.trim()) {
       setFormError("Please enter the officer's full name.");
@@ -140,8 +226,30 @@ function QmtOfficerPage() {
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new Event("alert-officers-updated"));
+      window.dispatchEvent(new Event("alert-dashboard-updated"));
     } catch {
       // ignore storage quota errors
+    }
+
+    // Persist to server API in background
+    try {
+      await fetch("/api/officers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newOfficer.name,
+          role: newOfficer.specialty,
+          department: newOfficer.dept,
+          type: "QMT Officer",
+          status: newOfficer.status,
+          email: newOfficer.email,
+          phone: newOfficer.phone,
+        }),
+      });
+      window.dispatchEvent(new Event("alert-dashboard-updated"));
+    } catch (err) {
+      console.warn("Notice: Saved officer to local storage while server syncs:", err);
     }
 
     toast.success(`QMT Officer ${newOfficer.name} added successfully.`);

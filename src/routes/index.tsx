@@ -37,7 +37,9 @@ import {
   bookAppointment,
   registerPatient,
   updateAppointmentStatus,
+  type TopOfficerLeader,
 } from "@/lib/dashboard-store";
+import { useAllResponses } from "@/lib/form-store";
 import { departments } from "@/routes/departments.$slug";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,24 +87,13 @@ const statusStyles: Record<string, string> = {
   Confirmed: "bg-success/12 text-success",
 };
 
-interface TopOfficerLeader {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  type: "QMT Officer" | "Coordinator";
-  auditsCompleted: number;
-  complianceRate: string;
-  rating: number;
-  status: "Active" | "In Audit" | "Reviewing";
-}
-
 const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
   {
     id: "top-1",
     name: "Dr. Habtamu Girma",
     role: "Lead QMT Quality Director",
     department: "Emergency & Triage Corridor",
+    departmentSlug: "emergency-corridor",
     type: "QMT Officer",
     auditsCompleted: 384,
     complianceRate: "99.4%",
@@ -114,6 +105,7 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
     name: "Sr. Tigist Alemu",
     role: "Senior Clinical Audit Coordinator",
     department: "Intensive Care Unit (ICU)",
+    departmentSlug: "icu",
     type: "Coordinator",
     auditsCompleted: 326,
     complianceRate: "98.7%",
@@ -125,6 +117,7 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
     name: "Dr. Yonas Bekele",
     role: "Surgical Safety Audit Officer",
     department: "Major Surgical Theatre",
+    departmentSlug: "surgical-service",
     type: "QMT Officer",
     auditsCompleted: 295,
     complianceRate: "98.2%",
@@ -136,6 +129,7 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
     name: "Sr. Meron Haile",
     role: "Inpatient Care Coordinator",
     department: "Inpatient Medical Ward",
+    departmentSlug: "inpatient",
     type: "Coordinator",
     auditsCompleted: 258,
     complianceRate: "97.6%",
@@ -147,6 +141,7 @@ const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
     name: "Dr. Dawit Abebe",
     role: "Pharmacovigilance Audit Officer",
     department: "Central Pharmacy & OPD",
+    departmentSlug: "opd",
     type: "QMT Officer",
     auditsCompleted: 231,
     complianceRate: "97.1%",
@@ -159,6 +154,7 @@ export function Dashboard() {
   const { user, ready } = useAuthUser();
   const navigate = useNavigate();
   const { stats, loading, refresh } = useDashboardData();
+  const { responses: liveResponses } = useAllResponses();
   const [search, setSearch] = useState("");
 
   // QMT Officers and Coordinators see coordinator page (/coordinators)
@@ -280,8 +276,86 @@ export function Dashboard() {
     }
   };
 
+  const handleToggleOfficerStatus = async (officer: TopOfficerLeader) => {
+    const nextStatus: "Active" | "In Audit" | "Reviewing" =
+      officer.status === "Active"
+        ? "In Audit"
+        : officer.status === "In Audit"
+          ? "Reviewing"
+          : "Active";
+
+    try {
+      await fetch(`/api/officers/${encodeURIComponent(officer.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const stored = localStorage.getItem("alert_qmt_officers_list");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const idx = parsed.findIndex(
+            (o: { id?: string; name?: string }) => o.id === officer.id || o.name === officer.name,
+          );
+          if (idx >= 0) {
+            parsed[idx].status = nextStatus;
+            localStorage.setItem("alert_qmt_officers_list", JSON.stringify(parsed));
+          }
+        }
+      }
+      toast.success(`${officer.name} status updated to ${nextStatus}`);
+      void refresh();
+    } catch (err) {
+      console.warn("Failed to update officer status:", err);
+    }
+  };
+
   const topOfficers = useMemo(() => {
-    let list = [...DEFAULT_TOP_OFFICERS];
+    let list: TopOfficerLeader[] =
+      stats.topOfficers && stats.topOfficers.length > 0
+        ? [...stats.topOfficers]
+        : [...DEFAULT_TOP_OFFICERS];
+
+    // Increment with local live responses if available
+    if (liveResponses && liveResponses.length > 0) {
+      const liveDeptCounts = new Map<string, number>();
+      for (const resp of liveResponses) {
+        const slug = (resp.departmentSlug || "").toLowerCase();
+        const label = (resp.departmentLabel || "").toLowerCase();
+        if (slug) liveDeptCounts.set(slug, (liveDeptCounts.get(slug) || 0) + 1);
+        if (label) liveDeptCounts.set(label, (liveDeptCounts.get(label) || 0) + 1);
+      }
+
+      list = list.map((officer) => {
+        const slug = (officer.departmentSlug || "").toLowerCase();
+        const dept = officer.department.toLowerCase();
+        let addCount = 0;
+        if (slug && liveDeptCounts.has(slug)) {
+          addCount += liveDeptCounts.get(slug) || 0;
+        }
+        if (
+          slug === "surgical-service" ||
+          dept.includes("surgical") ||
+          dept.includes("theatre")
+        ) {
+          addCount += liveDeptCounts.get("or-cancellation") || 0;
+          addCount += liveDeptCounts.get("preoperative-preparation") || 0;
+          addCount += liveDeptCounts.get("or-time-stamp") || 0;
+        }
+        if (addCount > 0) {
+          const baseAudits = officer.auditsCompleted;
+          const complianceBase = parseFloat(officer.complianceRate) || 98.0;
+          const newCompliance = `${Math.min(99.9, complianceBase + addCount * 0.05).toFixed(1)}%`;
+          return {
+            ...officer,
+            auditsCompleted: baseAudits + addCount,
+            complianceRate: newCompliance,
+          };
+        }
+        return officer;
+      });
+    }
+
     try {
       const stored = localStorage.getItem("alert_qmt_officers_list");
       if (stored) {
@@ -304,11 +378,17 @@ export function Dashboard() {
               name: o.name,
               role: o.specialty || "Quality Management Officer",
               department: o.dept || "General Ward",
+              departmentSlug: (o.dept || "").toLowerCase().replace(/\s+/g, "-"),
               type: "QMT Officer" as const,
               auditsCompleted: Math.max(120, (o.exp || 1) * 45 + ((idx * 17) % 80)),
               complianceRate: `${(96 + ((idx * 3) % 4) + 0.5).toFixed(1)}%`,
               rating: o.rating || 5.0,
-              status: o.status === "In Audit" ? ("In Audit" as const) : ("Active" as const),
+              status:
+                o.status === "In Audit"
+                  ? ("In Audit" as const)
+                  : o.status === "Reviewing"
+                    ? ("Reviewing" as const)
+                    : ("Active" as const),
             }),
           );
           const combined = [...list, ...custom];
@@ -319,13 +399,14 @@ export function Dashboard() {
             seen.add(key);
             return true;
           });
-          unique.sort((a, b) => b.auditsCompleted - a.auditsCompleted);
-          list = unique.slice(0, 5);
+          list = unique;
         }
       }
     } catch {
       // ignore
     }
+
+    list.sort((a, b) => b.auditsCompleted - a.auditsCompleted);
 
     if (!search.trim()) return list.slice(0, 5);
     const q = search.toLowerCase();
@@ -335,10 +416,11 @@ export function Dashboard() {
           o.name.toLowerCase().includes(q) ||
           o.role.toLowerCase().includes(q) ||
           o.department.toLowerCase().includes(q) ||
-          o.type.toLowerCase().includes(q),
+          o.type.toLowerCase().includes(q) ||
+          o.status.toLowerCase().includes(q),
       )
       .slice(0, 5);
-  }, [search]);
+  }, [stats.topOfficers, liveResponses, search]);
 
   const statCards = [
     {
@@ -658,17 +740,20 @@ export function Dashboard() {
                             </div>
                           </td>
                           <td className="py-3 whitespace-nowrap text-right">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                            <button
+                              type="button"
+                              onClick={() => void handleToggleOfficerStatus(officer)}
+                              title="Click to toggle status (Active / In Audit / Reviewing)"
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium transition-all hover:scale-105 cursor-pointer ${
                                 officer.status === "Active"
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
                                   : officer.status === "In Audit"
-                                    ? "bg-primary/10 text-primary"
-                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
                               }`}
                             >
                               {officer.status}
-                            </span>
+                            </button>
                           </td>
                         </tr>
                       );
