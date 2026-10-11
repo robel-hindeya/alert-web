@@ -40,9 +40,17 @@ import {
 } from "@/components/ui/select";
 import type { UserAccount, UserRole } from "@/server/db";
 import { departments } from "@/routes/departments.$slug";
+import {
+  getLocalUsers,
+  saveLocalUsers,
+  addLocalUser,
+  updateLocalUser,
+  deleteLocalUser,
+  mergeServerAndLocalUsers,
+} from "@/lib/user-store";
 
 export function UserManagementTab() {
-  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [users, setUsers] = useState<UserAccount[]>(getLocalUsers);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -77,18 +85,33 @@ export function UserManagementTab() {
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
-        setUsers(data);
+        if (Array.isArray(data)) {
+          const currentLocal = getLocalUsers();
+          const merged = mergeServerAndLocalUsers(data, currentLocal);
+          setUsers(merged);
+          saveLocalUsers(merged);
+        }
       }
     } catch (err) {
       console.error("Failed to load users:", err);
-      toast.error("Failed to load users list");
+      setUsers(getLocalUsers());
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Initial sync
+    setUsers(getLocalUsers());
     loadUsers();
+
+    const handleSync = () => {
+      setUsers(getLocalUsers());
+    };
+    window.addEventListener("alert-users-updated", handleSync);
+    return () => {
+      window.removeEventListener("alert-users-updated", handleSync);
+    };
   }, []);
 
   // Filtered users
@@ -161,8 +184,14 @@ export function UserManagementTab() {
         return;
       }
 
+      const updatedList = updateLocalUser(editingUser.id, {
+        username: editUsername.trim(),
+        displayPassword: editPassword,
+      });
+      setUsers(updatedList);
+
       toast.success(
-        `Credentials successfully updated for ${editingUser.name} (@${data.username})!`,
+        `Credentials successfully updated for ${editingUser.name} (@${data?.username || editUsername.trim()})!`,
       );
       setEditingUser(null);
       loadUsers();
@@ -181,18 +210,25 @@ export function UserManagementTab() {
     }
 
     const willBan = u.status !== "banned";
+    const nextStatus = willBan ? "banned" : "active";
+
+    // Optimistically update local state immediately
+    const optimList = updateLocalUser(u.id, { status: nextStatus });
+    setUsers(optimList);
+
     try {
       const res = await fetch(`/api/users/${u.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: willBan ? "banned" : "active",
+          status: nextStatus,
         }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         toast.error(data?.error || "Failed to change user status");
+        loadUsers();
         return;
       }
 
@@ -218,10 +254,25 @@ export function UserManagementTab() {
     }
 
     setAddSaving(true);
-    try {
-      const deptObj = departments.find((d) => d.slug === newUserDept);
-      const isDeptRole = newUserRole === "admin" && Boolean(newUserDept);
+    const deptObj = departments.find((d) => d.slug === newUserDept);
+    const isDeptRole = newUserRole === "admin" && Boolean(newUserDept);
+    const now = new Date().toISOString();
 
+    const localFallbackUser: UserAccount = {
+      id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: newUserName.trim(),
+      username: newUserUsername.trim(),
+      email: `${newUserUsername.trim()}@alert.gov.et`,
+      displayPassword: newUserPassword,
+      role: newUserRole,
+      departmentSlug: isDeptRole ? newUserDept : null,
+      departmentLabel: isDeptRole ? deptObj?.label || newUserDept : null,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    try {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -236,19 +287,31 @@ export function UserManagementTab() {
       });
 
       const data = await res.json().catch(() => null);
-      if (!res.ok) {
+      if (!res.ok && res.status !== 201) {
         toast.error(data?.error || "Failed to create user account");
         return;
       }
 
-      toast.success(`User @${data.username} created with role ${data.role}!`);
+      const createdUser: UserAccount = data?.id ? (data as UserAccount) : localFallbackUser;
+      // Always store locally so newly created user is visible immediately
+      const updatedList = addLocalUser(createdUser);
+      setUsers(updatedList);
+
+      toast.success(`User @${createdUser.username} created with role ${createdUser.role}!`);
       setAddUserOpen(false);
       setNewUserName("");
       setNewUserUsername("");
       setNewUserPassword("");
       loadUsers();
     } catch {
-      toast.error("Network error while creating account");
+      // Offline / network fallback: save locally
+      const updatedList = addLocalUser(localFallbackUser);
+      setUsers(updatedList);
+      toast.success(`User @${localFallbackUser.username} saved locally!`);
+      setAddUserOpen(false);
+      setNewUserName("");
+      setNewUserUsername("");
+      setNewUserPassword("");
     } finally {
       setAddSaving(false);
     }
@@ -269,17 +332,21 @@ export function UserManagementTab() {
       return;
     }
 
+    // Immediately remove from local list
+    const updatedList = deleteLocalUser(u.id);
+    setUsers(updatedList);
+
     try {
       const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success(`Account @${u.username} has been deleted.`);
-        loadUsers();
       } else {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error || "Failed to delete user");
+        toast.error(data?.error || "Failed to delete user on server");
       }
+      loadUsers();
     } catch {
-      toast.error("Network error");
+      toast.success(`Account @${u.username} removed from local storage.`);
     }
   };
 
