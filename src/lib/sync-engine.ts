@@ -1,5 +1,5 @@
 import { getLocalUsers, saveLocalUsers, mergeServerAndLocalUsers } from "./user-store";
-import { getAllForms } from "./form-store";
+import { getAllForms, isLegacySeedId } from "./form-store";
 import type { CustomForm, FormResponse } from "./form-types";
 import type { UserAccount } from "@/server/db";
 
@@ -73,13 +73,13 @@ export async function syncAllDevicesNow(): Promise<SyncResult> {
     }
 
     // 2. Update Forms
-    if (Array.isArray(data.forms) && data.forms.length > 0) {
+    if (Array.isArray(data.forms)) {
       const formMap = new Map<string, CustomForm>();
       for (const f of data.forms) {
-        if (f && f.id) formMap.set(f.id, f);
+        if (f && f.id && !isLegacySeedId(f.id)) formMap.set(f.id, f);
       }
       for (const f of localForms) {
-        if (f && f.id && !formMap.has(f.id)) formMap.set(f.id, f);
+        if (f && f.id && !isLegacySeedId(f.id) && !formMap.has(f.id)) formMap.set(f.id, f);
       }
       const mergedForms = Array.from(formMap.values());
       window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(mergedForms));
@@ -87,13 +87,13 @@ export async function syncAllDevicesNow(): Promise<SyncResult> {
     }
 
     // 3. Update Responses
-    if (Array.isArray(data.responses) && data.responses.length > 0) {
+    if (Array.isArray(data.responses)) {
       const respMap = new Map<string, FormResponse>();
       for (const r of data.responses) {
-        if (r && r.id) respMap.set(r.id, r);
+        if (r && r.id && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId)) respMap.set(r.id, r);
       }
       for (const r of localResponses) {
-        if (r && r.id && !respMap.has(r.id)) respMap.set(r.id, r);
+        if (r && r.id && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId) && !respMap.has(r.id)) respMap.set(r.id, r);
       }
       const mergedResponses = Array.from(respMap.values());
       window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(mergedResponses));

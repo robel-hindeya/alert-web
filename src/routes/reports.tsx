@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuthUser } from "@/lib/auth-session";
+import { isLegacySeedId } from "@/lib/form-store";
 import {
   BarChart3,
   Download,
@@ -145,16 +146,24 @@ function ReportsPage() {
     fetch("/api/reports")
       .then((res) => (res.ok ? res.json() : []))
       .then((data: ReportRecord[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setReports(data);
+        const validReports = Array.isArray(data)
+          ? data.filter((r) => r && !isLegacySeedId(r.id))
+          : [];
+        if (validReports.length > 0) {
+          setReports(validReports);
         } else {
           // If no custom reports yet, synthesize dynamic reports from real form responses
           fetch("/api/forms/all-responses")
             .then((r) => (r.ok ? r.json() : []))
             .then((responses) => {
-              if (Array.isArray(responses) && responses.length > 0) {
-                setTotalSubmissions(responses.length);
-                const synthesized: ReportRecord[] = responses.slice(0, 15).map((resp) => ({
+              const valid = Array.isArray(responses)
+                ? responses.filter(
+                    (resp) => resp && !isLegacySeedId(resp.id) && !isLegacySeedId(resp.formId),
+                  )
+                : [];
+              setTotalSubmissions(valid.length);
+              if (valid.length > 0) {
+                const synthesized: ReportRecord[] = valid.slice(0, 15).map((resp) => ({
                   id: `REP-${String(resp.id).slice(-6)}`,
                   title: `${resp.formTitle || "Department Audit"} Summary Report`,
                   category: "Audit" as ReportCategory,
@@ -166,11 +175,13 @@ function ReportsPage() {
                     day: "numeric",
                     year: "numeric",
                   }),
-                  score: "98%",
+                  score: "100%",
                   status: "Completed",
                   summary: `Real-time clinical audit entry recorded for ${resp.departmentLabel || "ALERT Hospital"}.`,
                 }));
                 setReports(synthesized);
+              } else {
+                setReports([]);
               }
             });
         }
@@ -180,7 +191,12 @@ function ReportsPage() {
     fetch("/api/forms/all-responses")
       .then((r) => (r.ok ? r.json() : []))
       .then((responses) => {
-        if (Array.isArray(responses)) setTotalSubmissions(responses.length);
+        if (Array.isArray(responses)) {
+          const valid = responses.filter(
+            (resp) => resp && !isLegacySeedId(resp.id) && !isLegacySeedId(resp.formId),
+          );
+          setTotalSubmissions(valid.length);
+        }
       })
       .catch(() => {});
   }, []);

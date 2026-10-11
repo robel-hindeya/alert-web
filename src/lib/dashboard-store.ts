@@ -93,11 +93,30 @@ export const DEFAULT_DASHBOARD_STATS: DashboardStats = {
   topOfficers: [],
 };
 
+const LEGACY_PURGE_KEY = "alert_purged_seed_data_v4";
+if (typeof window !== "undefined") {
+  try {
+    if (!localStorage.getItem(LEGACY_PURGE_KEY)) {
+      localStorage.removeItem(DASHBOARD_CACHE_KEY);
+      localStorage.removeItem("alert_hospital_forms");
+      localStorage.removeItem("alert_hospital_form_responses");
+      localStorage.removeItem("alert_qmt_officers_list");
+      localStorage.setItem(LEGACY_PURGE_KEY, "true");
+    }
+  } catch {}
+}
+
 export function getCachedDashboardStats(): DashboardStats {
   if (typeof window === "undefined") return DEFAULT_DASHBOARD_STATS;
   try {
     const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as DashboardStats) : DEFAULT_DASHBOARD_STATS;
+    if (!raw) return DEFAULT_DASHBOARD_STATS;
+    const parsed = JSON.parse(raw) as DashboardStats;
+    if (parsed.totalPatients === 17 || parsed.totalForms === 6 || parsed.totalResponses === 17) {
+      localStorage.removeItem(DASHBOARD_CACHE_KEY);
+      return DEFAULT_DASHBOARD_STATS;
+    }
+    return parsed;
   } catch {
     return DEFAULT_DASHBOARD_STATS;
   }

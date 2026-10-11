@@ -339,6 +339,34 @@ export function persistStoreToDisk(): void {
   }
 }
 
+export const isLegacySeedRecord = (id: unknown): boolean => {
+  if (typeof id !== "string") return false;
+  const lower = id.toLowerCase();
+  return (
+    lower.includes("seed") ||
+    lower.startsWith("resp-179171493") ||
+    lower.startsWith("resp-") ||
+    lower.startsWith("form-inpatient") ||
+    lower.startsWith("form-surgical") ||
+    lower.startsWith("form-mch") ||
+    lower.startsWith("form-opd") ||
+    lower.startsWith("form-emergency") ||
+    lower.startsWith("form-chart") ||
+    lower.includes("emergency-corridor-form")
+  );
+};
+
+export function dbResetAllData(): void {
+  inMemoryForms = [];
+  inMemoryResponses = [];
+  inMemoryPatients = [];
+  inMemoryAppointments = [];
+  inMemoryReports = [];
+  inMemoryActivities = [];
+  inMemoryUsers = [SUPERADMIN_HABTAMU];
+  persistStoreToDisk();
+}
+
 export function loadStoreFromDisk(): void {
   try {
     const fs = require("node:fs");
@@ -355,27 +383,58 @@ export function loadStoreFromDisk(): void {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed.users) && parsed.users.length > 0) {
       const map = new Map<string, UserAccount>();
-      for (const u of inMemoryUsers) map.set(u.username.toLowerCase(), u);
-      for (const u of parsed.users) map.set(u.username.toLowerCase(), u);
+      map.set("habtamu", SUPERADMIN_HABTAMU);
+      for (const u of parsed.users) {
+        if (
+          u &&
+          u.username &&
+          u.username.toLowerCase() !== "admin" &&
+          u.username.toLowerCase() !== "coordinator" &&
+          u.id !== "usr-admin-emergency" &&
+          u.id !== "usr-coordinator-lead"
+        ) {
+          map.set(u.username.toLowerCase(), u);
+        }
+      }
       inMemoryUsers = Array.from(map.values());
+    } else {
+      inMemoryUsers = [SUPERADMIN_HABTAMU];
     }
     if (Array.isArray(parsed.forms)) {
-      inMemoryForms = parsed.forms;
+      inMemoryForms = parsed.forms.filter((f: any) => f && f.id && !isLegacySeedRecord(f.id));
+    } else {
+      inMemoryForms = [];
     }
     if (Array.isArray(parsed.responses)) {
-      inMemoryResponses = parsed.responses;
+      inMemoryResponses = parsed.responses.filter(
+        (r: any) => r && r.id && !isLegacySeedRecord(r.id) && !isLegacySeedRecord(r.form_id),
+      );
+    } else {
+      inMemoryResponses = [];
     }
     if (Array.isArray(parsed.patients)) {
-      inMemoryPatients = parsed.patients;
+      inMemoryPatients = parsed.patients.filter((p: any) => p && p.id && !isLegacySeedRecord(p.id));
+    } else {
+      inMemoryPatients = [];
     }
     if (Array.isArray(parsed.appointments)) {
-      inMemoryAppointments = parsed.appointments;
+      inMemoryAppointments = parsed.appointments.filter(
+        (a: any) => a && a.id && !isLegacySeedRecord(a.id),
+      );
+    } else {
+      inMemoryAppointments = [];
     }
     if (Array.isArray(parsed.reports)) {
-      inMemoryReports = parsed.reports;
+      inMemoryReports = parsed.reports.filter((rep: any) => rep && rep.id && !isLegacySeedRecord(rep.id));
+    } else {
+      inMemoryReports = [];
     }
     if (Array.isArray(parsed.activities)) {
-      inMemoryActivities = parsed.activities;
+      inMemoryActivities = parsed.activities.filter(
+        (act: any) => act && act.id && !isLegacySeedRecord(act.id),
+      );
+    } else {
+      inMemoryActivities = [];
     }
     persistStoreToDisk();
   } catch {
@@ -1994,6 +2053,7 @@ export async function dbSyncData(payload: {
     const formMap = new Map<string, CustomForm>();
     for (const f of inMemoryForms) formMap.set(f.id, f);
     for (const f of payload.forms) {
+      if (isLegacySeedRecord(f.id)) continue;
       if (!formMap.has(f.id)) {
         formMap.set(f.id, f);
         try {
@@ -2022,6 +2082,7 @@ export async function dbSyncData(payload: {
     const respMap = new Map<string, StoredInMemoryResponse>();
     for (const r of inMemoryResponses) respMap.set(r.id, r);
     for (const r of payload.responses) {
+      if (isLegacySeedRecord(r.id) || isLegacySeedRecord(r.formId)) continue;
       if (!respMap.has(r.id)) {
         respMap.set(r.id, {
           id: r.id,

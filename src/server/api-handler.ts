@@ -34,6 +34,7 @@ import {
   type UserAccount,
   dbCheckSupabaseStatus,
   dbSyncData,
+  dbResetAllData,
 } from "./db.ts";
 import type { CustomForm, FormResponse } from "../lib/form-types.ts";
 
@@ -927,6 +928,20 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         status: 405,
         headers: corsHeaders,
       });
+    }
+
+    // -------------------------------------------------------------------------
+    // ADMIN PURGE / RESET: POST /api/admin/reset-data
+    // -------------------------------------------------------------------------
+    if (pathname === "/api/admin/reset-data") {
+      dbResetAllData();
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "All collections purged. Only superadmin credentials retained.",
+        }),
+        { status: 200, headers: corsHeaders },
+      );
     }
 
     return new Response(JSON.stringify({ error: "Not found" }), {

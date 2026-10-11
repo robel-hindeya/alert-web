@@ -461,6 +461,23 @@ export function saveCustomDepartmentForm(data: {
   return form;
 }
 
+export const isLegacySeedId = (id: unknown): boolean => {
+  if (typeof id !== "string") return false;
+  const lower = id.toLowerCase();
+  return (
+    lower.includes("seed") ||
+    lower.startsWith("resp-179171493") ||
+    lower.startsWith("resp-") ||
+    lower.startsWith("form-inpatient") ||
+    lower.startsWith("form-surgical") ||
+    lower.startsWith("form-mch") ||
+    lower.startsWith("form-opd") ||
+    lower.startsWith("form-emergency") ||
+    lower.startsWith("form-chart") ||
+    lower.includes("emergency-corridor-form")
+  );
+};
+
 const STATIC_DEPRECATED_FORM_IDS = new Set([
   "emergency-triage-assessment",
   "corridor-handover-checklist",
@@ -473,7 +490,9 @@ export function getAllForms(): CustomForm[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return [];
-    const cleaned = (parsed as CustomForm[]).filter((f) => !STATIC_DEPRECATED_FORM_IDS.has(f.id));
+    const cleaned = (parsed as CustomForm[]).filter(
+      (f) => f && f.id && !STATIC_DEPRECATED_FORM_IDS.has(f.id) && !isLegacySeedId(f.id),
+    );
     if (cleaned.length !== parsed.length) {
       window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(cleaned));
     }
@@ -605,12 +624,16 @@ export async function saveFormResponse(formId: string, answers: Record<string, u
 }
 
 export function getFormResponses(formId: string): FormResponse[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined" || isLegacySeedId(formId)) return [];
   try {
     const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
     if (!raw) return [];
     const list: FormResponse[] = JSON.parse(raw);
-    return list.filter((r) => r.formId === formId);
+    const cleaned = list.filter((r) => r && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId));
+    if (cleaned.length !== list.length) {
+      window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned.filter((r) => r.formId === formId);
   } catch {
     return [];
   }
@@ -784,7 +807,13 @@ export function useAllResponses() {
     if (typeof window === "undefined") return [];
     try {
       const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as FormResponse[];
+      const cleaned = parsed.filter((r) => r && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId));
+      if (cleaned.length !== parsed.length) {
+        window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return [];
     }
@@ -797,7 +826,8 @@ export function useAllResponses() {
       if (res.ok) {
         const data = (await res.json()) as EnrichedFormResponse[];
         if (Array.isArray(data)) {
-          setResponses(data);
+          const cleaned = data.filter((r) => r && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId));
+          setResponses(cleaned);
           return;
         }
       }
@@ -813,8 +843,9 @@ export function useAllResponses() {
         const raw = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw) as FormResponse[];
+          const cleaned = parsed.filter((r) => r && !isLegacySeedId(r.id) && !isLegacySeedId(r.formId));
           const allForms = getAllForms();
-          const enriched: EnrichedFormResponse[] = parsed.map((r) => {
+          const enriched: EnrichedFormResponse[] = cleaned.map((r) => {
             const f = allForms.find((fm) => fm.id === r.formId);
             return {
               ...r,
