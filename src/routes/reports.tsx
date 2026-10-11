@@ -140,10 +140,6 @@ function ReportsPage() {
   const [filterCustomDays, setFilterCustomDays] = useState("");
   const [activeReport, setActiveReport] = useState<ReportRecord | null>(null);
 
-  if (ready && user && user.role === "admin") {
-    return null;
-  }
-
   useEffect(() => {
     // 1. Fetch dynamic reports
     fetch("/api/reports")
@@ -776,6 +772,10 @@ function ReportsPage() {
     `);
     printWindow.document.close();
   };
+
+  if (ready && user && user.role === "admin") {
+    return null;
+  }
 
   return (
     <DashboardShell>

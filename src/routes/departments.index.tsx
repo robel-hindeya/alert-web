@@ -38,7 +38,18 @@ function DepartmentsPage() {
   }, [ready, user, navigate]);
 
   if (ready && user && user.role === "admin") {
-    return null;
+    return (
+      <DashboardShell bare>
+        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-xs font-medium text-muted-foreground">
+              Navigating to your department workspace...
+            </span>
+          </div>
+        </div>
+      </DashboardShell>
+    );
   }
 
   return (

@@ -169,23 +169,6 @@ export function Dashboard() {
     }
   }, [ready, user, navigate]);
 
-  if (ready && user && (user.role === "admin" || user.role === "qmt" || user.role === "coordinator")) {
-    return (
-      <DashboardShell bare>
-        <div className="flex flex-1 items-center justify-center p-8">
-          <div className="flex flex-col items-center gap-3">
-            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {user.role === "admin"
-                ? "Navigating to your department workspace..."
-                : "Redirecting to Coordinator Portal..."}
-            </span>
-          </div>
-        </div>
-      </DashboardShell>
-    );
-  }
-
   // Book Appointment Dialog
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [bookDraft, setBookDraft] = useState({
@@ -465,6 +448,23 @@ export function Dashboard() {
       icon: BedDouble,
     },
   ];
+
+  if (ready && user && (user.role === "admin" || user.role === "qmt" || user.role === "coordinator")) {
+    return (
+      <DashboardShell bare>
+        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {user.role === "admin"
+                ? "Navigating to your department workspace..."
+                : "Redirecting to Coordinator Portal..."}
+            </span>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>

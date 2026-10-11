@@ -295,14 +295,16 @@ function SettingsPage() {
     toast.success("Settings exported as JSON.");
   };
 
-  if (ready && user && (user.role === "coordinator" || user.role === "qmt")) {
+  if (ready && user && (user.role === "admin" || user.role === "coordinator" || user.role === "qmt")) {
     return (
-      <DashboardShell>
+      <DashboardShell bare={user.role === "admin"}>
         <div className="flex flex-1 items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3">
             <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <span className="text-xs font-medium text-muted-foreground">
-              Redirecting to Coordinator Portal...
+              {user.role === "admin"
+                ? "Navigating to your department workspace..."
+                : "Redirecting to Coordinator Portal..."}
             </span>
           </div>
         </div>

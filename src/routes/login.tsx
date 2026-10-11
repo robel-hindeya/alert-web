@@ -38,10 +38,17 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { user, ready } = useAuthUser();
 
-  // Redirect to superadmin dashboard if already authenticated
+  // Redirect to role dashboard if already authenticated
   useEffect(() => {
     if (ready && user) {
-      navigate({ to: "/" });
+      if (user.role === "admin") {
+        const dept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: dept } });
+      } else if (user.role === "coordinator" || user.role === "qmt") {
+        navigate({ to: "/coordinators" });
+      } else {
+        navigate({ to: "/" });
+      }
     }
   }, [ready, user, navigate]);
 
