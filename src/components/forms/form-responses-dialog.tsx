@@ -410,33 +410,33 @@ export function FormResponsesDialog({ open, onOpenChange, form }: FormResponsesD
                           >
                             <CartesianGrid
                               strokeDasharray="3 3"
-                              stroke="hsl(var(--border))"
+                              stroke="var(--color-border)"
                               vertical={false}
                             />
                             <XAxis
                               dataKey="date"
-                              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                              tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                               axisLine={false}
                               tickLine={false}
                             />
                             <YAxis
                               allowDecimals={false}
-                              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                              tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                               axisLine={false}
                               tickLine={false}
                             />
                             <Tooltip
                               contentStyle={{
                                 borderRadius: 12,
-                                border: "1px solid hsl(var(--border))",
+                                border: "1px solid var(--color-border)",
                                 fontSize: 12,
-                                backgroundColor: "hsl(var(--card))",
-                                color: "hsl(var(--foreground))",
+                                backgroundColor: "var(--color-card)",
+                                color: "var(--color-foreground)",
                               }}
                             />
                             <Bar
                               dataKey="submissions"
-                              fill="var(--primary)"
+                              fill="#0d9488"
                               radius={[6, 6, 0, 0]}
                               maxBarSize={40}
                             />
@@ -490,18 +490,18 @@ export function FormResponsesDialog({ open, onOpenChange, form }: FormResponsesD
                                       <CartesianGrid
                                         strokeDasharray="3 3"
                                         horizontal={false}
-                                        stroke="hsl(var(--border))"
+                                        stroke="var(--color-border)"
                                       />
                                       <XAxis
                                         type="number"
                                         allowDecimals={false}
-                                        tick={{ fontSize: 10 }}
+                                        tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
                                       />
                                       <YAxis
                                         type="category"
                                         dataKey="name"
                                         width={95}
-                                        tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
+                                        tick={{ fontSize: 11, fill: "var(--color-foreground)" }}
                                       />
                                       <Tooltip
                                         formatter={(val, name, item) => [
