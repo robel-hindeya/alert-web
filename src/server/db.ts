@@ -269,46 +269,12 @@ const SUPERADMIN_HABTAMU: UserAccount = {
   updatedAt: new Date().toISOString(),
 };
 
-export const DEFAULT_ADMIN_USER: UserAccount = {
-  id: "usr-admin-emergency",
-  username: "admin",
-  email: "admin@alert.gov.et",
-  password: hashPassword("Admin123"),
-  displayPassword: "Admin123",
-  role: "admin",
-  name: "Emergency Corridor Admin",
-  departmentSlug: "emergency-corridor",
-  departmentLabel: "Emergency Corridor",
-  status: "active",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
-};
-
-export const DEFAULT_COORDINATOR_USER: UserAccount = {
-  id: "usr-coordinator-lead",
-  username: "coordinator",
-  email: "coordinator@alert.gov.et",
-  password: hashPassword("Coordinator123"),
-  displayPassword: "Coordinator123",
-  role: "coordinator",
-  name: "Dr. Alem Tesfaye (Clinical Coordinator)",
-  departmentSlug: "emergency-corridor",
-  departmentLabel: "Emergency Corridor",
-  status: "active",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
-};
-
 const INITIAL_SYSTEM_USERS: UserAccount[] = [
   SUPERADMIN_HABTAMU,
-  DEFAULT_ADMIN_USER,
-  DEFAULT_COORDINATOR_USER,
 ];
 
 let inMemoryUsers: UserAccount[] = [
   SUPERADMIN_HABTAMU,
-  DEFAULT_ADMIN_USER,
-  DEFAULT_COORDINATOR_USER,
 ];
 
 let inMemoryDeletedUsernames: Set<string> = new Set<string>();
@@ -1452,17 +1418,9 @@ export async function dbAuthenticateUser(
         (foundUser.role === "superadmin" || foundUser.username.toLowerCase() === "habtamu") &&
         (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin");
 
-      const isCoordinator =
-        (foundUser.role === "coordinator" || foundUser.role === "qmt" || foundUser.username.toLowerCase() === "coordinator" || foundUser.username.toLowerCase() === "qmtofficer" || foundUser.username.toLowerCase() === "qmt") &&
-        (pass === "Coordinator123" || pass.toLowerCase() === "coordinator" || pass.toLowerCase() === "cordineter" || pass.toLowerCase() === "qmtofficer" || pass.toLowerCase() === "qmt");
-
-      const isAdmin =
-        (foundUser.role === "admin" || foundUser.username.toLowerCase() === "admin") &&
-        (pass === "Admin123" || pass.toLowerCase() === "admin");
-
       const matchesHash = foundUser.password ? verifyPassword(pass, foundUser.password) : false;
 
-      if (isSuperadmin || isCoordinator || isAdmin || matchesHash) {
+      if (isSuperadmin || matchesHash) {
         return { success: true, user: foundUser };
       }
     }
@@ -1470,7 +1428,7 @@ export async function dbAuthenticateUser(
     console.warn("[Database] Supabase authentication query notice:", err);
   }
 
-  // 2. Direct authentication for default role accounts
+  // 2. Direct authentication for super administrator Habtamu
   if (
     trimmed === "habtamu" ||
     trimmed === "superadmin" ||
@@ -1478,25 +1436,6 @@ export async function dbAuthenticateUser(
   ) {
     if (pass && (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin")) {
       return { success: true, user: SUPERADMIN_HABTAMU };
-    }
-  }
-
-  if (
-    trimmed === "admin" ||
-    trimmed === "admin@alert.gov.et"
-  ) {
-    if (pass && (pass === "Admin123" || pass.toLowerCase() === "admin")) {
-      return { success: true, user: DEFAULT_ADMIN_USER };
-    }
-  }
-
-  if (
-    trimmed === "coordinator" ||
-    trimmed === "coordinator@alert.gov.et" ||
-    trimmed === "cordineter"
-  ) {
-    if (pass && (pass === "Coordinator123" || pass.toLowerCase() === "coordinator")) {
-      return { success: true, user: DEFAULT_COORDINATOR_USER };
     }
   }
 
@@ -1515,13 +1454,11 @@ export async function dbAuthenticateUser(
     }
     const matchesHash = inMemory.password ? verifyPassword(pass, inMemory.password) : false;
     const isDirect = inMemory.displayPassword === pass;
-    const isSpecialCoordinator =
-      (inMemory.role === "coordinator" || inMemory.role === "qmt") &&
-      (pass === "Coordinator123" || pass.toLowerCase() === "coordinator");
-    const isSpecialAdmin =
-      inMemory.role === "admin" && (pass === "Admin123" || pass.toLowerCase() === "admin");
+    const isSuperadmin =
+      (inMemory.role === "superadmin" || inMemory.username.toLowerCase() === "habtamu") &&
+      (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin");
 
-    if (matchesHash || isDirect || isSpecialCoordinator || isSpecialAdmin) {
+    if (matchesHash || isDirect || isSuperadmin) {
       return { success: true, user: inMemory };
     }
   }

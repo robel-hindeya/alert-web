@@ -111,8 +111,7 @@ export function LoginPage() {
 
           const isMatch =
             found.displayPassword === effectivePassword ||
-            (found.username.toLowerCase() === "coordinator" && (effectivePassword === "Coordinator123" || effectivePassword.toLowerCase() === "coordinator")) ||
-            (found.username.toLowerCase() === "admin" && (effectivePassword === "Admin123" || effectivePassword.toLowerCase() === "admin"));
+            (found.username.toLowerCase() === "habtamu" && (effectivePassword === "Habtamu5645" || effectivePassword.toLowerCase() === "superadmin"));
 
           if (isMatch) {
             saveAuthUser({

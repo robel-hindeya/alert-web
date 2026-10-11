@@ -16,63 +16,45 @@ export const DEFAULT_SUPERADMIN_USER: UserAccount = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
-export const DEFAULT_ADMIN_USER: UserAccount = {
-  id: "usr-admin-emergency",
-  username: "admin",
-  email: "admin@alert.gov.et",
-  displayPassword: "Admin123",
-  role: "admin",
-  name: "Emergency Corridor Admin",
-  departmentSlug: "emergency-corridor",
-  departmentLabel: "Emergency Corridor",
-  status: "active",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
-};
-
-export const DEFAULT_COORDINATOR_USER: UserAccount = {
-  id: "usr-coordinator-lead",
-  username: "coordinator",
-  email: "coordinator@alert.gov.et",
-  displayPassword: "Coordinator123",
-  role: "coordinator",
-  name: "Dr. Alem Tesfaye (Clinical Coordinator)",
-  departmentSlug: "emergency-corridor",
-  departmentLabel: "Emergency Corridor",
-  status: "active",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
-};
-
 export function getLocalUsers(): UserAccount[] {
   if (typeof window === "undefined") {
-    return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
+    return [DEFAULT_SUPERADMIN_USER];
   }
   try {
     const raw = window.localStorage.getItem(USERS_STORAGE_KEY);
     if (!raw) {
-      const init = [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
+      const init = [DEFAULT_SUPERADMIN_USER];
       window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(init));
       return init;
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
+      return [DEFAULT_SUPERADMIN_USER];
     }
-    // Ensure default system accounts are always present
+    // Ensure master superadmin account is always present
     const map = new Map<string, UserAccount>();
     map.set("habtamu", DEFAULT_SUPERADMIN_USER);
-    map.set("admin", DEFAULT_ADMIN_USER);
-    map.set("coordinator", DEFAULT_COORDINATOR_USER);
 
     for (const u of parsed) {
-      if (u && u.username) {
+      if (
+        u &&
+        u.username &&
+        u.username.toLowerCase() !== "habtamu" &&
+        u.id !== "usr-admin-emergency" &&
+        u.id !== "usr-coordinator-lead" &&
+        u.username.toLowerCase() !== "admin" &&
+        u.username.toLowerCase() !== "coordinator"
+      ) {
         map.set(u.username.toLowerCase(), u);
       }
     }
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    if (result.length !== parsed.length) {
+      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(result));
+    }
+    return result;
   } catch {
-    return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
+    return [DEFAULT_SUPERADMIN_USER];
   }
 }
 
@@ -187,14 +169,6 @@ export function mergeServerAndLocalUsers(
 
   // Always keep master superadmin
   map.set("habtamu", DEFAULT_SUPERADMIN_USER);
-
-  // Add default system accounts ONLY if they were not deleted by user
-  if (!deletedSet.has("admin")) {
-    map.set("admin", DEFAULT_ADMIN_USER);
-  }
-  if (!deletedSet.has("coordinator")) {
-    map.set("coordinator", DEFAULT_COORDINATOR_USER);
-  }
 
   // Add local users (skip deleted)
   for (const u of localUsers) {
