@@ -10,14 +10,12 @@ export function MobileBottomNav() {
 
   const items = isQmt
     ? [
-        { label: "Coordinator Portal", shortLabel: "Portal", icon: ClipboardCheck, to: "/coordinators" as const },
         { label: "Department Audits", shortLabel: "Audits", icon: Building2, to: "/departments" as const },
         { label: "Reports", shortLabel: "Reports", icon: BarChart3, to: "/reports" as const },
         { label: "Profile", shortLabel: "Profile", icon: UserCheck, to: "/coordinators" as const },
       ]
     : [
         { label: "Admin Overview", shortLabel: "Admin", icon: LayoutDashboard, to: "/" as const },
-        { label: "Coordinator Portal", shortLabel: "Portal", icon: ClipboardCheck, to: "/coordinators" as const },
         { label: "QMT Audits", shortLabel: "Audits", icon: Building2, to: "/departments" as const },
         { label: "Reports", shortLabel: "Reports", icon: BarChart3, to: "/reports" as const },
         { label: "Settings", shortLabel: "Settings", icon: Settings, to: "/settings" as const },
@@ -28,7 +26,7 @@ export function MobileBottomNav() {
       aria-label="Mobile Bottom Navigation"
       className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))]"
     >
-      <div className={`grid ${isQmt ? "grid-cols-4" : "grid-cols-5"} gap-1 max-w-md mx-auto`}>
+      <div className={`grid ${isQmt ? "grid-cols-3" : "grid-cols-4"} gap-1 max-w-md mx-auto`}>
         {items.map(({ label, shortLabel, icon: Icon, to }) => {
           const isActive =
             to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to);

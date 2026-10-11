@@ -39,7 +39,6 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
     if (user?.role === "qmt" || user?.role === "coordinator") {
       const myDeptSlug = user.departmentSlug || "emergency-corridor";
       return [
-        { label: "Coordinator Portal", icon: ClipboardCheck, to: "/coordinators" },
         { label: "Department Workspace", icon: Briefcase, to: `/departments/${myDeptSlug}` },
         { label: "Department Audits", icon: Building2, to: "/departments" },
         { label: "Reports & Logs", icon: BarChart3, to: "/reports" },
@@ -56,7 +55,6 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
     // superadmin only
     return [
       { label: "Admin Overview", icon: LayoutDashboard, to: "/" },
-      { label: "Coordinator Portal", icon: ClipboardCheck, to: "/coordinators" },
       { label: "QMT Audits", icon: Building2, to: "/departments" },
       { label: "Reports & Logs", icon: BarChart3, to: "/reports" },
       { label: "Settings", icon: Settings, to: "/settings" },
