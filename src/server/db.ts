@@ -1,14 +1,7 @@
 import crypto from "node:crypto";
 import { getSupabaseServerClient, getSupabaseUrl } from "../lib/supabase.ts";
 import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.ts";
-import {
-  DEFAULT_SEED_PATIENTS,
-  DEFAULT_SEED_APPOINTMENTS,
-  DEFAULT_SEED_ACTIVITIES,
-  DEFAULT_SEED_REPORTS,
-  DEFAULT_SEED_FORMS,
-  DEFAULT_SEED_RESPONSES,
-} from "./seed-data.ts";
+
 
 // -----------------------------------------------------------------------------
 // Type Definitions
@@ -332,12 +325,12 @@ export interface StoredInMemoryResponse {
   } | undefined;
 }
 
-let inMemoryForms: CustomForm[] = [...DEFAULT_SEED_FORMS];
-let inMemoryResponses: StoredInMemoryResponse[] = [...DEFAULT_SEED_RESPONSES];
-let inMemoryPatients: Patient[] = [...DEFAULT_SEED_PATIENTS];
-let inMemoryAppointments: Appointment[] = [...DEFAULT_SEED_APPOINTMENTS];
-let inMemoryReports: ReportItem[] = [...DEFAULT_SEED_REPORTS];
-let inMemoryActivities: ActivityItem[] = [...DEFAULT_SEED_ACTIVITIES];
+let inMemoryForms: CustomForm[] = [];
+let inMemoryResponses: StoredInMemoryResponse[] = [];
+let inMemoryPatients: Patient[] = [];
+let inMemoryAppointments: Appointment[] = [];
+let inMemoryReports: ReportItem[] = [];
+let inMemoryActivities: ActivityItem[] = [];
 
 function getStorageFilePath(): string {
   try {
@@ -400,53 +393,23 @@ export function loadStoreFromDisk(): void {
       for (const u of parsed.users) map.set(u.username.toLowerCase(), u);
       inMemoryUsers = Array.from(map.values());
     }
-    if (Array.isArray(parsed.forms) && parsed.forms.length > 0) {
-      const map = new Map<string, CustomForm>();
-      for (const f of DEFAULT_SEED_FORMS) map.set(f.id, f);
-      for (const f of parsed.forms) map.set(f.id, f);
-      inMemoryForms = Array.from(map.values());
-    } else {
-      inMemoryForms = [...DEFAULT_SEED_FORMS];
+    if (Array.isArray(parsed.forms)) {
+      inMemoryForms = parsed.forms;
     }
-    if (Array.isArray(parsed.responses) && parsed.responses.length > 0) {
-      const map = new Map<string, StoredInMemoryResponse>();
-      for (const r of DEFAULT_SEED_RESPONSES) map.set(r.id, r);
-      for (const r of parsed.responses) map.set(r.id, r);
-      inMemoryResponses = Array.from(map.values());
-    } else {
-      inMemoryResponses = [...DEFAULT_SEED_RESPONSES];
+    if (Array.isArray(parsed.responses)) {
+      inMemoryResponses = parsed.responses;
     }
-    if (Array.isArray(parsed.patients) && parsed.patients.length > 0) {
-      const map = new Map<string, Patient>();
-      for (const p of DEFAULT_SEED_PATIENTS) map.set(p.id, p);
-      for (const p of parsed.patients) map.set(p.id, p);
-      inMemoryPatients = Array.from(map.values());
-    } else {
-      inMemoryPatients = [...DEFAULT_SEED_PATIENTS];
+    if (Array.isArray(parsed.patients)) {
+      inMemoryPatients = parsed.patients;
     }
-    if (Array.isArray(parsed.appointments) && parsed.appointments.length > 0) {
-      const map = new Map<string, Appointment>();
-      for (const a of DEFAULT_SEED_APPOINTMENTS) map.set(a.id, a);
-      for (const a of parsed.appointments) map.set(a.id, a);
-      inMemoryAppointments = Array.from(map.values());
-    } else {
-      inMemoryAppointments = [...DEFAULT_SEED_APPOINTMENTS];
+    if (Array.isArray(parsed.appointments)) {
+      inMemoryAppointments = parsed.appointments;
     }
-    if (Array.isArray(parsed.reports) && parsed.reports.length > 0) {
-      const map = new Map<string, ReportItem>();
-      for (const r of DEFAULT_SEED_REPORTS) map.set(r.id, r);
-      for (const r of parsed.reports) map.set(r.id, r);
-      inMemoryReports = Array.from(map.values());
-    } else {
-      inMemoryReports = [...DEFAULT_SEED_REPORTS];
+    if (Array.isArray(parsed.reports)) {
+      inMemoryReports = parsed.reports;
     }
-    if (Array.isArray(parsed.activities) && parsed.activities.length > 0) {
-      const map = new Map<string, ActivityItem>();
-      for (const a of DEFAULT_SEED_ACTIVITIES) map.set(a.id, a);
-      for (const a of parsed.activities) map.set(a.id, a);
-      inMemoryActivities = Array.from(map.values());
-    } else {
-      inMemoryActivities = [...DEFAULT_SEED_ACTIVITIES];
+    if (Array.isArray(parsed.activities)) {
+      inMemoryActivities = parsed.activities;
     }
     persistStoreToDisk();
   } catch {
@@ -1279,54 +1242,71 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
   const totalDoctors = 42;
   const availableBeds = 654;
 
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const baseDayVisits: Record<string, number> = {
-    Mon: 48,
-    Tue: 64,
-    Wed: 58,
-    Thu: 72,
-    Fri: 61,
-    Sat: 35,
-    Sun: 26,
+  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayVisits: Record<string, number> = {
+    Mon: 0,
+    Tue: 0,
+    Wed: 0,
+    Thu: 0,
+    Fri: 0,
+    Sat: 0,
+    Sun: 0,
   };
+  const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   for (const resp of inMemoryResponses) {
     if (resp?.submitted_at) {
       const d = new Date(resp.submitted_at);
       if (!isNaN(d.getTime())) {
-        const dayName = daysOfWeek[d.getDay()] || "Mon";
-        baseDayVisits[dayName] = (baseDayVisits[dayName] || 0) + 1;
+        const dayName = daysMap[d.getDay()] || "Mon";
+        dayVisits[dayName] = (dayVisits[dayName] || 0) + 1;
+      }
+    }
+  }
+  for (const appt of inMemoryAppointments) {
+    if (appt?.createdAt) {
+      const d = new Date(appt.createdAt);
+      if (!isNaN(d.getTime())) {
+        const dayName = daysMap[d.getDay()] || "Mon";
+        dayVisits[dayName] = (dayVisits[dayName] || 0) + 1;
       }
     }
   }
   const visits = daysOfWeek.map((dayName) => ({
     day: dayName,
-    value: baseDayVisits[dayName] ?? 40,
+    value: dayVisits[dayName] || 0,
   }));
 
-  const colors = [
-    "#0d9488",
-    "#0284c7",
-    "#6366f1",
-    "#ec4899",
-    "#f59e0b",
-  ];
-
-  const totalDeptResponses = deptCountsRaw.reduce((acc, row) => acc + (row.response_count || 0), 0);
-  let departments = [
-    { name: "Emergency Corridor", value: 28, color: "#0d9488" },
-    { name: "Inpatient Ward", value: 24, color: "#0284c7" },
-    { name: "Surgical Services", value: 20, color: "#6366f1" },
-    { name: "MCH Department", value: 16, color: "#ec4899" },
-    { name: "OPD Triage", value: 12, color: "#f59e0b" },
-  ];
-
-  if (deptCountsRaw.length > 0 && totalDeptResponses > 0) {
-    departments = deptCountsRaw.slice(0, 5).map((d, idx) => ({
-      name: d.department_label,
-      value: Math.round((d.response_count / totalDeptResponses) * 100),
-      color: colors[idx % colors.length] || "#0d9488",
-    }));
+  const deptCountsMap = new Map<string, number>();
+  for (const r of inMemoryResponses) {
+    const label = r.forms?.department_label || "Other";
+    deptCountsMap.set(label, (deptCountsMap.get(label) || 0) + 1);
   }
+  for (const p of inMemoryPatients) {
+    const label = p.departmentLabel || "Other";
+    deptCountsMap.set(label, (deptCountsMap.get(label) || 0) + 1);
+  }
+  for (const row of deptCountsRaw) {
+    if (row.department_label) {
+      deptCountsMap.set(
+        row.department_label,
+        (deptCountsMap.get(row.department_label) || 0) + (row.response_count || 0),
+      );
+    }
+  }
+
+  const totalDeptItems = Array.from(deptCountsMap.values()).reduce((a, b) => a + b, 0);
+  const colors = ["#0d9488", "#0284c7", "#6366f1", "#ec4899", "#f59e0b", "#10b981"];
+  const departments =
+    totalDeptItems > 0
+      ? Array.from(deptCountsMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, count], idx) => ({
+            name,
+            value: Math.round((count / totalDeptItems) * 100),
+            color: colors[idx % colors.length] || "#0d9488",
+          }))
+      : [];
 
   return {
     totalPatients,

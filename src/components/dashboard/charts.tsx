@@ -13,13 +13,13 @@ import {
 } from "recharts";
 
 const DEFAULT_VISITS = [
-  { day: "Mon", value: 42 },
-  { day: "Tue", value: 58 },
-  { day: "Wed", value: 51 },
-  { day: "Thu", value: 67 },
-  { day: "Fri", value: 60 },
-  { day: "Sat", value: 38 },
-  { day: "Sun", value: 29 },
+  { day: "Mon", value: 0 },
+  { day: "Tue", value: 0 },
+  { day: "Wed", value: 0 },
+  { day: "Thu", value: 0 },
+  { day: "Fri", value: 0 },
+  { day: "Sat", value: 0 },
+  { day: "Sun", value: 0 },
 ];
 
 function useMounted() {
@@ -36,8 +36,7 @@ export function VisitsChart({ data }: VisitsChartProps) {
   const mounted = useMounted();
   if (!mounted) return <div className="h-[240px]" />;
 
-  const hasRealData = data && data.length > 0 && data.some((d) => d.value > 0);
-  const chartData = hasRealData ? data : DEFAULT_VISITS;
+  const chartData = data && data.length > 0 ? data : DEFAULT_VISITS;
   const maxVal = Math.max(...chartData.map((d) => d.value), 10);
   const domainMax = Math.ceil(maxVal / 5) * 5;
 
@@ -92,21 +91,13 @@ interface DepartmentsChartProps {
   totalPatients?: number;
 }
 
-const DEFAULT_DEPARTMENTS = [
-  { name: "Emergency Corridor", value: 28, color: "#0d9488" },
-  { name: "Surgical Service", value: 22, color: "#0284c7" },
-  { name: "Inpatient", value: 20, color: "#6366f1" },
-  { name: "MCH", value: 16, color: "#f59e0b" },
-  { name: "OPD", value: 14, color: "#10b981" },
-];
-
 export function DepartmentsChart({ departments, totalPatients = 0 }: DepartmentsChartProps) {
   const mounted = useMounted();
 
-  const hasRealData =
-    departments && departments.length > 0 && departments.some((d) => d.value > 0);
-  const deptList = hasRealData ? departments : DEFAULT_DEPARTMENTS;
-  const effectiveTotal = totalPatients > 0 ? totalPatients : 148;
+  const deptList =
+    departments && departments.length > 0
+      ? departments
+      : [];
 
   return (
     <div className="flex flex-col items-center gap-5">
@@ -115,7 +106,11 @@ export function DepartmentsChart({ departments, totalPatients = 0 }: Departments
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={deptList}
+                data={
+                  deptList.length > 0
+                    ? deptList
+                    : [{ name: "No Submissions Yet", value: 100, color: "var(--color-border)" }]
+                }
                 dataKey="value"
                 innerRadius={58}
                 outerRadius={90}
@@ -123,7 +118,10 @@ export function DepartmentsChart({ departments, totalPatients = 0 }: Departments
                 stroke="none"
                 isAnimationActive={false}
               >
-                {deptList.map((d) => (
+                {(deptList.length > 0
+                  ? deptList
+                  : [{ name: "No Submissions Yet", color: "var(--color-border)" }]
+                ).map((d) => (
                   <Cell key={d.name} fill={d.color} />
                 ))}
               </Pie>
@@ -132,24 +130,28 @@ export function DepartmentsChart({ departments, totalPatients = 0 }: Departments
         )}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-bold text-foreground">
-            {effectiveTotal.toLocaleString()}
+            {totalPatients.toLocaleString()}
           </span>
           <span className="text-xs text-muted-foreground">Total Records</span>
         </div>
       </div>
-      <ul className="w-full space-y-3">
-        {deptList.map((d) => (
-          <li key={d.name} className="flex items-center gap-2 text-xs">
-            <span
-              className="size-2.5 rounded-full"
-              style={{ backgroundColor: d.color }}
-              aria-hidden
-            />
-            <span className="flex-1 text-foreground truncate">{d.name}</span>
-            <span className="font-semibold text-muted-foreground">{d.value}%</span>
-          </li>
-        ))}
-      </ul>
+      {deptList.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center">No department submissions yet.</p>
+      ) : (
+        <ul className="w-full space-y-3">
+          {deptList.map((d) => (
+            <li key={d.name} className="flex items-center gap-2 text-xs">
+              <span
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: d.color }}
+                aria-hidden
+              />
+              <span className="flex-1 text-foreground truncate">{d.name}</span>
+              <span className="font-semibold text-muted-foreground">{d.value}%</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

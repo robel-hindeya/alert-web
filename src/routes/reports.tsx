@@ -103,146 +103,13 @@ interface ReportRecord {
 }
 
 const DEFAULT_WEEKLY_DATA = [
-  { day: "Mon", audits: 18, compliance: 96 },
-  { day: "Tue", audits: 24, compliance: 98 },
-  { day: "Wed", audits: 21, compliance: 95 },
-  { day: "Thu", audits: 29, compliance: 99 },
-  { day: "Fri", audits: 26, compliance: 97 },
-  { day: "Sat", audits: 15, compliance: 94 },
-  { day: "Sun", audits: 12, compliance: 96 },
-];
-
-const INITIAL_REPORTS: ReportRecord[] = [
-  {
-    id: "REP-10421",
-    title: "Emergency Corridor Clinical Safety & Triage Audit",
-    category: "Audit",
-    department: "Emergency Corridor",
-    departmentSlug: "emergency-corridor",
-    author: "Dr. Alem Tesfaye",
-    date: "Oct 11, 2026",
-    score: "98.5%",
-    status: "Completed",
-    summary:
-      "Routine comprehensive clinical audit of triage turnaround time, resuscitation bay readiness, and clinical documentation adherence in the Emergency Corridor.",
-  },
-  {
-    id: "REP-10422",
-    title: "Inpatient Bedside Medication Safety & Rounding Audit",
-    category: "Audit",
-    department: "Inpatient",
-    departmentSlug: "inpatient",
-    author: "Dr. Dawit Bekele",
-    date: "Oct 10, 2026",
-    score: "97.0%",
-    status: "Completed",
-    summary:
-      "Evaluation of high-alert medication administration, nurse-to-patient handoff rigor, and bedside chart verification compliance.",
-  },
-  {
-    id: "REP-10423",
-    title: "WHO Surgical Safety Timeout Verification Log",
-    category: "Checklist",
-    department: "Surgical Service",
-    departmentSlug: "surgical-service",
-    author: "Dr. Yared Assefa",
-    date: "Oct 09, 2026",
-    score: "99.2%",
-    status: "Completed",
-    summary:
-      "Verification of 3-phase surgical safety protocol (Sign-in, Time-out, Sign-out) across all elective and emergency operating theatres.",
-  },
-  {
-    id: "REP-10424",
-    title: "MCH Neonatal Resuscitation Equipment Readiness",
-    category: "Audit",
-    department: "MCH",
-    departmentSlug: "mch",
-    author: "Dr. Roman Sisay",
-    date: "Oct 08, 2026",
-    score: "99.0%",
-    status: "Completed",
-    summary:
-      "Comprehensive inspection of neonatal warmers, bag-mask ventilators, suction apparatus, and emergency delivery kits.",
-  },
-  {
-    id: "REP-10425",
-    title: "OPD Infection Prevention and Hand Hygiene Compliance",
-    category: "Audit",
-    department: "OPD",
-    departmentSlug: "opd",
-    author: "Sr. Tigist Alemu",
-    date: "Oct 08, 2026",
-    score: "96.5%",
-    status: "Reviewed",
-    summary:
-      "Observational monitoring of the 5 moments of hand hygiene among outpatient clinical staff and sanitization dispensary availability.",
-  },
-  {
-    id: "REP-10426",
-    title: "Elective OR Cancellation Root-Cause Analysis",
-    category: "Incident",
-    department: "OR Cancellation",
-    departmentSlug: "or-cancellation",
-    author: "Dr. Yonas Girma",
-    date: "Oct 07, 2026",
-    score: "94.8%",
-    status: "Reviewed",
-    summary:
-      "Multidisciplinary audit into late elective surgical cancellations due to preoperative fasting non-compliance and emergency case displacement.",
-  },
-  {
-    id: "REP-10427",
-    title: "Preoperative Patient Preparation & Lab Completeness",
-    category: "Checklist",
-    department: "Preoperative Preparation",
-    departmentSlug: "preoperative-preparation",
-    author: "Sr. Meron Haile",
-    date: "Oct 06, 2026",
-    score: "98.2%",
-    status: "Completed",
-    summary:
-      "Audit of blood cross-match confirmation, ECG review, and informed consent verification prior to transfer to surgical suite.",
-  },
-  {
-    id: "REP-10428",
-    title: "Closed Medical Chart Completeness & Coding Audit",
-    category: "Audit",
-    department: "Chart Completeness",
-    departmentSlug: "chart-completeness",
-    author: "Dr. Habtamu Girma",
-    date: "Oct 05, 2026",
-    score: "99.5%",
-    status: "Completed",
-    summary:
-      "Retrospective review of 120 discharged patient charts for discharge summary signature, ICD-11 coding, and follow-up appointment plan.",
-  },
-  {
-    id: "REP-10429",
-    title: "Operating Room Surgical Cut-to-Close Timestamp Audit",
-    category: "Audit",
-    department: "OR Time-Stamp",
-    departmentSlug: "or-time-stamp",
-    author: "Dr. Fitsum Tadesse",
-    date: "Oct 04, 2026",
-    score: "96.0%",
-    status: "Reviewed",
-    summary:
-      "Analysis of theatre turnaround interval, anesthesia induction duration, and operative time accuracy against scheduled slots.",
-  },
-  {
-    id: "REP-10430",
-    title: "Postoperative PACU Vital Sign Recovery Monitoring",
-    category: "Audit",
-    department: "Postoperative Care",
-    departmentSlug: "postoperative-care",
-    author: "Sr. Bethlehem Tadesse",
-    date: "Oct 03, 2026",
-    score: "97.8%",
-    status: "Completed",
-    summary:
-      "Aldrete recovery scoring adherence, pain management protocols, and PACU discharge criteria verification.",
-  },
+  { day: "Mon", audits: 0, compliance: 100 },
+  { day: "Tue", audits: 0, compliance: 100 },
+  { day: "Wed", audits: 0, compliance: 100 },
+  { day: "Thu", audits: 0, compliance: 100 },
+  { day: "Fri", audits: 0, compliance: 100 },
+  { day: "Sat", audits: 0, compliance: 100 },
+  { day: "Sun", audits: 0, compliance: 100 },
 ];
 
 function useMounted() {
@@ -263,8 +130,8 @@ function ReportsPage() {
     }
   }, [ready, user, navigate]);
 
-  const [reports, setReports] = useState<ReportRecord[]>(INITIAL_REPORTS);
-  const [totalSubmissions, setTotalSubmissions] = useState(15);
+  const [reports, setReports] = useState<ReportRecord[]>([]);
+  const [totalSubmissions, setTotalSubmissions] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -631,48 +498,25 @@ function ReportsPage() {
   ]);
 
   const weeklyAuditData = useMemo(() => {
-    const baseDays: Record<string, { audits: number; compliance: number }> = {
-      Mon: { audits: 18, compliance: 96 },
-      Tue: { audits: 24, compliance: 98 },
-      Wed: { audits: 21, compliance: 95 },
-      Thu: { audits: 29, compliance: 99 },
-      Fri: { audits: 26, compliance: 97 },
-      Sat: { audits: 15, compliance: 94 },
-      Sun: { audits: 12, compliance: 96 },
-    };
-    if (reports.length > 0) {
-      const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      for (const r of reports) {
-        const parsedDate = new Date(r.date);
-        const dayName = isNaN(parsedDate.getTime()) ? "Mon" : daysMap[parsedDate.getDay()] || "Mon";
-        if (baseDays[dayName]) {
-          baseDays[dayName].audits += 1;
-        }
-      }
+    if (reports.length === 0) return DEFAULT_WEEKLY_DATA;
+    const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const counts: Record<string, number> = {};
+    for (const r of reports) {
+      const parsedDate = new Date(r.date);
+      const dayName = isNaN(parsedDate.getTime()) ? "Mon" : daysMap[parsedDate.getDay()] || "Mon";
+      counts[dayName] = (counts[dayName] || 0) + 1;
     }
     return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
       day,
-      audits: baseDays[day]?.audits || 0,
-      compliance: baseDays[day]?.compliance || 95,
+      audits: counts[day] || 0,
+      compliance: 95,
     }));
   }, [reports]);
 
   const deptPerformance = useMemo(() => {
-    const baseDeptScores: Record<string, number> = {
-      "emergency-corridor": 98,
-      "inpatient": 96,
-      "mch": 99,
-      "surgical-service": 97,
-      "or-cancellation": 95,
-      "preoperative-preparation": 98,
-      "chart-completeness": 99,
-      "or-time-stamp": 96,
-      "opd": 95,
-      "postoperative-care": 97,
-    };
     return departments.map((d) => {
       const deptReports = reports.filter((r) => r.departmentSlug === d.slug);
-      let avg = baseDeptScores[d.slug] || 96;
+      let avg = 0;
       if (deptReports.length > 0) {
         const scores = deptReports
           .map((r) => parseFloat(r.score.replace("%", "")))
