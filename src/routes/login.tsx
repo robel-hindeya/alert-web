@@ -58,8 +58,20 @@ export function LoginPage() {
     setIsBanned(false);
 
     try {
-      const targetUser = username.trim() || "habtamu";
-      const effectivePassword = password || "Habtamu5645";
+      const targetUser = username.trim();
+      const effectivePassword = password;
+
+      if (!targetUser) {
+        setError("Please enter your username or email.");
+        setLoading(false);
+        return;
+      }
+
+      if (!effectivePassword) {
+        setError("Please enter your password.");
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -80,7 +92,7 @@ export function LoginPage() {
               "This account has been banned. Access is revoked.",
           );
         } else {
-          setError(data?.error || "Invalid superadmin username or password.");
+          setError(data?.error || "Invalid username or password.");
         }
         setLoading(false);
         return;
@@ -122,13 +134,13 @@ export function LoginPage() {
           <div className="mt-4 text-center">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
               <ShieldCheck className="size-3.5" />
-              <span>Super Administrator Console</span>
+              <span>Authorized Portal Sign In</span>
             </div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">
               ALERT Hospital QMS
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in with your Super Administrator credentials
+              Sign in with your authorized credentials
             </p>
           </div>
 
@@ -157,7 +169,7 @@ export function LoginPage() {
             {/* Username input box */}
             <div>
               <label htmlFor="username" className="text-xs font-semibold text-foreground">
-                Superadmin Username or Email
+                Username or Email
               </label>
               <div className="relative mt-1.5">
                 <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -170,7 +182,7 @@ export function LoginPage() {
                     setError(null);
                     setIsBanned(false);
                   }}
-                  placeholder="habtamu"
+                  placeholder="Enter your username or email"
                   autoComplete="username"
                   className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium"
                 />
@@ -183,9 +195,6 @@ export function LoginPage() {
                 <label htmlFor="password" className="text-xs font-semibold text-foreground">
                   Password
                 </label>
-                <span className="text-[11px] text-muted-foreground font-normal">
-                  Habtamu5645
-                </span>
               </div>
               <div className="relative mt-1.5">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -198,7 +207,7 @@ export function LoginPage() {
                     setError(null);
                     setIsBanned(false);
                   }}
-                  placeholder="Habtamu5645"
+                  placeholder="••••••••"
                   autoComplete="current-password"
                   className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-10 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium"
                 />
@@ -223,7 +232,7 @@ export function LoginPage() {
               ) : (
                 <>
                   <LogIn className="size-4" />
-                  <span>Sign In as Superadmin</span>
+                  <span>Sign In</span>
                 </>
               )}
             </button>

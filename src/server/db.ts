@@ -1160,17 +1160,21 @@ export async function dbAuthenticateUser(
         };
       }
 
+      if (!pass) {
+        return { success: false, error: "Password is required" };
+      }
+
       const isSuperadmin =
         (foundUser.role === "superadmin" || foundUser.username.toLowerCase() === "habtamu") &&
-        (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin" || pass === "");
+        (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin");
 
       const isCoordinator =
         (foundUser.role === "coordinator" || foundUser.role === "qmt" || foundUser.username.toLowerCase() === "coordinator" || foundUser.username.toLowerCase() === "qmtofficer" || foundUser.username.toLowerCase() === "qmt") &&
-        (pass === "Coordinator123" || pass.toLowerCase() === "coordinator" || pass.toLowerCase() === "cordineter" || pass.toLowerCase() === "qmtofficer" || pass.toLowerCase() === "qmt" || pass === "");
+        (pass === "Coordinator123" || pass.toLowerCase() === "coordinator" || pass.toLowerCase() === "cordineter" || pass.toLowerCase() === "qmtofficer" || pass.toLowerCase() === "qmt");
 
       const isAdmin =
         (foundUser.role === "admin" || foundUser.username.toLowerCase() === "admin") &&
-        (pass === "Admin123" || pass.toLowerCase() === "admin" || pass === "");
+        (pass === "Admin123" || pass.toLowerCase() === "admin");
 
       const matchesHash = foundUser.password ? verifyPassword(pass, foundUser.password) : false;
 
@@ -1188,7 +1192,7 @@ export async function dbAuthenticateUser(
     trimmed === "superadmin" ||
     trimmed === "habtamu@alert.gov.et"
   ) {
-    if (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin" || pass === "") {
+    if (pass && (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin")) {
       const habtamuUser = SUPERADMIN_HABTAMU;
 
       // Try seeding Habtamu into Supabase in background
