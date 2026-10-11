@@ -221,13 +221,15 @@ export function CoordinatorPortal() {
   // Filtered department forms
   const filteredForms = useMemo(() => {
     return forms.filter((f) => {
+      const s = (formSearch || "").trim().toLowerCase();
       const matchesSearch =
-        f.title.toLowerCase().includes(formSearch.toLowerCase()) ||
-        (f.description && f.description.toLowerCase().includes(formSearch.toLowerCase()));
+        !s ||
+        (f?.title || "").toLowerCase().includes(s) ||
+        (f?.description || "").toLowerCase().includes(s);
       if (!matchesSearch) return false;
 
       if (formTypeFilter === "all") return true;
-      const lowerTitle = f.title.toLowerCase();
+      const lowerTitle = (f?.title || "").toLowerCase();
       if (formTypeFilter === "audit")
         return lowerTitle.includes("audit") || lowerTitle.includes("checklist");
       if (formTypeFilter === "consent") return lowerTitle.includes("consent");
@@ -246,10 +248,10 @@ export function CoordinatorPortal() {
         return false;
       }
       if (!historySearch.trim()) return true;
-      const q = historySearch.toLowerCase();
-      if (r.id.toLowerCase().includes(q)) return true;
-      if (r.formTitle && r.formTitle.toLowerCase().includes(q)) return true;
-      if (r.departmentLabel && r.departmentLabel.toLowerCase().includes(q)) return true;
+      const q = historySearch.trim().toLowerCase();
+      if ((r?.id || "").toLowerCase().includes(q)) return true;
+      if (r?.formTitle && r.formTitle.toLowerCase().includes(q)) return true;
+      if (r?.departmentLabel && r.departmentLabel.toLowerCase().includes(q)) return true;
       // Search in answers
       for (const val of Object.values(r.answers || {})) {
         if (typeof val === "string" && val.toLowerCase().includes(q)) return true;

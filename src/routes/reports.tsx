@@ -461,11 +461,13 @@ function ReportsPage() {
 
   const filteredReports = useMemo(() => {
     return reports.filter((r) => {
+      const q = search.trim().toLowerCase();
       const matchSearch =
-        r.title.toLowerCase().includes(search.toLowerCase()) ||
-        r.id.toLowerCase().includes(search.toLowerCase()) ||
-        r.author.toLowerCase().includes(search.toLowerCase()) ||
-        r.department.toLowerCase().includes(search.toLowerCase());
+        !q ||
+        (r?.title || "").toLowerCase().includes(q) ||
+        (r?.id || "").toLowerCase().includes(q) ||
+        (r?.author || "").toLowerCase().includes(q) ||
+        (r?.department || "").toLowerCase().includes(q);
 
       const matchDept = selectedDept === "all" || r.departmentSlug === selectedDept;
       const matchCat = selectedCategory === "all" || r.category === selectedCategory;

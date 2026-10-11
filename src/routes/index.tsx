@@ -334,8 +334,8 @@ export function Dashboard() {
       }
 
       list = list.map((officer) => {
-        const slug = (officer.departmentSlug || "").toLowerCase();
-        const dept = officer.department.toLowerCase();
+        const slug = (officer?.departmentSlug || "").toLowerCase();
+        const dept = (officer?.department || "").toLowerCase();
         let addCount = 0;
         if (slug && liveDeptCounts.has(slug)) {
           addCount += liveDeptCounts.get(slug) || 0;
@@ -350,8 +350,8 @@ export function Dashboard() {
           addCount += liveDeptCounts.get("or-time-stamp") || 0;
         }
         if (addCount > 0) {
-          const baseAudits = officer.auditsCompleted;
-          const complianceBase = parseFloat(officer.complianceRate) || 98.0;
+          const baseAudits = officer.auditsCompleted || 0;
+          const complianceBase = parseFloat(officer.complianceRate || "98") || 98.0;
           const newCompliance = `${Math.min(99.9, complianceBase + addCount * 0.05).toFixed(1)}%`;
           return {
             ...officer,
@@ -363,68 +363,70 @@ export function Dashboard() {
       });
     }
 
-    try {
-      const stored = localStorage.getItem("alert_qmt_officers_list");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const custom = parsed.map(
-            (
-              o: {
-                id?: string;
-                name: string;
-                specialty?: string;
-                dept?: string;
-                exp?: number;
-                rating?: number;
-                status?: string;
-              },
-              idx: number,
-            ) => ({
-              id: o.id || `custom-${idx}`,
-              name: o.name,
-              role: o.specialty || "Quality Management Officer",
-              department: o.dept || "General Ward",
-              departmentSlug: (o.dept || "").toLowerCase().replace(/\s+/g, "-"),
-              type: "QMT Officer" as const,
-              auditsCompleted: Math.max(120, (o.exp || 1) * 45 + ((idx * 17) % 80)),
-              complianceRate: `${(96 + ((idx * 3) % 4) + 0.5).toFixed(1)}%`,
-              rating: o.rating || 5.0,
-              status:
-                o.status === "In Audit"
-                  ? ("In Audit" as const)
-                  : o.status === "Reviewing"
-                    ? ("Reviewing" as const)
-                    : ("Active" as const),
-            }),
-          );
-          const combined = [...list, ...custom];
-          const seen = new Set<string>();
-          const unique = combined.filter((item) => {
-            const key = item.name.toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          list = unique;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("alert_qmt_officers_list");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const custom = parsed.map(
+              (
+                o: {
+                  id?: string;
+                  name?: string;
+                  specialty?: string;
+                  dept?: string;
+                  exp?: number;
+                  rating?: number;
+                  status?: string;
+                },
+                idx: number,
+              ) => ({
+                id: o.id || `custom-${idx}`,
+                name: o.name || `Officer ${idx + 1}`,
+                role: o.specialty || "Quality Management Officer",
+                department: o.dept || "General Ward",
+                departmentSlug: (o.dept || "").toLowerCase().replace(/\s+/g, "-"),
+                type: "QMT Officer" as const,
+                auditsCompleted: Math.max(120, (o.exp || 1) * 45 + ((idx * 17) % 80)),
+                complianceRate: `${(96 + ((idx * 3) % 4) + 0.5).toFixed(1)}%`,
+                rating: o.rating || 5.0,
+                status:
+                  o.status === "In Audit"
+                    ? ("In Audit" as const)
+                    : o.status === "Reviewing"
+                      ? ("Reviewing" as const)
+                      : ("Active" as const),
+              }),
+            );
+            const combined = [...list, ...custom];
+            const seen = new Set<string>();
+            const unique = combined.filter((item) => {
+              const key = (item.name || "").toLowerCase();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+            list = unique;
+          }
         }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
 
-    list.sort((a, b) => b.auditsCompleted - a.auditsCompleted);
+    list.sort((a, b) => (b.auditsCompleted || 0) - (a.auditsCompleted || 0));
 
     if (!search.trim()) return list.slice(0, 5);
-    const q = search.toLowerCase();
+    const q = search.trim().toLowerCase();
     return list
       .filter(
         (o) =>
-          o.name.toLowerCase().includes(q) ||
-          o.role.toLowerCase().includes(q) ||
-          o.department.toLowerCase().includes(q) ||
-          o.type.toLowerCase().includes(q) ||
-          o.status.toLowerCase().includes(q),
+          (o.name || "").toLowerCase().includes(q) ||
+          (o.role || "").toLowerCase().includes(q) ||
+          (o.department || "").toLowerCase().includes(q) ||
+          (o.type || "").toLowerCase().includes(q) ||
+          (o.status || "").toLowerCase().includes(q),
       )
       .slice(0, 5);
   }, [stats.topOfficers, liveResponses, search]);
@@ -676,13 +678,14 @@ export function Dashboard() {
                     </tr>
                   ) : (
                     topOfficers.map((officer, index) => {
-                      const initials = officer.name
+                      const initials = (officer?.name || "OF")
                         .replace(/^Dr\.\s*|^Sr\.\s*/i, "")
                         .split(" ")
+                        .filter(Boolean)
                         .map((n) => n[0])
                         .join("")
                         .slice(0, 2)
-                        .toUpperCase();
+                        .toUpperCase() || "OF";
 
                       const rankBadges = [
                         "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",

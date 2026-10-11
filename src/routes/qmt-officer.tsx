@@ -263,9 +263,9 @@ function QmtOfficerPage() {
     const query = search.toLowerCase();
     return officers.filter(
       (o) =>
-        o.name.toLowerCase().includes(query) ||
-        o.specialty.toLowerCase().includes(query) ||
-        o.dept.toLowerCase().includes(query),
+        (o?.name || "").toLowerCase().includes(query) ||
+        (o?.specialty || "").toLowerCase().includes(query) ||
+        (o?.dept || "").toLowerCase().includes(query),
     );
   }, [officers, search]);
 

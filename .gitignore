@@ -21,7 +21,8 @@ dist-ssr
 
 # Wrangler / Cloudflare
 .wrangler/
-.dev.vars
+# Data directory
+data/
 data/*.tmp
 
 # Editor directories and files

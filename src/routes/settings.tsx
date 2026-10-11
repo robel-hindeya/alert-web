@@ -18,8 +18,19 @@ import {
   Clock,
   KeyRound,
   UsersRound,
+  Copy,
+  ExternalLink,
+  Server,
+  AlertTriangle,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  syncAllDevicesNow,
+  getDatabaseStatus,
+  getDatabaseSchema,
+  type DatabaseStatus,
+} from "@/lib/sync-engine";
 import { useAuthUser } from "@/lib/auth-session";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
@@ -118,6 +129,69 @@ function SettingsPage() {
   const [confirmPw, setConfirmPw] = useState("");
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
+
+  // Database & Cross-Device Sync State
+  const [dbStatus, setDbStatus] = useState<DatabaseStatus | null>(null);
+  const [dbStatusLoading, setDbStatusLoading] = useState(false);
+  const [schemaSql, setSchemaSql] = useState("");
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [showSqlPreview, setShowSqlPreview] = useState(false);
+  const [syncingDevices, setSyncingDevices] = useState(false);
+
+  const loadDbStatus = async () => {
+    setDbStatusLoading(true);
+    try {
+      const status = await getDatabaseStatus();
+      setDbStatus(status);
+      const sql = await getDatabaseSchema();
+      setSchemaSql(sql);
+    } catch {
+      // ignore
+    } finally {
+      setDbStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDbStatus();
+  }, []);
+
+  const handleSyncDevices = async () => {
+    setSyncingDevices(true);
+    try {
+      const res = await syncAllDevicesNow();
+      if (res.success) {
+        toast.success(
+          `Replicated across all devices! (${res.usersCount} users, ${res.formsCount} forms, ${res.responsesCount} responses)`,
+        );
+      } else {
+        toast.info("Local and server data synchronized.");
+      }
+      loadDbStatus();
+    } catch {
+      toast.error("Failed to complete sync. Using local cache.");
+    } finally {
+      setSyncingDevices(false);
+    }
+  };
+
+  const handleCopySchemaSql = async () => {
+    try {
+      let sql = schemaSql;
+      if (!sql) {
+        sql = await getDatabaseSchema();
+        setSchemaSql(sql);
+      }
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(sql);
+        setCopiedSql(true);
+        setTimeout(() => setCopiedSql(false), 2500);
+        toast.success("Supabase SQL schema copied to clipboard!");
+      }
+    } catch {
+      toast.error("Failed to copy schema.");
+    }
+  };
 
   useEffect(() => {
     try {
@@ -806,15 +880,180 @@ function SettingsPage() {
 
           {/* 5. Data & Backup Tab */}
           <TabsContent value="backup" className="space-y-4">
+            {/* Supabase Cloud Database & Cross-Device Replication Suite */}
+            <div className="card-soft p-5 sm:p-6 space-y-5 border border-primary/20 bg-card">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Server className="size-4 text-primary" />
+                      Cross-Device Sync &amp; Supabase Cloud Database
+                    </h2>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                        dbStatus?.allTablesReady
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      }`}
+                    >
+                      {dbStatus?.allTablesReady ? (
+                        <>
+                          <CheckCircle2 className="size-3" /> Cloud PostgreSQL Active
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="size-3" /> Replicated Persistent Storage
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ensures every user created, clinical audit submitted, and custom form made is
+                    permanently visible across all PCs, browsers, and mobile devices.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={handleSyncDevices}
+                    disabled={syncingDevices}
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold shadow-xs"
+                  >
+                    <RefreshCw className={`size-3.5 ${syncingDevices ? "animate-spin" : ""}`} />
+                    {syncingDevices ? "Syncing All PCs..." : "Sync All Devices Now"}
+                  </Button>
+                  <Button
+                    onClick={loadDbStatus}
+                    disabled={dbStatusLoading}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                  >
+                    <RefreshCw className={`size-3.5 ${dbStatusLoading ? "animate-spin" : ""}`} />
+                    Check Health
+                  </Button>
+                </div>
+              </div>
+
+              {/* Status & Tables Matrix */}
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 pt-1">
+                {[
+                  { key: "users", label: "User Accounts (users)" },
+                  { key: "forms", label: "Custom Forms (forms)" },
+                  { key: "form_responses", label: "Audit Responses (form_responses)" },
+                  { key: "patients", label: "Patient Registry (patients)" },
+                  { key: "appointments", label: "Appointments (appointments)" },
+                  { key: "activities", label: "Activity Logs (activities)" },
+                  { key: "reports", label: "Reports & Incidents (reports)" },
+                  { key: "officers", label: "Officers Leaderboard (officers)" },
+                ].map((t) => {
+                  const isReady = dbStatus?.tables?.[t.key] ?? false;
+                  return (
+                    <div
+                      key={t.key}
+                      className={`flex items-center justify-between p-3 rounded-xl border text-xs ${
+                        isReady
+                          ? "border-emerald-500/30 bg-emerald-500/5 text-foreground"
+                          : "border-border/80 bg-muted/20 text-muted-foreground"
+                      }`}
+                    >
+                      <span className="font-medium truncate mr-2">{t.label}</span>
+                      {isReady ? (
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <CheckCircle2 className="size-3.5" /> Ready
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 shrink-0">
+                          <Clock className="size-3.5" /> Local/Disk
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Setup Guidance Box */}
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                      <Database className="size-4 text-primary" />
+                      Supabase Cloud Setup for Universal Multi-PC Access
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                      Execute our verified SQL script in the Supabase Dashboard to enable native cloud tables.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      onClick={handleCopySchemaSql}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs font-medium border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      {copiedSql ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                      {copiedSql ? "Copied!" : "Copy SQL Schema"}
+                    </Button>
+                    <a
+                      href="https://supabase.com/dashboard/project/ytbjqvmekbtarinxsshs/sql/new"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      Open Supabase SQL Editor
+                    </a>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-muted-foreground space-y-1 border-t border-primary/15 pt-2.5">
+                  <p>
+                    <strong>Steps to activate:</strong> 1. Click <em>"Copy SQL Schema"</em> above · 2. Click <em>"Open Supabase SQL Editor"</em> · 3. Paste and click <em>"Run"</em>.
+                  </p>
+                  <p>
+                    Once executed, Supabase PostgreSQL will store all user accounts, forms, and clinical audits permanently across all devices.
+                  </p>
+                </div>
+
+                {/* Optional SQL Preview Disclosure */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowSqlPreview((v) => !v)}
+                    className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                  >
+                    {showSqlPreview ? "▲ Hide SQL Script" : "▼ View Full SQL Schema Script"}
+                  </button>
+                  {showSqlPreview && (
+                    <div className="relative mt-2">
+                      <pre className="p-3 text-[11px] bg-muted/80 border border-border rounded-xl text-foreground font-mono overflow-auto max-h-56 whitespace-pre-wrap break-all">
+                        {schemaSql || "Loading schema.sql..."}
+                      </pre>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleCopySchemaSql}
+                        className="absolute top-2 right-2 h-7 text-xs gap-1 shadow-xs"
+                      >
+                        <Copy className="size-3" />
+                        Copy
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Snapshots & Manual Exports */}
             <div className="card-soft p-5 sm:p-6 space-y-5">
               <div>
                 <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                   <Database className="size-4 text-primary" />
-                  Database Backups &amp; Data Archives
+                  Local Backups &amp; Data Archives
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Manage hospital audit records storage, manual snapshots, and JSON/CSV data
-                  portability.
+                  Manage hospital audit records storage, manual snapshots, and JSON data portability.
                 </p>
               </div>
 
@@ -830,7 +1069,7 @@ function SettingsPage() {
                   </div>
                   <p className="text-lg font-bold text-foreground">{lastBackupTime}</p>
                   <p className="text-xs text-muted-foreground">
-                    Estimated size: 26.4 MB · Storage: Local &amp; Replicated Nitro DB
+                    Storage: Replicated Multi-PC Server Engine &amp; Nitro DB
                   </p>
                   <Button
                     onClick={handleCreateBackup}

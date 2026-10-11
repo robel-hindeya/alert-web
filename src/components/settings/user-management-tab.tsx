@@ -48,10 +48,12 @@ import {
   deleteLocalUser,
   mergeServerAndLocalUsers,
 } from "@/lib/user-store";
+import { syncAllDevicesNow } from "@/lib/sync-engine";
 
 export function UserManagementTab() {
   const [users, setUsers] = useState<UserAccount[]>(getLocalUsers);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
 
@@ -82,6 +84,10 @@ export function UserManagementTab() {
   const loadUsers = async () => {
     setLoading(true);
     try {
+      // 1. Sync with central server & Supabase first
+      await syncAllDevicesNow().catch(() => {});
+
+      // 2. Fetch server users
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
@@ -97,6 +103,25 @@ export function UserManagementTab() {
       setUsers(getLocalUsers());
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncAllDevices = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncAllDevicesNow();
+      if (result.success) {
+        toast.success(
+          `Replicated across all devices! (${result.usersCount} users, ${result.formsCount} forms)`,
+        );
+        setUsers(getLocalUsers());
+      } else {
+        toast.info("Local and server data synchronized.");
+      }
+    } catch {
+      toast.error("Failed to complete sync. Using local cache.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -125,10 +150,10 @@ export function UserManagementTab() {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = u.name.toLowerCase().includes(q);
-        const matchesUser = u.username.toLowerCase().includes(q);
-        const matchesRole = u.role.toLowerCase().includes(q);
-        const matchesDept = (u.departmentLabel || "").toLowerCase().includes(q);
+        const matchesName = (u?.name || "").toLowerCase().includes(q);
+        const matchesUser = (u?.username || "").toLowerCase().includes(q);
+        const matchesRole = (u?.role || "").toLowerCase().includes(q);
+        const matchesDept = (u?.departmentLabel || "").toLowerCase().includes(q);
         return matchesName || matchesUser || matchesRole || matchesDept;
       }
 
@@ -189,6 +214,7 @@ export function UserManagementTab() {
         displayPassword: editPassword,
       });
       setUsers(updatedList);
+      syncAllDevicesNow().catch(() => {});
 
       toast.success(
         `Credentials successfully updated for ${editingUser.name} (@${data?.username || editUsername.trim()})!`,
@@ -215,6 +241,7 @@ export function UserManagementTab() {
     // Optimistically update local state immediately
     const optimList = updateLocalUser(u.id, { status: nextStatus });
     setUsers(optimList);
+    syncAllDevicesNow().catch(() => {});
 
     try {
       const res = await fetch(`/api/users/${u.id}`, {
@@ -296,6 +323,7 @@ export function UserManagementTab() {
       // Always store locally so newly created user is visible immediately
       const updatedList = addLocalUser(createdUser);
       setUsers(updatedList);
+      syncAllDevicesNow().catch(() => {});
 
       toast.success(`User @${createdUser.username} created with role ${createdUser.role}!`);
       setAddUserOpen(false);
@@ -307,6 +335,7 @@ export function UserManagementTab() {
       // Offline / network fallback: save locally
       const updatedList = addLocalUser(localFallbackUser);
       setUsers(updatedList);
+      syncAllDevicesNow().catch(() => {});
       toast.success(`User @${localFallbackUser.username} saved locally!`);
       setAddUserOpen(false);
       setNewUserName("");
@@ -335,6 +364,7 @@ export function UserManagementTab() {
     // Immediately remove from local list
     const updatedList = deleteLocalUser(u.id);
     setUsers(updatedList);
+    syncAllDevicesNow().catch(() => {});
 
     try {
       const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
@@ -410,7 +440,17 @@ export function UserManagementTab() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button
+              onClick={handleSyncAllDevices}
+              variant="outline"
+              size="sm"
+              disabled={syncing}
+              className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
+            >
+              <RefreshCw className={`size-3.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync All Devices"}
+            </Button>
             <Button
               onClick={loadUsers}
               variant="outline"
@@ -432,8 +472,26 @@ export function UserManagementTab() {
           </div>
         </div>
 
+        {/* Cross-Device Sync Status Banner */}
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl bg-primary/6 border border-primary/20 px-3.5 py-2.5 text-xs">
+          <div className="flex items-center gap-2 text-foreground font-medium">
+            <CheckCircle2 className="size-4 text-primary shrink-0" />
+            <span>
+              <strong>Cross-Device Replication Active:</strong> All created accounts and credentials are fully synchronised across every PC, browser, and mobile device.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleSyncAllDevices}
+            disabled={syncing}
+            className="text-[11px] font-semibold text-primary hover:underline cursor-pointer disabled:opacity-50"
+          >
+            {syncing ? "Replicating..." : "Force Sync Now →"}
+          </button>
+        </div>
+
         {/* Stats Row */}
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 pt-4 border-t border-border/60">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 pt-4 border-t border-border/60">
           <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Total Accounts

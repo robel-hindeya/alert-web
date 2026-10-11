@@ -197,17 +197,28 @@ function DepartmentDashboard() {
   );
 
   const records = useMemo(() => {
-    return deptResponses.slice(0, 10).map((r) => ({
-      id: r.id,
-      name: r.formTitle || "Clinical Audit Entry",
-      by: "Clinical Auditor",
-      status: "Completed",
-      date: new Date(r.submittedAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    }));
+    return deptResponses.slice(0, 10).map((r) => {
+      let formattedDate = "Recent";
+      try {
+        if (r.submittedAt) {
+          const d = new Date(r.submittedAt);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+          }
+        }
+      } catch {}
+      return {
+        id: r.id,
+        name: r.formTitle || "Clinical Audit Entry",
+        by: "Clinical Auditor",
+        status: "Completed",
+        date: formattedDate,
+      };
+    });
   }, [deptResponses]);
 
   const [coordinators, setCoordinators] = useState<Coordinator[]>(() => {

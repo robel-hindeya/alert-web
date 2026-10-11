@@ -60,16 +60,25 @@ export function FormResponsesDialog({ open, onOpenChange, form }: FormResponsesD
   // Filtered responses based on search query
   const filteredResponses = useMemo(() => {
     if (!searchQuery.trim()) return responses;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     return responses.filter((r) => {
+      if (!r) return false;
       // search in submission date
-      if (new Date(r.submittedAt).toLocaleDateString().toLowerCase().includes(q)) return true;
-      if (new Date(r.submittedAt).toLocaleTimeString().toLowerCase().includes(q)) return true;
-      if (r.id.toLowerCase().includes(q)) return true;
+      try {
+        if (r.submittedAt) {
+          const d = new Date(r.submittedAt);
+          if (!isNaN(d.getTime())) {
+            if (d.toLocaleDateString().toLowerCase().includes(q)) return true;
+            if (d.toLocaleTimeString().toLowerCase().includes(q)) return true;
+          }
+        }
+      } catch {}
+      if ((r?.id || "").toLowerCase().includes(q)) return true;
       // search in answers
       for (const val of Object.values(r.answers || {})) {
         if (typeof val === "string" && val.toLowerCase().includes(q)) return true;
-        if (Array.isArray(val) && val.some((v) => String(v).toLowerCase().includes(q))) return true;
+        if (typeof val === "number" && String(val).toLowerCase().includes(q)) return true;
+        if (Array.isArray(val) && val.some((v) => (String(v || "")).toLowerCase().includes(q))) return true;
       }
       return false;
     });

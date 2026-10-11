@@ -31,6 +31,9 @@ import {
   dbDeleteUser,
   dbBanUser,
   type UserRole,
+  type UserAccount,
+  dbCheckSupabaseStatus,
+  dbSyncData,
 } from "./db.ts";
 import type { CustomForm, FormResponse } from "../lib/form-types.ts";
 
@@ -836,6 +839,81 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         }
         await dbDeleteForm(formId);
         return new Response(JSON.stringify({ success: true, id: formId }), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
+
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: corsHeaders,
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // SUPABASE DATABASE STATUS: GET /api/database/status
+    // -------------------------------------------------------------------------
+    if (pathname === "/api/database/status") {
+      if (request.method !== "GET") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), {
+          status: 405,
+          headers: corsHeaders,
+        });
+      }
+      const dbStatus = await dbCheckSupabaseStatus();
+      return new Response(JSON.stringify(dbStatus), {
+        status: 200,
+        headers: corsHeaders,
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // DATABASE SCHEMA SQL: GET /api/database/schema
+    // -------------------------------------------------------------------------
+    if (pathname === "/api/database/schema") {
+      if (request.method !== "GET") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), {
+          status: 405,
+          headers: corsHeaders,
+        });
+      }
+      let schemaContent = "";
+      try {
+        const fs = await import("fs");
+        const path = await import("path");
+        const schemaPath = path.resolve(process.cwd(), "schema.sql");
+        if (fs.existsSync(schemaPath)) {
+          schemaContent = fs.readFileSync(schemaPath, "utf-8");
+        }
+      } catch (err) {
+        console.error("Could not read schema.sql from disk:", err);
+      }
+      return new Response(JSON.stringify({ schema: schemaContent }), {
+        status: 200,
+        headers: corsHeaders,
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // CROSS-DEVICE DATA SYNC: GET /api/sync & POST /api/sync
+    // -------------------------------------------------------------------------
+    if (pathname === "/api/sync") {
+      if (request.method === "GET") {
+        const synced = await dbSyncData({});
+        return new Response(JSON.stringify(synced), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
+
+      if (request.method === "POST") {
+        const rawPayload = (await request.json().catch(() => ({}))) as {
+          users?: UserAccount[];
+          forms?: CustomForm[];
+          responses?: FormResponse[];
+        };
+        const synced = await dbSyncData(rawPayload);
+        return new Response(JSON.stringify(synced), {
           status: 200,
           headers: corsHeaders,
         });

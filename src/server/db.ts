@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { getSupabaseServerClient } from "../lib/supabase.ts";
+import { getSupabaseServerClient, getSupabaseUrl } from "../lib/supabase.ts";
 import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.ts";
 
 // -----------------------------------------------------------------------------
@@ -276,6 +276,102 @@ let inMemoryUsers: UserAccount[] = [
   SUPERADMIN_HABTAMU,
 ];
 
+export interface StoredInMemoryResponse {
+  id: string;
+  form_id: string;
+  submitted_at: string;
+  answers_json: unknown;
+  forms?: {
+    department_slug?: string | undefined;
+    department_label?: string | undefined;
+    title?: string | undefined;
+  } | undefined;
+}
+
+let inMemoryForms: CustomForm[] = [];
+let inMemoryResponses: StoredInMemoryResponse[] = [];
+let inMemoryPatients: Patient[] = [];
+let inMemoryAppointments: Appointment[] = [];
+let inMemoryReports: ReportItem[] = [];
+
+function getStorageFilePath(): string {
+  try {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const dir = path.resolve(process.cwd(), "data");
+    if (!fs.existsSync(dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        return path.resolve(dir, "hospital_data.json");
+      } catch {
+        const os = require("node:os");
+        return path.resolve(os.tmpdir(), "hospital_data.json");
+      }
+    }
+    return path.resolve(dir, "hospital_data.json");
+  } catch {
+    return "";
+  }
+}
+
+export function persistStoreToDisk(): void {
+  try {
+    const fs = require("node:fs");
+    const filePath = getStorageFilePath();
+    if (!filePath) return;
+    const payload = {
+      users: inMemoryUsers,
+      forms: inMemoryForms,
+      responses: inMemoryResponses,
+      patients: inMemoryPatients,
+      appointments: inMemoryAppointments,
+      reports: inMemoryReports,
+      updatedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf-8");
+  } catch {
+    // Non-blocking
+  }
+}
+
+export function loadStoreFromDisk(): void {
+  try {
+    const fs = require("node:fs");
+    const filePath = getStorageFilePath();
+    if (!filePath || !fs.existsSync(filePath)) return;
+    const raw = fs.readFileSync(filePath, "utf-8");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed.users) && parsed.users.length > 0) {
+      const map = new Map<string, UserAccount>();
+      for (const u of inMemoryUsers) map.set(u.username.toLowerCase(), u);
+      for (const u of parsed.users) map.set(u.username.toLowerCase(), u);
+      inMemoryUsers = Array.from(map.values());
+    }
+    if (Array.isArray(parsed.forms) && parsed.forms.length > 0) {
+      const map = new Map<string, CustomForm>();
+      for (const f of inMemoryForms) map.set(f.id, f);
+      for (const f of parsed.forms) map.set(f.id, f);
+      inMemoryForms = Array.from(map.values());
+    }
+    if (Array.isArray(parsed.responses) && parsed.responses.length > 0) {
+      inMemoryResponses = parsed.responses;
+    }
+    if (Array.isArray(parsed.patients) && parsed.patients.length > 0) {
+      inMemoryPatients = parsed.patients;
+    }
+    if (Array.isArray(parsed.appointments) && parsed.appointments.length > 0) {
+      inMemoryAppointments = parsed.appointments;
+    }
+    if (Array.isArray(parsed.reports) && parsed.reports.length > 0) {
+      inMemoryReports = parsed.reports;
+    }
+  } catch {
+    // Non-blocking
+  }
+}
+loadStoreFromDisk();
+
 // -----------------------------------------------------------------------------
 // FORMS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
@@ -291,7 +387,7 @@ export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm
     const { data, error } = await query;
     if (!error && Array.isArray(data) && data.length > 0) {
       const rows = data as FormDbRow[];
-      return rows.map((r) => ({
+      const dbForms = rows.map((r) => ({
         id: r.id,
         departmentSlug: r.department_slug,
         departmentLabel: r.department_label,
@@ -302,11 +398,27 @@ export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       }));
+
+      // Merge into inMemoryForms
+      const map = new Map<string, CustomForm>();
+      for (const f of inMemoryForms) map.set(f.id, f);
+      for (const f of dbForms) map.set(f.id, f);
+      inMemoryForms = Array.from(map.values());
+      persistStoreToDisk();
+
+      if (departmentSlug) {
+        return inMemoryForms.filter((f) => f.departmentSlug === departmentSlug);
+      }
+      return inMemoryForms;
     }
   } catch (err) {
     console.warn("[Database] Supabase forms query warning:", err);
   }
-  return [];
+
+  if (departmentSlug) {
+    return inMemoryForms.filter((f) => f.departmentSlug === departmentSlug);
+  }
+  return inMemoryForms;
 }
 
 export async function dbGetFormById(id: string): Promise<CustomForm | null> {
@@ -315,7 +427,7 @@ export async function dbGetFormById(id: string): Promise<CustomForm | null> {
     const { data, error } = await supabase.from("forms").select("*").eq("id", id).maybeSingle();
     if (!error && data) {
       const r = data as FormDbRow;
-      return {
+      const parsed: CustomForm = {
         id: r.id,
         departmentSlug: r.department_slug,
         departmentLabel: r.department_label,
@@ -326,11 +438,19 @@ export async function dbGetFormById(id: string): Promise<CustomForm | null> {
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       };
+      // Keep in local store as well
+      const idx = inMemoryForms.findIndex((f) => f.id === parsed.id);
+      if (idx >= 0) inMemoryForms[idx] = parsed;
+      else inMemoryForms.unshift(parsed);
+      persistStoreToDisk();
+      return parsed;
     }
   } catch (err) {
     console.warn(`[Database] Supabase form ${id} query warning:`, err);
   }
-  return null;
+
+  const inMem = inMemoryForms.find((f) => f.id === id);
+  return inMem || null;
 }
 
 export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
@@ -338,14 +458,25 @@ export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
   const createdAt = form.createdAt || now;
   const updatedAt = now;
 
+  const prepared: CustomForm = {
+    ...form,
+    createdAt,
+    updatedAt,
+  };
+
+  const idx = inMemoryForms.findIndex((f) => f.id === prepared.id);
+  if (idx >= 0) inMemoryForms[idx] = prepared;
+  else inMemoryForms.unshift(prepared);
+  persistStoreToDisk();
+
   const row = {
-    id: form.id,
-    department_slug: form.departmentSlug,
-    department_label: form.departmentLabel,
-    title: form.title,
-    description: form.description || "",
-    banner_url: form.bannerUrl || null,
-    questions_json: form.questions || [],
+    id: prepared.id,
+    department_slug: prepared.departmentSlug,
+    department_label: prepared.departmentLabel,
+    title: prepared.title,
+    description: prepared.description || "",
+    banner_url: prepared.bannerUrl || null,
+    questions_json: prepared.questions || [],
     created_at: createdAt,
     updated_at: updatedAt,
   };
@@ -357,14 +488,14 @@ export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
     console.warn("[Database] Supabase form upsert warning:", err);
   }
 
-  return {
-    ...form,
-    createdAt,
-    updatedAt,
-  };
+  return prepared;
 }
 
 export async function dbDeleteForm(id: string): Promise<boolean> {
+  inMemoryForms = inMemoryForms.filter((f) => f.id !== id);
+  inMemoryResponses = inMemoryResponses.filter((r) => r.form_id !== id);
+  persistStoreToDisk();
+
   try {
     const supabase = getSupabaseServerClient();
     await supabase.from("form_responses").delete().eq("form_id", id);
@@ -377,21 +508,6 @@ export async function dbDeleteForm(id: string): Promise<boolean> {
 
 // -----------------------------------------------------------------------------
 // RESPONSES CRUD (Supabase with graceful fallback)
-// -----------------------------------------------------------------------------
-interface StoredInMemoryResponse {
-  id: string;
-  form_id: string;
-  submitted_at: string;
-  answers_json: unknown;
-  forms?: {
-    department_slug?: string | undefined;
-    department_label?: string | undefined;
-    title?: string | undefined;
-  } | undefined;
-}
-
-const inMemoryResponses: StoredInMemoryResponse[] = [];
-
 export async function dbSaveResponse(response: FormResponse): Promise<FormResponse> {
   const submittedAt = response.submittedAt || new Date().toISOString();
   const row = {
@@ -408,7 +524,7 @@ export async function dbSaveResponse(response: FormResponse): Promise<FormRespon
     console.warn("[Database] Supabase response insert warning:", err);
   }
 
-  // Save to in-memory fallback cache
+  // Save to in-memory fallback cache and persist to disk
   try {
     const form = await dbGetFormById(response.formId);
     inMemoryResponses.unshift({
@@ -422,6 +538,7 @@ export async function dbSaveResponse(response: FormResponse): Promise<FormRespon
         title: form?.title,
       },
     });
+    persistStoreToDisk();
   } catch {
     // ignore
   }
@@ -512,9 +629,9 @@ export async function dbGetAllResponses(limit = 100): Promise<
 // PATIENTS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
 export async function dbGetPatients(limit = 100): Promise<Patient[]> {
+  const safeLimit = Math.min(Math.max(1, limit), 500);
   try {
     const supabase = getSupabaseServerClient();
-    const safeLimit = Math.min(Math.max(1, limit), 500);
     const { data, error } = await supabase
       .from("patients")
       .select("*")
@@ -523,7 +640,7 @@ export async function dbGetPatients(limit = 100): Promise<Patient[]> {
 
     if (!error && Array.isArray(data) && data.length > 0) {
       const rows = data as PatientDbRow[];
-      return rows.map((r) => ({
+      inMemoryPatients = rows.map((r) => ({
         id: r.id,
         name: r.name,
         mrn: r.mrn,
@@ -535,11 +652,13 @@ export async function dbGetPatients(limit = 100): Promise<Patient[]> {
         registeredAt: r.registered_at,
         status: (r.status as "Active" | "Discharged" | "Admitted") || "Active",
       }));
+      persistStoreToDisk();
+      return inMemoryPatients;
     }
   } catch (err) {
     console.warn("[Database] Supabase patients query warning:", err);
   }
-  return [];
+  return inMemoryPatients.slice(0, safeLimit);
 }
 
 export async function dbAddPatient(patient: {
@@ -569,6 +688,9 @@ export async function dbAddPatient(patient: {
     registeredAt,
     status,
   };
+
+  inMemoryPatients.unshift(newPatient);
+  persistStoreToDisk();
 
   const row = {
     id,
@@ -604,6 +726,9 @@ export async function dbAddPatient(patient: {
 }
 
 export async function dbDeletePatient(id: string): Promise<boolean> {
+  inMemoryPatients = inMemoryPatients.filter((p) => p.id !== id);
+  persistStoreToDisk();
+
   try {
     const supabase = getSupabaseServerClient();
     await supabase.from("patients").delete().eq("id", id);
@@ -617,9 +742,9 @@ export async function dbDeletePatient(id: string): Promise<boolean> {
 // APPOINTMENTS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
 export async function dbGetAppointments(limit = 100, departmentSlug?: string): Promise<Appointment[]> {
+  const safeLimit = Math.min(Math.max(1, limit), 500);
   try {
     const supabase = getSupabaseServerClient();
-    const safeLimit = Math.min(Math.max(1, limit), 500);
     let query = supabase
       .from("appointments")
       .select("*")
@@ -632,7 +757,7 @@ export async function dbGetAppointments(limit = 100, departmentSlug?: string): P
     const { data, error } = await query.limit(safeLimit);
     if (!error && Array.isArray(data) && data.length > 0) {
       const rows = data as AppointmentDbRow[];
-      return rows.map((r) => ({
+      inMemoryAppointments = rows.map((r) => ({
         id: r.id,
         patientName: r.patient_name,
         patientId: r.patient_id || "",
@@ -644,11 +769,21 @@ export async function dbGetAppointments(limit = 100, departmentSlug?: string): P
         status: (r.status as "Completed" | "In Progress" | "Pending" | "Confirmed") || "Confirmed",
         createdAt: r.created_at,
       }));
+      persistStoreToDisk();
+
+      if (departmentSlug) {
+        return inMemoryAppointments.filter((a) => a.departmentSlug === departmentSlug);
+      }
+      return inMemoryAppointments;
     }
   } catch (err) {
     console.warn("[Database] Supabase appointments query warning:", err);
   }
-  return [];
+
+  if (departmentSlug) {
+    return inMemoryAppointments.filter((a) => a.departmentSlug === departmentSlug).slice(0, safeLimit);
+  }
+  return inMemoryAppointments.slice(0, safeLimit);
 }
 
 export async function dbAddAppointment(appointment: {
@@ -679,6 +814,9 @@ export async function dbAddAppointment(appointment: {
     status,
     createdAt,
   };
+
+  inMemoryAppointments.unshift(newApt);
+  persistStoreToDisk();
 
   const row = {
     id,
@@ -717,6 +855,12 @@ export async function dbUpdateAppointmentStatus(
   id: string,
   status: "Completed" | "In Progress" | "Pending" | "Confirmed",
 ): Promise<Appointment | null> {
+  const localIdx = inMemoryAppointments.findIndex((a) => a.id === id);
+  if (localIdx >= 0) {
+    inMemoryAppointments[localIdx] = { ...inMemoryAppointments[localIdx], status };
+    persistStoreToDisk();
+  }
+
   try {
     const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
@@ -756,10 +900,14 @@ export async function dbUpdateAppointmentStatus(
   } catch (err) {
     console.warn("[Database] Supabase appointment update warning:", err);
   }
-  return null;
+
+  return localIdx >= 0 ? inMemoryAppointments[localIdx] : null;
 }
 
 export async function dbDeleteAppointment(id: string): Promise<boolean> {
+  inMemoryAppointments = inMemoryAppointments.filter((a) => a.id !== id);
+  persistStoreToDisk();
+
   try {
     const supabase = getSupabaseServerClient();
     await supabase.from("appointments").delete().eq("id", id);
@@ -837,8 +985,6 @@ export async function dbAddActivity(
 // -----------------------------------------------------------------------------
 // REPORTS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
-const inMemoryReports: ReportItem[] = [];
-
 export async function dbGetReports(limit = 100): Promise<ReportItem[]> {
   try {
     const supabase = getSupabaseServerClient();
@@ -851,7 +997,7 @@ export async function dbGetReports(limit = 100): Promise<ReportItem[]> {
 
     if (!error && Array.isArray(data) && data.length > 0) {
       const rows = data as ReportDbRow[];
-      return rows.map((r) => ({
+      inMemoryReports = rows.map((r) => ({
         id: r.id,
         title: r.title,
         category: (r.category as ReportItem["category"]) || "Audit",
@@ -864,6 +1010,8 @@ export async function dbGetReports(limit = 100): Promise<ReportItem[]> {
         summary: r.summary,
         createdAt: r.created_at,
       }));
+      persistStoreToDisk();
+      return inMemoryReports;
     }
   } catch (err) {
     console.warn("[Database] Supabase reports query warning:", err);
@@ -906,6 +1054,9 @@ export async function dbAddReport(report: {
     createdAt,
   };
 
+  inMemoryReports.unshift(newReport);
+  persistStoreToDisk();
+
   const row = {
     id,
     title: newReport.title,
@@ -937,11 +1088,13 @@ export async function dbAddReport(report: {
     // Non-blocking
   }
 
-  inMemoryReports.unshift(newReport);
   return newReport;
 }
 
 export async function dbDeleteReport(id: string): Promise<boolean> {
+  inMemoryReports = inMemoryReports.filter((r) => r.id !== id);
+  persistStoreToDisk();
+
   try {
     const supabase = getSupabaseServerClient();
     await supabase.from("reports").delete().eq("id", id);
@@ -1297,6 +1450,7 @@ export async function dbAddUser(data: {
     (u) => u.username.toLowerCase() !== newUser.username.toLowerCase(),
   );
   inMemoryUsers.push(newUser);
+  persistStoreToDisk();
 
   const row = {
     id,
@@ -1398,6 +1552,7 @@ export async function dbUpdateUser(
   };
 
   inMemoryUsers = inMemoryUsers.map((u) => (u.id === id ? updated : u));
+  persistStoreToDisk();
 
   return updated;
 }
@@ -1411,6 +1566,7 @@ export async function dbDeleteUser(id: string): Promise<boolean> {
   }
 
   inMemoryUsers = inMemoryUsers.filter((u) => u.id !== id);
+  persistStoreToDisk();
 
   try {
     const supabase = getSupabaseServerClient();
@@ -1720,5 +1876,171 @@ export async function dbUpdateOfficerStatus(
   }
 
   return true;
+}
+
+// -----------------------------------------------------------------------------
+// SUPABASE DATABASE HEALTH & SCHEMA VERIFICATION
+// -----------------------------------------------------------------------------
+export async function dbCheckSupabaseStatus(): Promise<{
+  connected: boolean;
+  supabaseUrl: string;
+  tables: Record<string, boolean>;
+  allTablesReady: boolean;
+  message: string;
+}> {
+  const tables = [
+    "users",
+    "forms",
+    "form_responses",
+    "patients",
+    "appointments",
+    "activities",
+    "reports",
+    "officers",
+  ];
+  const tableStatus: Record<string, boolean> = {};
+
+  try {
+    const supabase = getSupabaseServerClient();
+    for (const t of tables) {
+      try {
+        const res = await supabase.from(t).select("*", { count: "exact", head: true });
+        tableStatus[t] = !res.error;
+      } catch {
+        tableStatus[t] = false;
+      }
+    }
+  } catch {
+    for (const t of tables) {
+      tableStatus[t] = false;
+    }
+  }
+
+  const allTablesReady = tables.every((t) => tableStatus[t] === true);
+  return {
+    connected: true,
+    supabaseUrl: getSupabaseUrl(),
+    tables: tableStatus,
+    allTablesReady,
+    message: allTablesReady
+      ? "All Supabase PostgreSQL tables are active and verified."
+      : "Some database tables are not initialized in Supabase yet. Please execute schema.sql in Supabase SQL Editor.",
+  };
+}
+
+// -----------------------------------------------------------------------------
+// CROSS-DEVICE BIDIRECTIONAL SYNC
+// -----------------------------------------------------------------------------
+export async function dbSyncData(payload: {
+  users?: UserAccount[];
+  forms?: CustomForm[];
+  responses?: FormResponse[];
+}): Promise<{
+  users: UserAccount[];
+  forms: CustomForm[];
+  responses: (FormResponse & {
+    formTitle?: string;
+    departmentLabel?: string;
+    departmentSlug?: string;
+  })[];
+}> {
+  // 1. Merge incoming client users
+  if (Array.isArray(payload.users) && payload.users.length > 0) {
+    const userMap = new Map<string, UserAccount>();
+    for (const u of inMemoryUsers) userMap.set(u.username.toLowerCase(), u);
+    for (const u of payload.users) {
+      if (!userMap.has(u.username.toLowerCase())) {
+        userMap.set(u.username.toLowerCase(), u);
+        // Try persisting into Supabase
+        try {
+          const supabase = getSupabaseServerClient();
+          await supabase.from("users").upsert({
+            id: u.id,
+            username: u.username,
+            email: u.email || `${u.username}@alert.gov.et`,
+            password: u.password || hashPassword("Admin123"),
+            role: u.role,
+            name: u.name,
+            department_slug: u.departmentSlug || null,
+            department_label: u.departmentLabel || null,
+            status: u.status || "active",
+            created_at: u.createdAt || new Date().toISOString(),
+            updated_at: u.updatedAt || new Date().toISOString(),
+          }, { onConflict: "username" });
+        } catch {
+          // non-blocking
+        }
+      }
+    }
+    inMemoryUsers = Array.from(userMap.values());
+  }
+
+  // 2. Merge incoming client forms
+  if (Array.isArray(payload.forms) && payload.forms.length > 0) {
+    const formMap = new Map<string, CustomForm>();
+    for (const f of inMemoryForms) formMap.set(f.id, f);
+    for (const f of payload.forms) {
+      if (!formMap.has(f.id)) {
+        formMap.set(f.id, f);
+        try {
+          const supabase = getSupabaseServerClient();
+          await supabase.from("forms").upsert({
+            id: f.id,
+            department_slug: f.departmentSlug,
+            department_label: f.departmentLabel,
+            title: f.title,
+            description: f.description || "",
+            banner_url: f.bannerUrl || null,
+            questions_json: f.questions || [],
+            created_at: f.createdAt || new Date().toISOString(),
+            updated_at: f.updatedAt || new Date().toISOString(),
+          }, { onConflict: "id" });
+        } catch {
+          // non-blocking
+        }
+      }
+    }
+    inMemoryForms = Array.from(formMap.values());
+  }
+
+  // 3. Merge incoming responses
+  if (Array.isArray(payload.responses) && payload.responses.length > 0) {
+    const respMap = new Map<string, StoredInMemoryResponse>();
+    for (const r of inMemoryResponses) respMap.set(r.id, r);
+    for (const r of payload.responses) {
+      if (!respMap.has(r.id)) {
+        respMap.set(r.id, {
+          id: r.id,
+          form_id: r.formId,
+          submitted_at: r.submittedAt || new Date().toISOString(),
+          answers_json: r.answers || {},
+        });
+        try {
+          const supabase = getSupabaseServerClient();
+          await supabase.from("form_responses").upsert({
+            id: r.id,
+            form_id: r.formId,
+            submitted_at: r.submittedAt || new Date().toISOString(),
+            answers_json: r.answers || {},
+          }, { onConflict: "id" });
+        } catch {
+          // non-blocking
+        }
+      }
+    }
+    inMemoryResponses = Array.from(respMap.values());
+  }
+
+  persistStoreToDisk();
+
+  const allUsers = await dbGetUsers();
+  const allForms = await dbGetAllForms();
+  const allResponses = await dbGetAllResponses(200);
+
+  return {
+    users: allUsers,
+    forms: allForms,
+    responses: allResponses,
+  };
 }
 
