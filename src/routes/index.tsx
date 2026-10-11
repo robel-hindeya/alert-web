@@ -9,9 +9,7 @@ import {
   Stethoscope,
   BedDouble,
   ArrowUp,
-  ArrowRight,
   UserPlus,
-  FileText,
   CalendarDays,
   CircleUser,
   Repeat,
@@ -485,89 +483,22 @@ export function Dashboard() {
           ))}
         </section>
 
-        {/* Dynamic Charts & Quick Actions */}
-        <section className="grid gap-4 xl:grid-cols-3">
-          <div className="card-soft p-5 xl:col-span-2">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  Clinical Activity & Submissions
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Live 7-day submission and audit frequency
-                </p>
-              </div>
-              <span className="rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground">
-                Last 7 Days
-              </span>
+        {/* Dynamic Clinical Activity & Submissions Chart */}
+        <section className="card-soft p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Clinical Activity & Submissions
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Live 7-day submission and audit frequency
+              </p>
             </div>
-            <VisitsChart data={stats.visits} />
+            <span className="rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground">
+              Last 7 Days
+            </span>
           </div>
-
-          <div className="card-soft p-5">
-            <h2 className="mb-4 text-base font-semibold text-foreground">Quick Actions</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setBookModalOpen(true)}
-                className="group flex flex-col justify-between gap-3 rounded-xl border border-primary/30 bg-primary/8 p-4 text-left transition-colors hover:bg-primary/15"
-              >
-                <div className="flex items-center justify-between">
-                  <CalendarPlus className="size-6 text-primary" />
-                  <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Book Appointment</p>
-                  <p className="text-xs text-muted-foreground">Schedule outpatient visit</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setRegisterModalOpen(true)}
-                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
-              >
-                <div className="flex items-center justify-between">
-                  <UserPlus className="size-6 text-primary" />
-                  <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Register Patient</p>
-                  <p className="text-xs text-muted-foreground">New patient admission</p>
-                </div>
-              </button>
-
-              <Link
-                to="/reports"
-                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
-              >
-                <div className="flex items-center justify-between">
-                  <FileText className="size-6 text-primary" />
-                  <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Clinical Reports</p>
-                  <p className="text-xs text-muted-foreground">Quality &amp; safety logs</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/departments"
-                className="group flex flex-col justify-between gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary"
-              >
-                <div className="flex items-center justify-between">
-                  <Activity className="size-6 text-primary" />
-                  <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">
-                    Clinical Departments
-                  </p>
-                  <p className="text-xs text-muted-foreground">10 specialized units</p>
-                </div>
-              </Link>
-            </div>
-          </div>
+          <VisitsChart data={stats.visits} />
         </section>
 
         {/* Dynamic QMT Officers Leaderboard and Department Share */}
