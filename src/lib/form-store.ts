@@ -485,6 +485,44 @@ const STATIC_DEPRECATED_FORM_IDS = new Set([
   "corridor-handover-checklist",
 ]);
 
+const DELETED_FORM_IDS_KEY = "alert_deleted_form_ids";
+
+export function getDeletedFormIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(DELETED_FORM_IDS_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function markFormDeleted(id: string) {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const set = getDeletedFormIds();
+    set.add(id);
+    window.localStorage.setItem(DELETED_FORM_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch {
+    // non-blocking
+  }
+}
+
+export function unmarkFormDeleted(id: string) {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const set = getDeletedFormIds();
+    if (set.has(id)) {
+      set.delete(id);
+      window.localStorage.setItem(DELETED_FORM_IDS_KEY, JSON.stringify(Array.from(set)));
+    }
+  } catch {
+    // non-blocking
+  }
+}
+
 export function getAllForms(): CustomForm[] {
   if (typeof window === "undefined") return [];
   try {
@@ -492,8 +530,14 @@ export function getAllForms(): CustomForm[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return [];
+    const deletedIds = getDeletedFormIds();
     const cleaned = (parsed as CustomForm[]).filter(
-      (f) => f && f.id && !STATIC_DEPRECATED_FORM_IDS.has(f.id) && !isLegacySeedId(f.id),
+      (f) =>
+        f &&
+        f.id &&
+        !STATIC_DEPRECATED_FORM_IDS.has(f.id) &&
+        !isLegacySeedId(f.id) &&
+        !deletedIds.has(f.id),
     );
     if (cleaned.length !== parsed.length) {
       window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(cleaned));
@@ -510,7 +554,7 @@ export function getFormsForDepartment(deptSlug: string): CustomForm[] {
 }
 
 export function getFormById(id: string, deptSlug?: string): CustomForm | undefined {
-  if (STATIC_DEPRECATED_FORM_IDS.has(id)) {
+  if (STATIC_DEPRECATED_FORM_IDS.has(id) || getDeletedFormIds().has(id)) {
     return undefined;
   }
   const all = getAllForms();
@@ -529,6 +573,8 @@ export function getFormById(id: string, deptSlug?: string): CustomForm | undefin
 export async function saveForm(form: CustomForm): Promise<CustomForm> {
   if (typeof window === "undefined") return form;
   try {
+    unmarkFormDeleted(form.id);
+
     const all = getAllForms();
     const existingIndex = all.findIndex((f) => f.id === form.id);
     const now = new Date().toISOString();
@@ -570,21 +616,45 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
 }
 
 export async function deleteForm(id: string): Promise<boolean> {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || !id) return false;
   try {
-    // Delete from real database
+    // 1. Mark as permanently deleted in local tracker so background syncs won't re-add it
+    markFormDeleted(id);
+
+    // 2. Remove form from local storage immediately
+    const all = getAllForms();
+    const updated = all.filter((f) => f.id !== id);
+    window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
+
+    // 3. Remove all responses for this deleted form from local storage
+    try {
+      const rawResponses = window.localStorage.getItem(RESPONSES_STORAGE_KEY);
+      if (rawResponses) {
+        const parsedResponses = JSON.parse(rawResponses);
+        if (Array.isArray(parsedResponses)) {
+          const updatedResponses = parsedResponses.filter(
+            (r: any) => r && r.formId !== id && r.form_id !== id,
+          );
+          window.localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(updatedResponses));
+          window.dispatchEvent(new Event("alert-form-responses-updated"));
+        }
+      }
+    } catch {
+      // non-blocking
+    }
+
+    // 4. Notify all components to re-render immediately
+    window.dispatchEvent(new Event("alert-forms-updated"));
+
+    // 5. Delete from backend database (asynchronous, idempotent)
     try {
       await fetch(`/api/forms/${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
-    } catch {
-      // ignore
+    } catch (netErr) {
+      console.warn("Notice: Form deleted locally; background server sync warning:", netErr);
     }
 
-    const all = getAllForms();
-    const updated = all.filter((f) => f.id !== id);
-    window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new Event("alert-forms-updated"));
     return true;
   } catch (err) {
     console.error("Failed to delete form from database", err);
@@ -664,14 +734,27 @@ export function useDepartmentForms(deptSlug: string) {
       })
       .then((dbForms) => {
         if (!isMounted || !dbForms) return;
-        if (Array.isArray(dbForms) && dbForms.length > 0) {
-          const cleaned = dbForms.filter((f) => !STATIC_DEPRECATED_FORM_IDS.has(f.id));
+        if (Array.isArray(dbForms)) {
+          const deletedIds = getDeletedFormIds();
+          const cleaned = dbForms.filter(
+            (f) =>
+              f &&
+              f.id &&
+              !STATIC_DEPRECATED_FORM_IDS.has(f.id) &&
+              !isLegacySeedId(f.id) &&
+              !deletedIds.has(f.id),
+          );
           const all = getAllForms();
           // Merge db forms with any locally saved forms that might not be in db yet
           const map = new Map<string, CustomForm>();
           for (const f of cleaned) map.set(f.id, f);
           for (const f of all) {
-            if (f.departmentSlug === deptSlug && !map.has(f.id) && !STATIC_DEPRECATED_FORM_IDS.has(f.id)) {
+            if (
+              f.departmentSlug === deptSlug &&
+              !map.has(f.id) &&
+              !STATIC_DEPRECATED_FORM_IDS.has(f.id) &&
+              !deletedIds.has(f.id)
+            ) {
               map.set(f.id, f);
             }
           }

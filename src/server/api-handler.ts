@@ -835,13 +835,6 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       }
 
       if (request.method === "DELETE") {
-        const form = await dbGetFormById(formId);
-        if (!form) {
-          return new Response(JSON.stringify({ error: "Form not found" }), {
-            status: 404,
-            headers: corsHeaders,
-          });
-        }
         await dbDeleteForm(formId);
         return new Response(JSON.stringify({ success: true, id: formId }), {
           status: 200,

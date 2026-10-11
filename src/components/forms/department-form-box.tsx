@@ -13,8 +13,19 @@ import {
   Sparkles,
   BarChart3,
   Inbox,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useDepartmentForms, CustomForm, deleteForm } from "@/lib/form-store";
 import { FormBuilderDialog } from "./form-builder-dialog";
 import { FormResponsesDialog } from "./form-responses-dialog";
@@ -33,6 +44,8 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
   const [responsesForm, setResponsesForm] = useState<CustomForm | null>(null);
   const [responsesOpen, setResponsesOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formToDelete, setFormToDelete] = useState<CustomForm | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleOpenCreate = () => {
     setEditingForm(null);
@@ -50,16 +63,29 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
     setResponsesOpen(true);
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleRequestDelete = (form: CustomForm, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this form and all its responses?")) {
-      const ok = await deleteForm(id);
+    setFormToDelete(form);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!formToDelete) return;
+    setIsDeleting(true);
+    const targetId = formToDelete.id;
+    try {
+      const ok = await deleteForm(targetId);
       if (ok) {
         refresh();
-        toast.success("Form deleted from database");
+        toast.success("Form deleted successfully");
+        setFormToDelete(null);
       } else {
         toast.error("Failed to delete form from database");
       }
+    } catch (err) {
+      console.error("Error deleting form:", err);
+      toast.error("Failed to delete form");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -215,8 +241,8 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
                       {/* Delete Button */}
                       <button
                         type="button"
-                        onClick={(e) => handleDelete(form.id, e)}
-                        className="grid size-8 place-items-center rounded-lg border border-border bg-background text-muted-foreground hover:border-destructive/40 hover:text-destructive transition-colors"
+                        onClick={(e) => handleRequestDelete(form, e)}
+                        className="grid size-8 place-items-center rounded-lg border border-border bg-background text-muted-foreground hover:border-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
                         title="Delete form"
                       >
                         <Trash2 className="size-3.5" />
@@ -303,6 +329,57 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
           form={responsesForm}
         />
       )}
+
+      {/* Delete Form Confirmation Dialog */}
+      <AlertDialog
+        open={!!formToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setFormToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive mb-1">
+              <span className="grid size-9 place-items-center rounded-xl bg-destructive/10 text-destructive">
+                <Trash2 className="size-5" />
+              </span>
+              <AlertDialogTitle className="text-lg font-bold">Delete Form</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-foreground font-semibold">
+                &ldquo;{formToDelete?.title}&rdquo;
+              </strong>
+              ? All questions and associated responses will be permanently removed from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0 mt-4">
+            <AlertDialogCancel disabled={isDeleting} className="text-xs sm:text-sm">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleConfirmDelete();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm gap-1.5 font-semibold"
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="size-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-3.5" />
+                  <span>Delete Form</span>
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

@@ -37,6 +37,7 @@ import {
   CalendarDays,
   LogOut,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { performLogout, useAuthUser } from "@/lib/auth-session";
 import { FormBuilderDialog } from "@/components/forms/form-builder-dialog";
@@ -57,6 +58,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -73,6 +84,7 @@ import {
   FormResponse,
   FormQuestion,
   EnrichedFormResponse,
+  deleteForm,
 } from "@/lib/form-store";
 import { departments } from "@/routes/departments.$slug";
 import { useDeptSession, saveDeptSession } from "@/lib/dept-session";
@@ -276,6 +288,9 @@ export function CoordinatorPortal() {
   }, [allResponses, historySearch, historyFormFilter]);
 
   // Handle Form Actions
+  const [formToDelete, setFormToDelete] = useState<CustomForm | null>(null);
+  const [isDeletingForm, setIsDeletingForm] = useState(false);
+
   const handleOpenFill = (form: CustomForm) => {
     setFormToFill(form);
     setFillModalOpen(true);
@@ -286,6 +301,27 @@ export function CoordinatorPortal() {
     const url = `${window.location.origin}/forms/${formId}`;
     navigator.clipboard.writeText(url);
     toast.success("Form link copied to clipboard!");
+  };
+
+  const handleConfirmDeleteForm = async () => {
+    if (!formToDelete) return;
+    setIsDeletingForm(true);
+    const targetId = formToDelete.id;
+    try {
+      const ok = await deleteForm(targetId);
+      if (ok) {
+        refreshForms();
+        toast.success("Form deleted successfully");
+        setFormToDelete(null);
+      } else {
+        toast.error("Failed to delete form from database");
+      }
+    } catch (err) {
+      console.error("Error deleting form:", err);
+      toast.error("Failed to delete form");
+    } finally {
+      setIsDeletingForm(false);
+    }
   };
 
   return (
@@ -740,6 +776,18 @@ export function CoordinatorPortal() {
                           title="Edit Questions"
                         >
                           <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFormToDelete(form);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs rounded-xl text-muted-foreground hover:text-destructive hover:border-destructive/30 hover:bg-destructive/10"
+                          title="Delete Form"
+                        >
+                          <Trash2 className="size-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -1408,6 +1456,57 @@ export function CoordinatorPortal() {
         initialForm={editingForm}
         onSaved={() => refreshForms()}
       />
+
+      {/* Delete Form Confirmation Dialog */}
+      <AlertDialog
+        open={!!formToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingForm) setFormToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive mb-1">
+              <span className="grid size-9 place-items-center rounded-xl bg-destructive/10 text-destructive">
+                <Trash2 className="size-5" />
+              </span>
+              <AlertDialogTitle className="text-lg font-bold">Delete Form</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-foreground font-semibold">
+                &ldquo;{formToDelete?.title}&rdquo;
+              </strong>
+              ? All questions and associated responses will be permanently removed from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0 mt-4">
+            <AlertDialogCancel disabled={isDeletingForm} className="text-xs sm:text-sm">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingForm}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleConfirmDeleteForm();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm gap-1.5 font-semibold"
+            >
+              {isDeletingForm ? (
+                <>
+                  <RefreshCw className="size-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-3.5" />
+                  <span>Delete Form</span>
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

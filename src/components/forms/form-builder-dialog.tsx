@@ -34,8 +34,19 @@ import {
   Upload,
   Palette,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
-import { CustomForm, FormQuestion, QuestionType, saveForm } from "@/lib/form-store";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CustomForm, FormQuestion, QuestionType, saveForm, deleteForm } from "@/lib/form-store";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
@@ -151,6 +162,8 @@ export function FormBuilderDialog({
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingForm, setDeletingForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Initialize or reset form on dialog open
   useEffect(() => {
@@ -391,6 +404,27 @@ export function FormBuilderDialog({
     }
   };
 
+  const handleDeleteForm = async () => {
+    if (!initialForm?.id) return;
+    setDeletingForm(true);
+    try {
+      const ok = await deleteForm(initialForm.id);
+      if (ok) {
+        toast.success("Form deleted successfully");
+        setShowDeleteConfirm(false);
+        onSaved?.();
+        onOpenChange(false);
+      } else {
+        toast.error("Failed to delete form from database");
+      }
+    } catch (err) {
+      console.error("Error deleting form:", err);
+      toast.error("Failed to delete form");
+    } finally {
+      setDeletingForm(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] sm:w-full max-w-4xl overflow-hidden p-0 flex flex-col sm:rounded-2xl border-border bg-background shadow-2xl">
@@ -414,12 +448,27 @@ export function FormBuilderDialog({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {initialForm?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving || deletingForm}
+                className="gap-1 sm:gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 font-medium px-2 sm:px-3 text-xs"
+                title="Delete this form from database"
+              >
+                <Trash2 className="size-3.5 sm:size-4" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
+            )}
+
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleSaveAndView}
-              disabled={saving}
+              disabled={saving || deletingForm}
               className="gap-1 sm:gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-medium px-2 sm:px-3 text-xs"
               title="Save changes and open public form view"
             >
@@ -432,7 +481,7 @@ export function FormBuilderDialog({
               type="button"
               size="sm"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || deletingForm}
               className="gap-1 sm:gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 px-2.5 sm:px-3 text-xs"
             >
               <FileCheck2 className="size-3.5 sm:size-4" />
@@ -1024,12 +1073,27 @@ export function FormBuilderDialog({
           </p>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {initialForm?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving || deletingForm}
+                className="gap-1 sm:gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 font-medium text-xs mr-1 sm:mr-2"
+                title="Delete this form from database"
+              >
+                <Trash2 className="size-3.5" />
+                <span className="hidden sm:inline">Delete Form</span>
+              </Button>
+            )}
+
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              disabled={saving}
+              disabled={saving || deletingForm}
               className="text-muted-foreground text-xs"
             >
               Cancel
@@ -1040,7 +1104,7 @@ export function FormBuilderDialog({
               variant="outline"
               size="sm"
               onClick={handleSaveAndView}
-              disabled={saving}
+              disabled={saving || deletingForm}
               className="gap-1 sm:gap-1.5 text-primary border-primary/30 hover:bg-primary/10 font-medium text-xs"
             >
               <Eye className="size-3.5 sm:size-4" />
@@ -1052,7 +1116,7 @@ export function FormBuilderDialog({
               type="button"
               size="sm"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || deletingForm}
               className="gap-1 sm:gap-1.5 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
             >
               <FileCheck2 className="size-3.5 sm:size-4" />
@@ -1061,6 +1125,52 @@ export function FormBuilderDialog({
           </div>
         </div>
       </DialogContent>
+
+      {/* Delete Form Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive mb-1">
+              <span className="grid size-9 place-items-center rounded-xl bg-destructive/10 text-destructive">
+                <Trash2 className="size-5" />
+              </span>
+              <AlertDialogTitle className="text-lg font-bold">Delete Form</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-foreground font-semibold">
+                &ldquo;{title || initialForm?.title || "this form"}&rdquo;
+              </strong>
+              ? All questions and associated responses will be permanently removed from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0 mt-4">
+            <AlertDialogCancel disabled={deletingForm} className="text-xs sm:text-sm">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingForm}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleDeleteForm();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm gap-1.5 font-semibold"
+            >
+              {deletingForm ? (
+                <>
+                  <RefreshCw className="size-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-3.5" />
+                  <span>Delete Form</span>
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ============================================================ */}
       {/* QUESTION-TYPE SELECTOR DIALOG (Opens when user clicks "+") */}
