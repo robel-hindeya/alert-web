@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Settings, LogOut, ChevronDown, ShieldCheck, LayoutDashboard } from "lucide-react";
+import { Settings, LogOut, ChevronDown, ShieldCheck, LayoutDashboard, Building2 } from "lucide-react";
 import { useAuthUser } from "@/lib/auth-session";
 
 export function AdminMenu({ compact = false }: { compact?: boolean }) {
@@ -95,6 +95,16 @@ export function AdminMenu({ compact = false }: { compact?: boolean }) {
               >
                 <ShieldCheck className="size-4 text-primary" />
                 Coordinator Portal
+              </Link>
+            ) : user?.role === "admin" ? (
+              <Link
+                to={"/departments/$slug" as any}
+                params={{ slug: user.departmentSlug || "emergency-corridor" } as any}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Building2 className="size-4 text-primary" />
+                Department Workspace
               </Link>
             ) : (
               <>

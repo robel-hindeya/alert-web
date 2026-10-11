@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuthUser } from "@/lib/auth-session";
 import {
   BarChart3,
   Download,
@@ -119,6 +120,16 @@ function useMounted() {
 
 function ReportsPage() {
   const mounted = useMounted();
+  const { user, ready } = useAuthUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (ready && user && user.role === "admin") {
+      const myDept = user.departmentSlug || "emergency-corridor";
+      navigate({ to: "/departments/$slug", params: { slug: myDept } });
+    }
+  }, [ready, user, navigate]);
+
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [totalSubmissions, setTotalSubmissions] = useState(0);
   const [search, setSearch] = useState("");
@@ -128,6 +139,10 @@ function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [filterCustomDays, setFilterCustomDays] = useState("");
   const [activeReport, setActiveReport] = useState<ReportRecord | null>(null);
+
+  if (ready && user && user.role === "admin") {
+    return null;
+  }
 
   useEffect(() => {
     // 1. Fetch dynamic reports

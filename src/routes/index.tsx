@@ -157,21 +157,28 @@ export function Dashboard() {
   const { responses: liveResponses } = useAllResponses();
   const [search, setSearch] = useState("");
 
-  // QMT Officers and Coordinators see coordinator page (/coordinators)
+  // Redirect non-superadmin users to their respective workspaces
   useEffect(() => {
-    if (ready && user && (user.role === "qmt" || user.role === "coordinator")) {
-      navigate({ to: "/coordinators" });
+    if (ready && user) {
+      if (user.role === "admin") {
+        const targetDept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: targetDept } });
+      } else if (user.role === "qmt" || user.role === "coordinator") {
+        navigate({ to: "/coordinators" });
+      }
     }
   }, [ready, user, navigate]);
 
-  if (ready && user && (user.role === "qmt" || user.role === "coordinator")) {
+  if (ready && user && (user.role === "admin" || user.role === "qmt" || user.role === "coordinator")) {
     return (
-      <DashboardShell>
+      <DashboardShell bare>
         <div className="flex flex-1 items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3">
             <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <span className="text-xs font-medium text-muted-foreground">
-              Redirecting to Coordinator Portal...
+              {user.role === "admin"
+                ? "Navigating to your department workspace..."
+                : "Redirecting to Coordinator Portal..."}
             </span>
           </div>
         </div>

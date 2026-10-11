@@ -37,7 +37,9 @@ export function DashboardShell({
     );
   }
 
-  if (bare) {
+  const isBare = bare || user?.role === "admin";
+
+  if (isBare) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         {/* Mobile / Department Top Bar in bare mode */}

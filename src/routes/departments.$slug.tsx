@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { LogOut, UserPlus, FilePlus2, Eye, Mail, Phone, UserCog } from "lucide-react";
 import { useDeptSession, clearDeptSession } from "@/lib/dept-session";
-import { performLogout } from "@/lib/auth-session";
+import { performLogout, useAuthUser } from "@/lib/auth-session";
 import { DepartmentFormBox } from "@/components/forms/department-form-box";
 import { FormBuilderDialog } from "@/components/forms/form-builder-dialog";
 import { useDashboardData } from "@/lib/dashboard-store";
@@ -110,7 +110,18 @@ function DepartmentDashboard() {
   const { slug, label } = Route.useLoaderData();
   const navigate = useNavigate();
   const { session } = useDeptSession();
-  const deptOnly = session?.slug === slug;
+  const { user, ready } = useAuthUser();
+  const isNormalAdmin = user?.role === "admin";
+  const deptOnly = isNormalAdmin || session?.slug === slug;
+
+  useEffect(() => {
+    if (ready && user && user.role === "admin") {
+      const myDept = user.departmentSlug || "emergency-corridor";
+      if (slug !== myDept) {
+        navigate({ to: "/departments/$slug", params: { slug: myDept } });
+      }
+    }
+  }, [ready, user, slug, navigate]);
 
   const signOut = () => {
     performLogout();
@@ -286,13 +297,15 @@ function DepartmentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              to="/coordinators"
-              className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold text-primary hover:bg-primary/20 transition-colors shadow-2xs"
-            >
-              <UserCog className="size-3.5 sm:size-4" />
-              <span>Coordinators Portal</span>
-            </Link>
+            {!isNormalAdmin && (
+              <Link
+                to="/coordinators"
+                className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold text-primary hover:bg-primary/20 transition-colors shadow-2xs"
+              >
+                <UserCog className="size-3.5 sm:size-4" />
+                <span>Coordinators Portal</span>
+              </Link>
+            )}
 
             <button
               type="button"

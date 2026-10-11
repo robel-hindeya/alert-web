@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { NotificationMenu } from "@/components/dashboard/notification-menu";
+import { useAuthUser } from "@/lib/auth-session";
 import { departments } from "./departments.$slug";
 
 export const Route = createFileRoute("/departments/")({
@@ -25,6 +27,20 @@ export const Route = createFileRoute("/departments/")({
 });
 
 function DepartmentsPage() {
+  const { user, ready } = useAuthUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (ready && user && user.role === "admin") {
+      const myDept = user.departmentSlug || "emergency-corridor";
+      navigate({ to: "/departments/$slug", params: { slug: myDept } });
+    }
+  }, [ready, user, navigate]);
+
+  if (ready && user && user.role === "admin") {
+    return null;
+  }
+
   return (
     <DashboardShell>
       <main className="flex-1 space-y-4 sm:space-y-6 p-3.5 sm:p-5 lg:p-6">

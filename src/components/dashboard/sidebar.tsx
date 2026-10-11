@@ -46,7 +46,14 @@ export function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps) {
       ];
     }
 
-    // superadmin and admin
+    if (user?.role === "admin") {
+      const myDeptSlug = user.departmentSlug || "emergency-corridor";
+      return [
+        { label: "Department Workspace", icon: Briefcase, to: `/departments/${myDeptSlug}` },
+      ];
+    }
+
+    // superadmin only
     return [
       { label: "Admin Overview", icon: LayoutDashboard, to: "/" },
       { label: "Coordinator Portal", icon: ClipboardCheck, to: "/coordinators" },

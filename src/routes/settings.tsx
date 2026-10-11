@@ -98,11 +98,15 @@ function SettingsPage() {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState("Today, 03:00 AM");
 
-  // Protect Settings: only superadmin and admin can access
+  // Protect Settings: only superadmin can access
   useEffect(() => {
     if (ready && user) {
-      if (user.role === "coordinator" || user.role === "qmt") {
-        toast.error("Access restricted: Settings is reserved for Hospital Administrators.");
+      if (user.role === "admin") {
+        toast.error("Access restricted: Settings is reserved for Super Administrator.");
+        const myDept = user.departmentSlug || "emergency-corridor";
+        window.location.href = `/departments/${myDept}`;
+      } else if (user.role === "coordinator" || user.role === "qmt") {
+        toast.error("Access restricted: Settings is reserved for Super Administrator.");
         window.location.href = "/coordinators";
       }
     }

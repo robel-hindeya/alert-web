@@ -26,8 +26,15 @@ function SuperadminRoutePage() {
   const { user, ready } = useAuthUser();
 
   useEffect(() => {
-    if (ready && !user) {
-      navigate({ to: "/login" });
+    if (ready) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (user.role === "admin") {
+        const myDept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: myDept } });
+      } else if (user.role !== "superadmin") {
+        navigate({ to: "/coordinators" });
+      }
     }
   }, [ready, user, navigate]);
 
