@@ -1239,8 +1239,8 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
     todayAppointments || inMemoryAppointments.filter((a) => a.date === "Today").length;
 
   const totalPatients = effectivePatientCount + effectiveResponsesCount;
-  const totalDoctors = 42;
-  const availableBeds = 654;
+  const totalDoctors = 0;
+  const availableBeds = 0;
 
   const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const dayVisits: Record<string, number> = {
@@ -1310,7 +1310,7 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
 
   return {
     totalPatients,
-    totalPatientsDelta: "+14.2%",
+    totalPatientsDelta: totalPatients > 0 ? `+${totalPatients}` : "+0",
     todayAppointments: effectiveTodayAppts,
     todayAppointmentsDelta: `+${effectiveTodayAppts}`,
     totalDoctors,
@@ -1730,80 +1730,9 @@ export async function dbBanUser(id: string, ban: boolean): Promise<UserAccount> 
 // -----------------------------------------------------------------------------
 // TOP QMT OFFICERS & COORDINATORS LEADERBOARD (Dynamic Supabase + Live Aggregations)
 // -----------------------------------------------------------------------------
-export const DEFAULT_BASE_OFFICERS: TopOfficerLeader[] = [
-  {
-    id: "top-1",
-    name: "Dr. Habtamu Girma",
-    role: "Lead QMT Quality Director",
-    department: "Emergency & Triage Corridor",
-    departmentSlug: "emergency-corridor",
-    type: "QMT Officer",
-    auditsCompleted: 384,
-    complianceRate: "99.4%",
-    rating: 5.0,
-    status: "Active",
-    email: "dr.girma@alert.et",
-    phone: "+251 911 23 4567",
-  },
-  {
-    id: "top-2",
-    name: "Sr. Tigist Alemu",
-    role: "Senior Clinical Audit Coordinator",
-    department: "Intensive Care Unit (ICU)",
-    departmentSlug: "icu",
-    type: "Coordinator",
-    auditsCompleted: 326,
-    complianceRate: "98.7%",
-    rating: 4.9,
-    status: "In Audit",
-    email: "sr.alemu@alert.et",
-    phone: "+251 911 34 5678",
-  },
-  {
-    id: "top-3",
-    name: "Dr. Yonas Bekele",
-    role: "Surgical Safety Audit Officer",
-    department: "Major Surgical Theatre",
-    departmentSlug: "surgical-service",
-    type: "QMT Officer",
-    auditsCompleted: 295,
-    complianceRate: "98.2%",
-    rating: 4.9,
-    status: "Active",
-    email: "dr.bekele@alert.et",
-    phone: "+251 911 45 6789",
-  },
-  {
-    id: "top-4",
-    name: "Sr. Meron Haile",
-    role: "Inpatient Care Coordinator",
-    department: "Inpatient Medical Ward",
-    departmentSlug: "inpatient",
-    type: "Coordinator",
-    auditsCompleted: 258,
-    complianceRate: "97.6%",
-    rating: 4.8,
-    status: "Active",
-    email: "sr.haile@alert.et",
-    phone: "+251 911 56 7890",
-  },
-  {
-    id: "top-5",
-    name: "Dr. Dawit Abebe",
-    role: "Pharmacovigilance Audit Officer",
-    department: "Central Pharmacy & OPD",
-    departmentSlug: "opd",
-    type: "QMT Officer",
-    auditsCompleted: 231,
-    complianceRate: "97.1%",
-    rating: 4.8,
-    status: "Reviewing",
-    email: "dr.abebe@alert.et",
-    phone: "+251 911 67 8901",
-  },
-];
+export const DEFAULT_BASE_OFFICERS: TopOfficerLeader[] = [];
 
-const inMemoryOfficers: TopOfficerLeader[] = [...DEFAULT_BASE_OFFICERS];
+const inMemoryOfficers: TopOfficerLeader[] = [];
 
 export async function dbGetTopOfficers(limit = 10): Promise<TopOfficerLeader[]> {
   let baseList: TopOfficerLeader[] = [...inMemoryOfficers];

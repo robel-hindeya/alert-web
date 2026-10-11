@@ -87,68 +87,7 @@ const statusStyles: Record<string, string> = {
   Confirmed: "bg-success/12 text-success",
 };
 
-const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [
-  {
-    id: "top-1",
-    name: "Dr. Habtamu Girma",
-    role: "Lead QMT Quality Director",
-    department: "Emergency & Triage Corridor",
-    departmentSlug: "emergency-corridor",
-    type: "QMT Officer",
-    auditsCompleted: 384,
-    complianceRate: "99.4%",
-    rating: 5.0,
-    status: "Active",
-  },
-  {
-    id: "top-2",
-    name: "Sr. Tigist Alemu",
-    role: "Senior Clinical Audit Coordinator",
-    department: "Intensive Care Unit (ICU)",
-    departmentSlug: "icu",
-    type: "Coordinator",
-    auditsCompleted: 326,
-    complianceRate: "98.7%",
-    rating: 4.9,
-    status: "In Audit",
-  },
-  {
-    id: "top-3",
-    name: "Dr. Yonas Bekele",
-    role: "Surgical Safety Audit Officer",
-    department: "Major Surgical Theatre",
-    departmentSlug: "surgical-service",
-    type: "QMT Officer",
-    auditsCompleted: 295,
-    complianceRate: "98.2%",
-    rating: 4.9,
-    status: "Active",
-  },
-  {
-    id: "top-4",
-    name: "Sr. Meron Haile",
-    role: "Inpatient Care Coordinator",
-    department: "Inpatient Medical Ward",
-    departmentSlug: "inpatient",
-    type: "Coordinator",
-    auditsCompleted: 258,
-    complianceRate: "97.6%",
-    rating: 4.8,
-    status: "Active",
-  },
-  {
-    id: "top-5",
-    name: "Dr. Dawit Abebe",
-    role: "Pharmacovigilance Audit Officer",
-    department: "Central Pharmacy & OPD",
-    departmentSlug: "opd",
-    type: "QMT Officer",
-    auditsCompleted: 231,
-    complianceRate: "97.1%",
-    rating: 4.8,
-    status: "Reviewing",
-  },
-];
+const DEFAULT_TOP_OFFICERS: TopOfficerLeader[] = [];
 
 export function Dashboard() {
   const { user, ready } = useAuthUser();
@@ -304,7 +243,7 @@ export function Dashboard() {
     let list: TopOfficerLeader[] =
       stats.topOfficers && stats.topOfficers.length > 0
         ? [...stats.topOfficers]
-        : [...DEFAULT_TOP_OFFICERS];
+        : [];
 
     // Increment with local live responses if available
     if (liveResponses && liveResponses.length > 0) {
@@ -352,14 +291,25 @@ export function Dashboard() {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const custom = parsed.map(
+            const isLegacyMock = (o: any) =>
+              !o ||
+              (typeof o.id === "string" && o.id.startsWith("top-")) ||
+              o.name === "Dr. Habtamu Girma" ||
+              o.name === "Dr. Yonas Bekele" ||
+              o.name === "Dr. Dawit Abebe" ||
+              o.name === "Sr. Tigist Alemu" ||
+              o.name === "Sr. Meron Haile";
+
+            const cleaned = parsed.filter((o) => !isLegacyMock(o));
+            const custom = cleaned.map(
               (
                 o: {
                   id?: string;
                   name?: string;
                   specialty?: string;
                   dept?: string;
-                  exp?: number;
+                  auditsCompleted?: number;
+                  complianceRate?: string;
                   rating?: number;
                   status?: string;
                 },
@@ -371,8 +321,8 @@ export function Dashboard() {
                 department: o.dept || "General Ward",
                 departmentSlug: (o.dept || "").toLowerCase().replace(/\s+/g, "-"),
                 type: "QMT Officer" as const,
-                auditsCompleted: Math.max(120, (o.exp || 1) * 45 + ((idx * 17) % 80)),
-                complianceRate: `${(96 + ((idx * 3) % 4) + 0.5).toFixed(1)}%`,
+                auditsCompleted: o.auditsCompleted || 0,
+                complianceRate: o.complianceRate || "100.0%",
                 rating: o.rating || 5.0,
                 status:
                   o.status === "In Audit"
@@ -567,8 +517,8 @@ export function Dashboard() {
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">500,000+ OPD Visit</p>
-                  <p className="text-xs text-muted-foreground">per yr</p>
+                  <p className="text-sm font-bold text-foreground">Book Appointment</p>
+                  <p className="text-xs text-muted-foreground">Schedule outpatient visit</p>
                 </div>
               </button>
 
@@ -582,8 +532,8 @@ export function Dashboard() {
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">7,000+ Delivery Services</p>
-                  <p className="text-xs text-muted-foreground">per yr</p>
+                  <p className="text-sm font-bold text-foreground">Register Patient</p>
+                  <p className="text-xs text-muted-foreground">New patient admission</p>
                 </div>
               </button>
 
@@ -596,8 +546,8 @@ export function Dashboard() {
                   <ArrowRight className="size-4 text-primary transition-transform group-hover:translate-x-0.5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">2,000+ Staff</p>
-                  <p className="text-xs text-muted-foreground">Clinical &amp; Support</p>
+                  <p className="text-sm font-bold text-foreground">Clinical Reports</p>
+                  <p className="text-xs text-muted-foreground">Quality &amp; safety logs</p>
                 </div>
               </Link>
 
@@ -611,9 +561,9 @@ export function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-foreground">
-                    35+ Speciality &amp; Subspeciality
+                    Clinical Departments
                   </p>
-                  <p className="text-xs text-muted-foreground">Clinical Departments</p>
+                  <p className="text-xs text-muted-foreground">10 specialized units</p>
                 </div>
               </Link>
             </div>

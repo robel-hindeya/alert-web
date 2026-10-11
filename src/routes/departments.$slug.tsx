@@ -233,7 +233,23 @@ function DepartmentDashboard() {
         const stored = localStorage.getItem(`alert_coordinators_${slug}`);
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) {
+            const isLegacyMockCoord = (c: any) =>
+              !c ||
+              c.id === "crd-1" ||
+              c.id === "crd-2" ||
+              c.id === "crd-3" ||
+              c.name === "Sr. Tigist Alemu" ||
+              c.name === "Dr. Habtamu Girma" ||
+              c.name === "Sr. Meron Haile" ||
+              c.name === "Dr. Dawit Abebe" ||
+              c.name === "Dr. Yonas Bekele";
+            const cleaned = parsed.filter((c) => !isLegacyMockCoord(c));
+            if (cleaned.length !== parsed.length) {
+              localStorage.setItem(`alert_coordinators_${slug}`, JSON.stringify(cleaned));
+            }
+            return cleaned;
+          }
         }
       } catch {
         // ignore

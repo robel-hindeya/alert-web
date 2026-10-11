@@ -73,8 +73,8 @@ export const DEFAULT_DASHBOARD_STATS: DashboardStats = {
   totalPatientsDelta: "0%",
   todayAppointments: 0,
   todayAppointmentsDelta: "0",
-  totalDoctors: 42,
-  availableBeds: 654,
+  totalDoctors: 0,
+  availableBeds: 0,
   totalForms: 0,
   totalResponses: 0,
   visits: [

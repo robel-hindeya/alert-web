@@ -98,18 +98,18 @@ export interface CoordinatorProfile {
 
 const DEFAULT_PROFILE: CoordinatorProfile = {
   id: "CRD-001",
-  name: "Dr. Alem Tesfaye",
-  role: "Lead Clinical Audit Coordinator",
+  name: "Clinical Audit Coordinator",
+  role: "Clinical Audit Coordinator",
   department: "Emergency Corridor",
   departmentSlug: "emergency-corridor",
-  email: "alem.tesfaye@alert.gov.et",
-  phone: "+251 911 224 551",
+  email: "coordinator@alert.gov.et",
+  phone: "",
   shift: "Day Shift (08:00 - 16:00)",
   certified: true,
   certificationTitle: "Certified Clinical Quality Auditor (CCQA)",
   hospital: "ALERT Comprehensive Specialized Hospital",
-  office: "Block B, Room 204 — Quality & Audit Directorate",
-  bio: "Lead Clinical Audit Coordinator overseeing continuous quality improvement, emergency triage protocol audits, and clinical documentation compliance across ALERT Hospital.",
+  office: "Quality & Clinical Audit Directorate",
+  bio: "Clinical Audit Coordinator overseeing continuous quality improvement, departmental audits, and documentation compliance across ALERT Hospital.",
   duties: [
     "Daily clinical triage & audit rounds",
     "Chart completeness verification",
@@ -134,7 +134,12 @@ export function CoordinatorPortal() {
     if (typeof window === "undefined") return DEFAULT_PROFILE;
     try {
       const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.name !== "Dr. Alem Tesfaye") {
+          return parsed;
+        }
+      }
     } catch {
       // fallback
     }
@@ -143,13 +148,22 @@ export function CoordinatorPortal() {
 
   // Sync profile when authenticated coordinator or QMT officer user loads
   useEffect(() => {
-    if (user && (user.role === "coordinator" || user.role === "qmt")) {
+    if (user) {
       setProfile((prev) => ({
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
-        role: user.role === "qmt" ? "Quality Management Officer" : prev.role,
-        department: user.departmentLabel || (user.role === "qmt" ? "Quality Management Directorate" : prev.department),
+        role:
+          user.role === "qmt"
+            ? "Quality Management Officer"
+            : user.role === "admin"
+              ? "Department Administrator"
+              : user.role === "superadmin"
+                ? "Super Administrator"
+                : prev.role,
+        department:
+          user.departmentLabel ||
+          (user.role === "qmt" ? "Quality Management Directorate" : prev.department),
         departmentSlug: user.departmentSlug || prev.departmentSlug,
       }));
       if (user.departmentSlug) {

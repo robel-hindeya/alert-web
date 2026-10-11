@@ -103,13 +103,13 @@ interface ReportRecord {
 }
 
 const DEFAULT_WEEKLY_DATA = [
-  { day: "Mon", audits: 0, compliance: 100 },
-  { day: "Tue", audits: 0, compliance: 100 },
-  { day: "Wed", audits: 0, compliance: 100 },
-  { day: "Thu", audits: 0, compliance: 100 },
-  { day: "Fri", audits: 0, compliance: 100 },
-  { day: "Sat", audits: 0, compliance: 100 },
-  { day: "Sun", audits: 0, compliance: 100 },
+  { day: "Mon", audits: 0, compliance: 0 },
+  { day: "Tue", audits: 0, compliance: 0 },
+  { day: "Wed", audits: 0, compliance: 0 },
+  { day: "Thu", audits: 0, compliance: 0 },
+  { day: "Fri", audits: 0, compliance: 0 },
+  { day: "Sat", audits: 0, compliance: 0 },
+  { day: "Sun", audits: 0, compliance: 0 },
 ];
 
 function useMounted() {
@@ -501,15 +501,24 @@ function ReportsPage() {
     if (reports.length === 0) return DEFAULT_WEEKLY_DATA;
     const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const counts: Record<string, number> = {};
+    const complianceMap: Record<string, { totalScore: number; count: number }> = {};
     for (const r of reports) {
       const parsedDate = new Date(r.date);
       const dayName = isNaN(parsedDate.getTime()) ? "Mon" : daysMap[parsedDate.getDay()] || "Mon";
       counts[dayName] = (counts[dayName] || 0) + 1;
+      const numScore = parseFloat(r.score.replace("%", ""));
+      if (!isNaN(numScore)) {
+        if (!complianceMap[dayName]) complianceMap[dayName] = { totalScore: 0, count: 0 };
+        complianceMap[dayName].totalScore += numScore;
+        complianceMap[dayName].count += 1;
+      }
     }
     return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
       day,
       audits: counts[day] || 0,
-      compliance: 95,
+      compliance: complianceMap[day]?.count
+        ? Math.round(complianceMap[day].totalScore / complianceMap[day].count)
+        : counts[day] ? 100 : 0,
     }));
   }, [reports]);
 
@@ -533,17 +542,17 @@ function ReportsPage() {
   }, [reports]);
 
   const averageScore = useMemo(() => {
-    if (reports.length === 0) return "100%";
+    if (reports.length === 0) return "0%";
     const numericScores = reports
       .map((r) => parseFloat(r.score.replace("%", "")))
       .filter((n) => !isNaN(n));
-    if (numericScores.length === 0) return "98.5%";
+    if (numericScores.length === 0) return "0%";
     const avg = numericScores.reduce((a, b) => a + b, 0) / numericScores.length;
     return `${avg.toFixed(1)}%`;
   }, [reports]);
 
   const completedRate = useMemo(() => {
-    if (reports.length === 0) return "100%";
+    if (reports.length === 0) return "0%";
     const completed = reports.filter(
       (r) => r.status === "Completed" || r.status === "Reviewed",
     ).length;
