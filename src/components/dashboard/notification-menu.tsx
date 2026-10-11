@@ -66,13 +66,14 @@ export function NotificationMenu({ className }: { className?: string }) {
         let type: NotificationItem["type"] = "audit";
         let link = "/departments";
 
-        if (act.type.includes("report_generated")) {
+        const actType = String(act?.type || "");
+        if (actType.includes("report_generated")) {
           type = "report";
           link = "/reports";
-        } else if (act.type.includes("report_deleted")) {
+        } else if (actType.includes("report_deleted")) {
           type = "delete";
           link = "/reports";
-        } else if (act.type.includes("form_submitted")) {
+        } else if (actType.includes("form_submitted")) {
           type = "audit";
           link = "/departments";
         }

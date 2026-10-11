@@ -268,12 +268,46 @@ const SUPERADMIN_HABTAMU: UserAccount = {
   updatedAt: new Date().toISOString(),
 };
 
+export const DEFAULT_ADMIN_USER: UserAccount = {
+  id: "usr-admin-emergency",
+  username: "admin",
+  email: "admin@alert.gov.et",
+  password: hashPassword("Admin123"),
+  displayPassword: "Admin123",
+  role: "admin",
+  name: "Emergency Corridor Admin",
+  departmentSlug: "emergency-corridor",
+  departmentLabel: "Emergency Corridor",
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
+export const DEFAULT_COORDINATOR_USER: UserAccount = {
+  id: "usr-coordinator-lead",
+  username: "coordinator",
+  email: "coordinator@alert.gov.et",
+  password: hashPassword("Coordinator123"),
+  displayPassword: "Coordinator123",
+  role: "coordinator",
+  name: "Dr. Alem Tesfaye (Clinical Coordinator)",
+  departmentSlug: "emergency-corridor",
+  departmentLabel: "Emergency Corridor",
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
 const INITIAL_SYSTEM_USERS: UserAccount[] = [
   SUPERADMIN_HABTAMU,
+  DEFAULT_ADMIN_USER,
+  DEFAULT_COORDINATOR_USER,
 ];
 
 let inMemoryUsers: UserAccount[] = [
   SUPERADMIN_HABTAMU,
+  DEFAULT_ADMIN_USER,
+  DEFAULT_COORDINATOR_USER,
 ];
 
 export interface StoredInMemoryResponse {
@@ -1351,35 +1385,33 @@ export async function dbAuthenticateUser(
     console.warn("[Database] Supabase authentication query notice:", err);
   }
 
-  // 2. Direct authentication for Superadmin Habtamu
+  // 2. Direct authentication for default role accounts
   if (
     trimmed === "habtamu" ||
     trimmed === "superadmin" ||
     trimmed === "habtamu@alert.gov.et"
   ) {
     if (pass && (pass === "Habtamu5645" || pass.toLowerCase() === "superadmin")) {
-      const habtamuUser = SUPERADMIN_HABTAMU;
+      return { success: true, user: SUPERADMIN_HABTAMU };
+    }
+  }
 
-      // Try seeding Habtamu into Supabase in background
-      try {
-        const supabase = getSupabaseServerClient();
-        await supabase.from("users").upsert(
-          {
-            id: habtamuUser.id,
-            username: habtamuUser.username,
-            email: habtamuUser.email,
-            password: habtamuUser.password,
-            role: habtamuUser.role,
-            name: habtamuUser.name,
-            status: "active",
-          },
-          { onConflict: "username" },
-        );
-      } catch {
-        // ignore
-      }
+  if (
+    trimmed === "admin" ||
+    trimmed === "admin@alert.gov.et"
+  ) {
+    if (pass && (pass === "Admin123" || pass.toLowerCase() === "admin")) {
+      return { success: true, user: DEFAULT_ADMIN_USER };
+    }
+  }
 
-      return { success: true, user: habtamuUser };
+  if (
+    trimmed === "coordinator" ||
+    trimmed === "coordinator@alert.gov.et" ||
+    trimmed === "cordineter"
+  ) {
+    if (pass && (pass === "Coordinator123" || pass.toLowerCase() === "coordinator")) {
+      return { success: true, user: DEFAULT_COORDINATOR_USER };
     }
   }
 

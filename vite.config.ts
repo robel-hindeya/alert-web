@@ -70,3 +70,5 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+// Vite server reload trigger
+

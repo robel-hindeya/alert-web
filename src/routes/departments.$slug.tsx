@@ -63,9 +63,12 @@ export const departments = [
 
 export const Route = createFileRoute("/departments/$slug")({
   loader: ({ params }) => {
-    const dept = departments.find((d) => d.slug === params.slug);
-    if (!dept) throw notFound();
-    return { slug: dept.slug, label: dept.label };
+    const matched = departments.find((d) => d.slug === params.slug);
+    const dept = matched ?? departments[0];
+    return {
+      slug: dept.slug,
+      label: matched ? dept.label : (params.slug ? params.slug.replace(/-/g, " ") : dept.label),
+    };
   },
   head: ({ loaderData }) => {
     const name = loaderData?.label ?? "Department";
@@ -132,16 +135,16 @@ function DepartmentDashboard() {
   const { responses } = useAllResponses();
 
   const deptResponses = useMemo(() => {
-    return responses.filter((r) => r.departmentSlug === slug);
+    return (responses || []).filter((r) => r && r.departmentSlug === slug);
   }, [responses, slug]);
 
   const deptAppointments = useMemo(() => {
-    return dashStats.appointments.filter((a) => a.departmentSlug === slug);
-  }, [dashStats.appointments, slug]);
+    return (dashStats?.appointments || []).filter((a) => a && a.departmentSlug === slug);
+  }, [dashStats?.appointments, slug]);
 
   const deptPatients = useMemo(() => {
-    return dashStats.patients.filter((p) => p.departmentSlug === slug);
-  }, [dashStats.patients, slug]);
+    return (dashStats?.patients || []).filter((p) => p && p.departmentSlug === slug);
+  }, [dashStats?.patients, slug]);
 
   const weeklyData = useMemo(() => {
     const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -155,6 +158,7 @@ function DepartmentDashboard() {
       Sun: 0,
     };
     for (const resp of deptResponses) {
+      if (!resp?.submittedAt) continue;
       const d = new Date(resp.submittedAt);
       if (!isNaN(d.getTime())) {
         const dayName = daysMap[d.getDay()] || "Mon";
@@ -178,7 +182,7 @@ function DepartmentDashboard() {
         label: "Active patients",
         value: String(
           deptPatients.length ||
-            (dashStats.totalPatients > 0 ? Math.ceil(dashStats.totalPatients / 10) : 0),
+            ((dashStats?.totalPatients ?? 0) > 0 ? Math.ceil((dashStats?.totalPatients ?? 0) / 10) : 0),
         ),
         icon: UserRound,
       },
@@ -193,14 +197,14 @@ function DepartmentDashboard() {
         icon: TrendingUp,
       },
     ],
-    [deptResponses.length, deptPatients.length, dashStats.totalPatients, deptAppointments.length],
+    [deptResponses.length, deptPatients.length, dashStats?.totalPatients, deptAppointments.length],
   );
 
   const records = useMemo(() => {
     return deptResponses.slice(0, 10).map((r) => {
       let formattedDate = "Recent";
       try {
-        if (r.submittedAt) {
+        if (r?.submittedAt) {
           const d = new Date(r.submittedAt);
           if (!isNaN(d.getTime())) {
             formattedDate = d.toLocaleDateString("en-US", {
@@ -212,8 +216,8 @@ function DepartmentDashboard() {
         }
       } catch {}
       return {
-        id: r.id,
-        name: r.formTitle || "Clinical Audit Entry",
+        id: r?.id || `REC-${Math.random().toString(36).slice(2, 7)}`,
+        name: r?.formTitle || "Clinical Audit Entry",
         by: "Clinical Auditor",
         status: "Completed",
         date: formattedDate,
@@ -264,16 +268,16 @@ function DepartmentDashboard() {
   };
 
   const toggleDuty = (duty: string) => {
-    setViewing((v) =>
-      v
-        ? {
-            ...v,
-            duties: v.duties.includes(duty)
-              ? v.duties.filter((d) => d !== duty)
-              : [...v.duties, duty],
-          }
-        : v,
-    );
+    setViewing((v) => {
+      if (!v) return null;
+      const currentDuties = Array.isArray(v.duties) ? v.duties : [];
+      return {
+        ...v,
+        duties: currentDuties.includes(duty)
+          ? currentDuties.filter((d) => d !== duty)
+          : [...currentDuties, duty],
+      };
+    });
   };
 
   const saveViewing = () => {
@@ -467,12 +471,13 @@ function DepartmentDashboard() {
                 <article key={c.id} className="rounded-2xl border border-border bg-card p-4">
                   <div className="flex items-center gap-3">
                     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary">
-                      {c.name
-                        .split(" ")
-                        .slice(1)
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)}
+                      {(() => {
+                        const parts = (c?.name || "CO").trim().split(/\s+/).filter(Boolean);
+                        if (parts.length > 1) {
+                          return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+                        }
+                        return (parts[0]?.slice(0, 2) || "CO").toUpperCase();
+                      })()}
                     </span>
                     <div className="min-w-0">
                       <HoverCard>
@@ -493,7 +498,7 @@ function DepartmentDashboard() {
                             Shift: {c.shift} · {c.certified ? "Certified" : "Not certified"}
                           </p>
                           <p className="text-muted-foreground">
-                            Duties: {c.duties.length ? c.duties.join(", ") : "None assigned"}
+                            Duties: {c.duties && c.duties.length ? c.duties.join(", ") : "None assigned"}
                           </p>
                         </HoverCardContent>
                       </HoverCard>

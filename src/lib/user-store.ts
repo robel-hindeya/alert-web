@@ -16,29 +16,63 @@ export const DEFAULT_SUPERADMIN_USER: UserAccount = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
+export const DEFAULT_ADMIN_USER: UserAccount = {
+  id: "usr-admin-emergency",
+  username: "admin",
+  email: "admin@alert.gov.et",
+  displayPassword: "Admin123",
+  role: "admin",
+  name: "Emergency Corridor Admin",
+  departmentSlug: "emergency-corridor",
+  departmentLabel: "Emergency Corridor",
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
+export const DEFAULT_COORDINATOR_USER: UserAccount = {
+  id: "usr-coordinator-lead",
+  username: "coordinator",
+  email: "coordinator@alert.gov.et",
+  displayPassword: "Coordinator123",
+  role: "coordinator",
+  name: "Dr. Alem Tesfaye (Clinical Coordinator)",
+  departmentSlug: "emergency-corridor",
+  departmentLabel: "Emergency Corridor",
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
 export function getLocalUsers(): UserAccount[] {
   if (typeof window === "undefined") {
-    return [DEFAULT_SUPERADMIN_USER];
+    return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
   }
   try {
     const raw = window.localStorage.getItem(USERS_STORAGE_KEY);
     if (!raw) {
-      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([DEFAULT_SUPERADMIN_USER]));
-      return [DEFAULT_SUPERADMIN_USER];
+      const init = [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
+      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(init));
+      return init;
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return [DEFAULT_SUPERADMIN_USER];
+      return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
     }
-    // Ensure Superadmin Habtamu is always present
-    const hasHabtamu = parsed.some((u: UserAccount) => u.username?.toLowerCase() === "habtamu");
-    if (!hasHabtamu) {
-      parsed.unshift(DEFAULT_SUPERADMIN_USER);
-      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsed));
+    // Ensure default system accounts are always present
+    const map = new Map<string, UserAccount>();
+    map.set("habtamu", DEFAULT_SUPERADMIN_USER);
+    map.set("admin", DEFAULT_ADMIN_USER);
+    map.set("coordinator", DEFAULT_COORDINATOR_USER);
+
+    for (const u of parsed) {
+      if (u && u.username) {
+        map.set(u.username.toLowerCase(), u);
+      }
     }
-    return parsed as UserAccount[];
+    return Array.from(map.values());
   } catch {
-    return [DEFAULT_SUPERADMIN_USER];
+    return [DEFAULT_SUPERADMIN_USER, DEFAULT_ADMIN_USER, DEFAULT_COORDINATOR_USER];
   }
 }
 
@@ -98,8 +132,10 @@ export function mergeServerAndLocalUsers(
 ): UserAccount[] {
   const map = new Map<string, UserAccount>();
 
-  // Add default superadmin first
+  // Add default system accounts first
   map.set("habtamu", DEFAULT_SUPERADMIN_USER);
+  map.set("admin", DEFAULT_ADMIN_USER);
+  map.set("coordinator", DEFAULT_COORDINATOR_USER);
 
   // Add local users
   for (const u of localUsers) {

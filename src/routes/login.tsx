@@ -119,7 +119,14 @@ export function LoginPage() {
               status: found.status,
             });
             toast.success(`Welcome back, ${found.name}!`);
-            navigate({ to: "/" });
+            if (found.role === "admin") {
+              const dept = found.departmentSlug || "emergency-corridor";
+              navigate({ to: "/departments/$slug", params: { slug: dept } });
+            } else if (found.role === "coordinator" || found.role === "qmt") {
+              navigate({ to: "/coordinators" });
+            } else {
+              navigate({ to: "/" });
+            }
             return;
           }
         }
@@ -141,7 +148,14 @@ export function LoginPage() {
         const u = data.user;
         saveAuthUser(u);
         toast.success(`Welcome back, ${u.name}!`);
-        navigate({ to: "/" });
+        if (u.role === "admin") {
+          const dept = u.departmentSlug || "emergency-corridor";
+          navigate({ to: "/departments/$slug", params: { slug: dept } });
+        } else if (u.role === "coordinator" || u.role === "qmt") {
+          navigate({ to: "/coordinators" });
+        } else {
+          navigate({ to: "/" });
+        }
         return;
       } else {
         setError("Unexpected response from server.");
@@ -173,7 +187,14 @@ export function LoginPage() {
             status: found.status,
           });
           toast.success(`Welcome back, ${found.name}!`);
-          navigate({ to: "/" });
+          if (found.role === "admin") {
+            const dept = found.departmentSlug || "emergency-corridor";
+            navigate({ to: "/departments/$slug", params: { slug: dept } });
+          } else if (found.role === "coordinator" || found.role === "qmt") {
+            navigate({ to: "/coordinators" });
+          } else {
+            navigate({ to: "/" });
+          }
           return;
         }
       } else {
