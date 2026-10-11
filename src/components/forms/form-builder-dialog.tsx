@@ -150,6 +150,7 @@ export function FormBuilderDialog({
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Initialize or reset form on dialog open
   useEffect(() => {
@@ -351,11 +352,19 @@ export function FormBuilderDialog({
       toast.error("Please enter a Form Title before saving.");
       return;
     }
-    const form = buildFormObject();
-    await saveForm(form);
-    if (onSaved) onSaved(form);
-    toast.success("Form saved successfully to database!");
-    onOpenChange(false);
+    setSaving(true);
+    try {
+      const form = buildFormObject();
+      await saveForm(form);
+      if (onSaved) onSaved(form);
+      toast.success("Form saved successfully!");
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Failed to save form:", err);
+      toast.error("Failed to save form. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveAndView = async () => {
@@ -363,15 +372,23 @@ export function FormBuilderDialog({
       toast.error("Please enter a Form Title before saving.");
       return;
     }
-    const form = buildFormObject();
-    await saveForm(form);
-    if (onSaved) onSaved(form);
-    toast.success("Form saved! Opening public view...");
-    onOpenChange(false);
-    navigate({
-      to: "/forms/$formId",
-      params: { formId: form.id },
-    });
+    setSaving(true);
+    try {
+      const form = buildFormObject();
+      await saveForm(form);
+      if (onSaved) onSaved(form);
+      toast.success("Form saved! Opening public view...");
+      onOpenChange(false);
+      navigate({
+        to: "/forms/$formId",
+        params: { formId: form.id },
+      });
+    } catch (err) {
+      console.error("Failed to save form:", err);
+      toast.error("Failed to save form. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -402,6 +419,7 @@ export function FormBuilderDialog({
               variant="outline"
               size="sm"
               onClick={handleSaveAndView}
+              disabled={saving}
               className="gap-1 sm:gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-medium px-2 sm:px-3 text-xs"
               title="Save changes and open public form view"
             >
@@ -414,11 +432,12 @@ export function FormBuilderDialog({
               type="button"
               size="sm"
               onClick={handleSave}
+              disabled={saving}
               className="gap-1 sm:gap-1.5 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 px-2.5 sm:px-3 text-xs"
             >
               <FileCheck2 className="size-3.5 sm:size-4" />
-              <span className="hidden sm:inline">Save Form</span>
-              <span className="sm:hidden">Save</span>
+              <span className="hidden sm:inline">{saving ? "Saving..." : "Save Form"}</span>
+              <span className="sm:hidden">{saving ? "..." : "Save"}</span>
             </Button>
           </div>
         </div>
@@ -1010,6 +1029,7 @@ export function FormBuilderDialog({
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
+              disabled={saving}
               className="text-muted-foreground text-xs"
             >
               Cancel
@@ -1020,6 +1040,7 @@ export function FormBuilderDialog({
               variant="outline"
               size="sm"
               onClick={handleSaveAndView}
+              disabled={saving}
               className="gap-1 sm:gap-1.5 text-primary border-primary/30 hover:bg-primary/10 font-medium text-xs"
             >
               <Eye className="size-3.5 sm:size-4" />
@@ -1031,10 +1052,11 @@ export function FormBuilderDialog({
               type="button"
               size="sm"
               onClick={handleSave}
+              disabled={saving}
               className="gap-1 sm:gap-1.5 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
             >
               <FileCheck2 className="size-3.5 sm:size-4" />
-              Save
+              {saving ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>

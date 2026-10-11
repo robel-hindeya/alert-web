@@ -464,17 +464,19 @@ export function saveCustomDepartmentForm(data: {
 export const isLegacySeedId = (id: unknown): boolean => {
   if (typeof id !== "string") return false;
   const lower = id.toLowerCase();
+  // Only match well-known legacy/seed IDs, not user-created forms (which start with "frm-")
+  if (lower.startsWith("frm-")) return false;
   return (
-    lower.includes("seed") ||
+    lower.includes("-seed-") ||
     lower.startsWith("resp-179171493") ||
-    lower.startsWith("resp-") ||
-    lower.startsWith("form-inpatient") ||
-    lower.startsWith("form-surgical") ||
-    lower.startsWith("form-mch") ||
-    lower.startsWith("form-opd") ||
-    lower.startsWith("form-emergency") ||
-    lower.startsWith("form-chart") ||
-    lower.includes("emergency-corridor-form")
+    lower.startsWith("form-inpatient-") ||
+    lower.startsWith("form-surgical-") ||
+    lower.startsWith("form-mch-") ||
+    lower.startsWith("form-opd-") ||
+    lower.startsWith("form-emergency-") ||
+    lower.startsWith("form-chart-") ||
+    lower === "emergency-triage-assessment" ||
+    lower === "corridor-handover-checklist"
   );
 };
 
@@ -696,7 +698,9 @@ export function useDepartmentForms(deptSlug: string) {
     ready,
     save: saveForm,
     remove: deleteForm,
-    refresh: () => setForms(getFormsForDepartment(deptSlug)),
+    refresh: () => {
+      setForms(getFormsForDepartment(deptSlug));
+    },
   };
 }
 
