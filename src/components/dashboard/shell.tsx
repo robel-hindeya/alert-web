@@ -37,7 +37,9 @@ export function DashboardShell({
     );
   }
 
-  const isBare = bare || user?.role === "admin";
+  // Only normal admin has sidebar removed (bare mode).
+  // Super Administrator always sees the full sidebar across all pages.
+  const isBare = user?.role === "admin" || (bare && user?.role !== "superadmin");
 
   if (isBare) {
     return (

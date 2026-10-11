@@ -76,12 +76,37 @@ export function getLocalUsers(): UserAccount[] {
   }
 }
 
+const DELETED_USERS_KEY = "alert_deleted_usernames";
+
+export function getDeletedUsernames(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(DELETED_USERS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function markUsernameDeleted(username: string): void {
+  if (typeof window === "undefined" || !username) return;
+  try {
+    const set = getDeletedUsernames();
+    set.add(username.toLowerCase().trim());
+    window.localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 export function saveLocalUsers(users: UserAccount[]): void {
   if (typeof window === "undefined") return;
   try {
-    // Ensure Superadmin Habtamu is preserved
-    const hasHabtamu = users.some((u) => u.username?.toLowerCase() === "habtamu");
-    const safeList = hasHabtamu ? users : [DEFAULT_SUPERADMIN_USER, ...users];
+    const deletedSet = getDeletedUsernames();
+    // Ensure Superadmin Habtamu is preserved and deleted accounts are excluded
+    const filtered = users.filter(
+      (u) => u && u.username && !deletedSet.has(u.username.toLowerCase())
+    );
+    const hasHabtamu = filtered.some((u) => u.username?.toLowerCase() === "habtamu");
+    const safeList = hasHabtamu ? filtered : [DEFAULT_SUPERADMIN_USER, ...filtered];
     window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(safeList));
     window.dispatchEvent(new Event("alert-users-updated"));
   } catch (err) {
@@ -91,6 +116,15 @@ export function saveLocalUsers(users: UserAccount[]): void {
 
 export function addLocalUser(newUser: UserAccount): UserAccount[] {
   const current = getLocalUsers();
+  // If previously deleted, unmark deleted since we are explicitly creating/adding it
+  if (typeof window !== "undefined" && newUser.username) {
+    try {
+      const set = getDeletedUsernames();
+      set.delete(newUser.username.toLowerCase().trim());
+      window.localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(Array.from(set)));
+    } catch {}
+  }
+
   const existingIdx = current.findIndex(
     (u) =>
       u.id === newUser.id ||
@@ -119,9 +153,27 @@ export function updateLocalUser(
   return updated;
 }
 
-export function deleteLocalUser(id: string): UserAccount[] {
+export function deleteLocalUser(id: string, username?: string): UserAccount[] {
   const current = getLocalUsers();
-  const updated = current.filter((u) => u.id !== id && u.username !== "habtamu");
+  const targetUser = current.find(
+    (u) => u.id === id || (username && u.username.toLowerCase() === username.toLowerCase()),
+  );
+  if (targetUser?.username) {
+    markUsernameDeleted(targetUser.username);
+  }
+  if (username) {
+    markUsernameDeleted(username);
+  }
+
+  const deletedSet = getDeletedUsernames();
+  const updated = current.filter(
+    (u) =>
+      u.id !== id &&
+      !deletedSet.has(u.username.toLowerCase()) &&
+      (username ? u.username.toLowerCase() !== username.toLowerCase() : true) &&
+      u.username.toLowerCase() !== "habtamu" ? true : u.username.toLowerCase() === "habtamu"
+  ).filter((u) => u.id !== id && (username ? u.username.toLowerCase() !== username.toLowerCase() : true));
+
   saveLocalUsers(updated);
   return updated;
 }
@@ -130,23 +182,30 @@ export function mergeServerAndLocalUsers(
   serverUsers: UserAccount[],
   localUsers: UserAccount[],
 ): UserAccount[] {
+  const deletedSet = getDeletedUsernames();
   const map = new Map<string, UserAccount>();
 
-  // Add default system accounts first
+  // Always keep master superadmin
   map.set("habtamu", DEFAULT_SUPERADMIN_USER);
-  map.set("admin", DEFAULT_ADMIN_USER);
-  map.set("coordinator", DEFAULT_COORDINATOR_USER);
 
-  // Add local users
+  // Add default system accounts ONLY if they were not deleted by user
+  if (!deletedSet.has("admin")) {
+    map.set("admin", DEFAULT_ADMIN_USER);
+  }
+  if (!deletedSet.has("coordinator")) {
+    map.set("coordinator", DEFAULT_COORDINATOR_USER);
+  }
+
+  // Add local users (skip deleted)
   for (const u of localUsers) {
-    if (u && u.username) {
+    if (u && u.username && !deletedSet.has(u.username.toLowerCase())) {
       map.set(u.username.toLowerCase(), u);
     }
   }
 
-  // Add or update with server users
+  // Add or update with server users (skip deleted)
   for (const u of serverUsers) {
-    if (u && u.username) {
+    if (u && u.username && !deletedSet.has(u.username.toLowerCase())) {
       const lower = u.username.toLowerCase();
       const existing = map.get(lower);
       if (existing) {

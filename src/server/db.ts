@@ -310,6 +310,8 @@ let inMemoryUsers: UserAccount[] = [
   DEFAULT_COORDINATOR_USER,
 ];
 
+let inMemoryDeletedUsernames: Set<string> = new Set<string>();
+
 export interface StoredInMemoryResponse {
   id: string;
   form_id: string;
@@ -1277,9 +1279,13 @@ export async function dbGetUsers(): Promise<UserAccount[]> {
       const rows = data as UserDbRow[];
       const dbUsers = rows.map(mapUserRow);
       const map = new Map<string, UserAccount>();
-      for (const u of dbUsers) map.set(u.username.toLowerCase(), u);
+      for (const u of dbUsers) {
+        if (!inMemoryDeletedUsernames.has(u.username.toLowerCase())) {
+          map.set(u.username.toLowerCase(), u);
+        }
+      }
       for (const u of inMemoryUsers) {
-        if (!map.has(u.username.toLowerCase())) {
+        if (!map.has(u.username.toLowerCase()) && !inMemoryDeletedUsernames.has(u.username.toLowerCase())) {
           map.set(u.username.toLowerCase(), u);
         }
       }
@@ -1290,7 +1296,7 @@ export async function dbGetUsers(): Promise<UserAccount[]> {
   }
 
   // Graceful return of system accounts so app remains operational
-  return inMemoryUsers;
+  return inMemoryUsers.filter((u) => !inMemoryDeletedUsernames.has(u.username.toLowerCase()));
 }
 
 export async function dbGetUserById(id: string): Promise<UserAccount | null> {
@@ -1589,20 +1595,48 @@ export async function dbUpdateUser(
   return updated;
 }
 
-export async function dbDeleteUser(id: string): Promise<boolean> {
-  const existing = await dbGetUserById(id);
-  if (!existing) return false;
+export async function dbDeleteUser(idOrUsername: string): Promise<boolean> {
+  const target = idOrUsername.trim();
+  const targetLower = target.toLowerCase();
 
-  if (existing.username === "habtamu" || existing.role === "superadmin") {
+  // Find user in memory or database
+  let existing = inMemoryUsers.find(
+    (u) => u.id === target || u.username.toLowerCase() === targetLower,
+  );
+
+  if (!existing) {
+    existing = (await dbGetUserById(target)) || (await dbGetUserByUsername(target));
+  }
+
+  const usernameToDelete = existing ? existing.username.toLowerCase() : targetLower;
+
+  if (usernameToDelete === "habtamu" || existing?.role === "superadmin") {
     throw new Error("Super Administrator account cannot be deleted.");
   }
 
-  inMemoryUsers = inMemoryUsers.filter((u) => u.id !== id);
+  // Track as deleted so sync and getters never resurrect it
+  inMemoryDeletedUsernames.add(usernameToDelete);
+
+  // Remove from inMemoryUsers
+  inMemoryUsers = inMemoryUsers.filter(
+    (u) => u.id !== target && u.username.toLowerCase() !== usernameToDelete,
+  );
   persistStoreToDisk();
 
+  // Remove from Supabase
   try {
     const supabase = getSupabaseServerClient();
-    await supabase.from("users").delete().eq("id", id);
+    if (existing) {
+      await supabase
+        .from("users")
+        .delete()
+        .or(`id.eq.${existing.id},username.ilike.${existing.username}`);
+    } else {
+      await supabase
+        .from("users")
+        .delete()
+        .or(`id.eq.${target},username.ilike.${targetLower}`);
+    }
   } catch (err) {
     console.warn("[Database] Supabase user delete warning:", err);
   }
@@ -1981,6 +2015,9 @@ export async function dbSyncData(payload: {
     const userMap = new Map<string, UserAccount>();
     for (const u of inMemoryUsers) userMap.set(u.username.toLowerCase(), u);
     for (const u of payload.users) {
+      if (inMemoryDeletedUsernames.has(u.username.toLowerCase())) {
+        continue;
+      }
       if (!userMap.has(u.username.toLowerCase())) {
         userMap.set(u.username.toLowerCase(), u);
         // Try persisting into Supabase

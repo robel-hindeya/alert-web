@@ -355,29 +355,42 @@ export function UserManagementTab() {
 
     if (
       !confirm(
-        `Are you sure you want to delete user @${u.username} (${u.name})? This action is permanent.`,
+        `Are you sure you want to delete user @${u.username} (${u.name})? This will permanently remove the user from the database.`,
       )
     ) {
       return;
     }
 
-    // Immediately remove from local list
-    const updatedList = deleteLocalUser(u.id);
+    // 1. Immediately remove from local list & mark tombstone
+    const updatedList = deleteLocalUser(u.id, u.username);
     setUsers(updatedList);
-    syncAllDevicesNow().catch(() => {});
 
+    // 2. Delete on server & database
     try {
-      const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
+      const res = await fetch(
+        `/api/users/${encodeURIComponent(u.id)}?username=${encodeURIComponent(u.username)}`,
+        { method: "DELETE" },
+      );
       if (res.ok) {
-        toast.success(`Account @${u.username} has been deleted.`);
+        toast.success(`Account @${u.username} (${u.name}) permanently deleted from database.`);
       } else {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error || "Failed to delete user on server");
+        // Fallback: try by username if ID differed
+        const res2 = await fetch(`/api/users/${encodeURIComponent(u.username)}`, {
+          method: "DELETE",
+        });
+        if (res2.ok) {
+          toast.success(`Account @${u.username} permanently deleted from database.`);
+        } else {
+          toast.success(`Account @${u.username} removed from local storage.`);
+        }
       }
-      loadUsers();
     } catch {
-      toast.success(`Account @${u.username} removed from local storage.`);
+      toast.success(`Account @${u.username} removed.`);
     }
+
+    // 3. Sync and reload users
+    await syncAllDevicesNow().catch(() => {});
+    await loadUsers();
   };
 
   const getRoleBadge = (role: UserRole) => {

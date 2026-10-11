@@ -115,7 +115,7 @@ function DepartmentDashboard() {
   const { session } = useDeptSession();
   const { user, ready } = useAuthUser();
   const isNormalAdmin = user?.role === "admin";
-  const deptOnly = isNormalAdmin || session?.slug === slug;
+  const deptOnly = isNormalAdmin;
 
   useEffect(() => {
     if (ready && user && user.role === "admin") {

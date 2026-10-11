@@ -27,12 +27,17 @@ function CoordinatorsRoutePage() {
   const { user, ready } = useAuthUser();
 
   useEffect(() => {
-    if (ready && !user) {
-      navigate({ to: "/login" });
+    if (ready) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (user.role === "admin") {
+        const myDept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: myDept } });
+      }
     }
   }, [ready, user, navigate]);
 
-  if (!ready || !user) {
+  if (!ready || !user || user.role === "admin") {
     return null;
   }
 

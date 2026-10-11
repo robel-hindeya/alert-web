@@ -363,7 +363,11 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
       if (request.method === "DELETE") {
         try {
-          const ok = await dbDeleteUser(userId);
+          const usernameParam = url.searchParams.get("username")?.trim();
+          let ok = await dbDeleteUser(userId);
+          if (!ok && usernameParam) {
+            ok = await dbDeleteUser(usernameParam);
+          }
           if (!ok) {
             return new Response(JSON.stringify({ error: "User not found" }), {
               status: 404,
