@@ -151,12 +151,14 @@ export function useDashboardData() {
     };
 
     window.addEventListener("alert-dashboard-updated", handleUpdate);
+    window.addEventListener("alert-forms-updated", handleUpdate);
     window.addEventListener("alert-form-responses-updated", handleUpdate);
     window.addEventListener("alert-appointment-added", handleUpdate);
     window.addEventListener("alert-patient-added", handleUpdate);
 
     return () => {
       window.removeEventListener("alert-dashboard-updated", handleUpdate);
+      window.removeEventListener("alert-forms-updated", handleUpdate);
       window.removeEventListener("alert-form-responses-updated", handleUpdate);
       window.removeEventListener("alert-appointment-added", handleUpdate);
       window.removeEventListener("alert-patient-added", handleUpdate);

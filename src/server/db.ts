@@ -342,17 +342,22 @@ export function persistStoreToDisk(): void {
 export const isLegacySeedRecord = (id: unknown): boolean => {
   if (typeof id !== "string") return false;
   const lower = id.toLowerCase();
+  // Real user created forms start with frm-
+  if (lower.startsWith("frm-")) return false;
+  // Real user responses start with resp- followed by digits (timestamp)
+  if (/^resp-\d{10,}/.test(lower)) return false;
   return (
-    lower.includes("seed") ||
-    lower.startsWith("resp-179171493") ||
-    lower.startsWith("resp-") ||
-    lower.startsWith("form-inpatient") ||
-    lower.startsWith("form-surgical") ||
-    lower.startsWith("form-mch") ||
-    lower.startsWith("form-opd") ||
-    lower.startsWith("form-emergency") ||
-    lower.startsWith("form-chart") ||
-    lower.includes("emergency-corridor-form")
+    lower.includes("-seed-") ||
+    lower === "resp-179171493" ||
+    lower.startsWith("resp-seed") ||
+    lower.startsWith("form-inpatient-seed") ||
+    lower.startsWith("form-surgical-seed") ||
+    lower.startsWith("form-mch-seed") ||
+    lower.startsWith("form-opd-seed") ||
+    lower.startsWith("form-emergency-seed") ||
+    lower.startsWith("form-chart-seed") ||
+    lower === "emergency-triage-assessment" ||
+    lower === "corridor-handover-checklist"
   );
 };
 
@@ -1234,8 +1239,6 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
     ]);
 
     patientCount = patientCountRes?.count || 0;
-    totalForms = formsCountRes?.count || 0;
-    totalResponses = responsesCountRes?.count || 0;
     todayAppointments = todayApptsRes?.count || 0;
     appointmentsRes = appts || [];
     patientsRes = pats || [];
@@ -1257,9 +1260,15 @@ export async function dbGetDashboardStats(): Promise<DashboardStats> {
     console.warn("[Database] Supabase dashboard stats query notice:", err);
   }
 
-  const effectivePatientCount = patientCount || inMemoryPatients.length;
-  const effectiveResponsesCount = totalResponses || inMemoryResponses.length;
-  const effectiveFormsCount = totalForms || inMemoryForms.length;
+  // Count actual clean, active forms and responses dynamically
+  const cleanForms = inMemoryForms.filter((f) => !isLegacySeedRecord(f.id));
+  const cleanResponses = inMemoryResponses.filter(
+    (r) => !isLegacySeedRecord(r.id) && !isLegacySeedRecord(r.form_id),
+  );
+
+  const effectiveFormsCount = cleanForms.length;
+  const effectiveResponsesCount = cleanResponses.length;
+  const effectivePatientCount = (patientCount || 0) + inMemoryPatients.length;
   const effectiveTodayAppts =
     todayAppointments || inMemoryAppointments.filter((a) => a.date === "Today").length;
 

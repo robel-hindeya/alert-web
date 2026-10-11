@@ -37,7 +37,7 @@ import {
   updateAppointmentStatus,
   type TopOfficerLeader,
 } from "@/lib/dashboard-store";
-import { useAllResponses } from "@/lib/form-store";
+import { useAllResponses, getAllForms, CustomForm } from "@/lib/form-store";
 import { departments } from "@/routes/departments.$slug";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,20 @@ export function Dashboard() {
   const { stats, loading, refresh } = useDashboardData();
   const { responses: liveResponses } = useAllResponses();
   const [search, setSearch] = useState("");
+  const [dynamicForms, setDynamicForms] = useState<CustomForm[]>(() => getAllForms());
+
+  useEffect(() => {
+    const syncForms = () => {
+      setDynamicForms(getAllForms());
+    };
+    syncForms();
+    window.addEventListener("alert-forms-updated", syncForms);
+    window.addEventListener("storage", syncForms);
+    return () => {
+      window.removeEventListener("alert-forms-updated", syncForms);
+      window.removeEventListener("storage", syncForms);
+    };
+  }, []);
 
   // Redirect non-superadmin users to their respective workspaces
   useEffect(() => {
@@ -362,11 +376,36 @@ export function Dashboard() {
       .slice(0, 5);
   }, [stats.topOfficers, liveResponses, search]);
 
+  const totalDynamicForms = dynamicForms.length;
+  const totalDynamicResponses = (liveResponses && liveResponses.length) || stats.totalResponses || 0;
+  const totalDynamicPatients = (stats.patients?.length || 0) + totalDynamicResponses;
+
+  const dynamicDepartments = useMemo(() => {
+    if (liveResponses && liveResponses.length > 0) {
+      const counts = new Map<string, number>();
+      for (const r of liveResponses) {
+        const label = r.departmentLabel || "Clinical Unit";
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }
+      const total = liveResponses.length;
+      const colors = ["#0d9488", "#0284c7", "#6366f1", "#ec4899", "#f59e0b", "#10b981"];
+      return Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count], idx) => ({
+          name,
+          value: Math.round((count / total) * 100),
+          color: colors[idx % colors.length] || "#0d9488",
+        }));
+    }
+    return stats.departments || [];
+  }, [liveResponses, stats.departments]);
+
   const statCards = [
     {
       label: "Total Patient Records",
-      value: stats.totalPatients.toLocaleString(),
-      delta: stats.totalPatientsDelta,
+      value: totalDynamicPatients.toLocaleString(),
+      delta: stats.totalPatientsDelta || `+${totalDynamicPatients}`,
       up: true,
       note: "registered + audits",
       icon: Users,
@@ -381,8 +420,8 @@ export function Dashboard() {
     },
     {
       label: "Clinical Forms & Audits",
-      value: stats.totalForms.toLocaleString(),
-      delta: `${stats.totalResponses} responses`,
+      value: totalDynamicForms.toLocaleString(),
+      delta: `${totalDynamicResponses} ${totalDynamicResponses === 1 ? "response" : "responses"}`,
       up: true,
       note: "total submissions",
       icon: Stethoscope,
@@ -659,7 +698,7 @@ export function Dashboard() {
           <div className="card-soft min-w-0 p-5 xl:col-span-1">
             <h2 className="mb-1 text-base font-semibold text-foreground">Department Submissions</h2>
             <p className="mb-4 text-xs text-muted-foreground">Audit volume by clinical unit</p>
-            <DepartmentsChart departments={stats.departments} totalPatients={stats.totalPatients} />
+            <DepartmentsChart departments={dynamicDepartments} totalPatients={totalDynamicPatients} />
           </div>
         </section>
 
