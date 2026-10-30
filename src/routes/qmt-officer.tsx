@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuthUser } from "@/lib/auth-session";
 import {
   Search,
   ArrowLeft,
@@ -99,6 +100,20 @@ const isLegacyMockOfficer = (o: any) =>
   o.name === "Sr. Meron Haile";
 
 function QmtOfficerPage() {
+  const { user, ready } = useAuthUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (ready) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (user.role === "admin") {
+        const myDept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: myDept } });
+      }
+    }
+  }, [ready, user, navigate]);
+
   const [officers, setOfficers] = useState<QmtOfficer[]>(() => {
     try {
       const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;

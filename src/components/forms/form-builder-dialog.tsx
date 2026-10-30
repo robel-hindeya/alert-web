@@ -355,7 +355,11 @@ export function FormBuilderDialog({
       updatedAt: new Date().toISOString(),
       questions: questions.map((q, idx) => ({
         ...q,
-        title: q.title.trim() || `Question ${idx + 1}`,
+        id: q.id || `q-${Date.now()}-${idx + 1}`,
+        title: q.title?.trim() || `Question ${idx + 1}`,
+        type: q.type || "text",
+        required: Boolean(q.required),
+        options: Array.isArray(q.options) ? q.options : [],
       })),
     };
   };
@@ -368,8 +372,8 @@ export function FormBuilderDialog({
     setSaving(true);
     try {
       const form = buildFormObject();
-      await saveForm(form);
-      if (onSaved) onSaved(form);
+      const saved = await saveForm(form);
+      if (onSaved) onSaved(saved || form);
       toast.success("Form saved successfully!");
       onOpenChange(false);
     } catch (err) {
@@ -388,13 +392,14 @@ export function FormBuilderDialog({
     setSaving(true);
     try {
       const form = buildFormObject();
-      await saveForm(form);
-      if (onSaved) onSaved(form);
+      const saved = await saveForm(form);
+      const targetForm = saved || form;
+      if (onSaved) onSaved(targetForm);
       toast.success("Form saved! Opening public view...");
       onOpenChange(false);
       navigate({
         to: "/forms/$formId",
-        params: { formId: form.id },
+        params: { formId: targetForm.id },
       });
     } catch (err) {
       console.error("Failed to save form:", err);

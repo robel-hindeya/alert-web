@@ -72,14 +72,27 @@ export async function syncAllDevicesNow(): Promise<SyncResult> {
       saveLocalUsers(mergedUsers);
     }
 
-    // 2. Update Forms
+    // 2. Update Forms (reconcile with timestamp & question count preservation)
     if (Array.isArray(data.forms)) {
       const formMap = new Map<string, CustomForm>();
-      for (const f of data.forms) {
+      for (const f of localForms) {
         if (f && f.id && !isLegacySeedId(f.id)) formMap.set(f.id, f);
       }
-      for (const f of localForms) {
-        if (f && f.id && !isLegacySeedId(f.id) && !formMap.has(f.id)) formMap.set(f.id, f);
+      for (const f of data.forms) {
+        if (!f || !f.id || isLegacySeedId(f.id)) continue;
+        const local = formMap.get(f.id);
+        if (!local) {
+          formMap.set(f.id, f);
+        } else {
+          const serverTime = new Date(f.updatedAt || f.createdAt || 0).getTime();
+          const localTime = new Date(local.updatedAt || local.createdAt || 0).getTime();
+          const serverQ = f.questions?.length || 0;
+          const localQ = local.questions?.length || 0;
+          // Only overwrite local if server is newer and has at least as many questions, or if local has no questions
+          if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+            formMap.set(f.id, f);
+          }
+        }
       }
       const mergedForms = Array.from(formMap.values());
       window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(mergedForms));

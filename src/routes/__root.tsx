@@ -109,7 +109,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             </button>
             {showDetails && (
               <pre className="mt-2 p-3 text-[11px] bg-muted/60 border border-border/80 rounded-lg text-foreground font-mono overflow-auto max-h-40 whitespace-pre-wrap break-all">
-                {error.stack || error.message}
+                {import.meta.env.DEV ? (error.stack || error.message) : error.message}
               </pre>
             )}
           </div>

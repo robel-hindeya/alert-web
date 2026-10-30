@@ -582,6 +582,14 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
       ...form,
       createdAt: form.createdAt || now,
       updatedAt: now,
+      questions: (form.questions || []).map((q, idx) => ({
+        ...q,
+        id: q.id || `q-${idx + 1}-${Date.now().toString(36)}`,
+        title: q.title?.trim() || `Question ${idx + 1}`,
+        type: q.type || "text",
+        required: Boolean(q.required),
+        options: Array.isArray(q.options) ? q.options : [],
+      })),
     };
 
     let updated: CustomForm[];
@@ -602,8 +610,27 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
         body: JSON.stringify(prepared),
       });
       if (res.ok) {
-        const savedDb = (await res.json()) as CustomForm;
-        return savedDb;
+        const savedDb = (await res.json()) as any;
+        const savedForm = (savedDb?.data || savedDb) as CustomForm;
+        if (savedForm && savedForm.id) {
+          const currentAll = getAllForms();
+          const currIdx = currentAll.findIndex((f) => f.id === savedForm.id);
+          const fullSaved: CustomForm = {
+            ...savedForm,
+            questions:
+              Array.isArray(savedForm.questions) && savedForm.questions.length > 0
+                ? savedForm.questions
+                : prepared.questions,
+          };
+          if (currIdx >= 0) {
+            currentAll[currIdx] = fullSaved;
+          } else {
+            currentAll.unshift(fullSaved);
+          }
+          window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(currentAll));
+          window.dispatchEvent(new Event("alert-forms-updated"));
+          return fullSaved;
+        }
       }
     } catch (apiErr) {
       console.warn("Notice: Saved form to local storage while server syncs:", apiErr);
@@ -745,21 +772,29 @@ export function useDepartmentForms(deptSlug: string) {
               !deletedIds.has(f.id),
           );
           const all = getAllForms();
-          // Merge db forms with any locally saved forms that might not be in db yet
           const map = new Map<string, CustomForm>();
-          for (const f of cleaned) map.set(f.id, f);
           for (const f of all) {
-            if (
-              f.departmentSlug === deptSlug &&
-              !map.has(f.id) &&
-              !STATIC_DEPRECATED_FORM_IDS.has(f.id) &&
-              !deletedIds.has(f.id)
-            ) {
+            if (f && f.id && !STATIC_DEPRECATED_FORM_IDS.has(f.id) && !deletedIds.has(f.id)) {
               map.set(f.id, f);
             }
           }
-          const currentDeptForms = Array.from(map.values());
-          const otherDepts = all.filter((f) => f.departmentSlug !== deptSlug);
+          for (const f of cleaned) {
+            if (!f || !f.id || STATIC_DEPRECATED_FORM_IDS.has(f.id) || deletedIds.has(f.id)) continue;
+            const existing = map.get(f.id);
+            if (!existing) {
+              if (f.departmentSlug === deptSlug) map.set(f.id, f);
+            } else {
+              const serverTime = new Date(f.updatedAt || f.createdAt || 0).getTime();
+              const localTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+              const serverQ = f.questions?.length || 0;
+              const localQ = existing.questions?.length || 0;
+              if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+                map.set(f.id, f);
+              }
+            }
+          }
+          const currentDeptForms = Array.from(map.values()).filter((f) => f.departmentSlug === deptSlug);
+          const otherDepts = Array.from(map.values()).filter((f) => f.departmentSlug !== deptSlug);
           const merged = [...currentDeptForms, ...otherDepts];
           window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(merged));
           setForms(currentDeptForms);
@@ -810,18 +845,35 @@ export function useForm(formId: string, deptSlug?: string) {
       })
       .then((dbForm) => {
         if (!isMounted || !dbForm) return;
-        setForm(dbForm);
-        // Cache to local
+        setForm((prev) => {
+          if (!prev) return dbForm;
+          const serverTime = new Date(dbForm.updatedAt || dbForm.createdAt || 0).getTime();
+          const localTime = new Date(prev.updatedAt || prev.createdAt || 0).getTime();
+          const serverQ = dbForm.questions?.length || 0;
+          const localQ = prev.questions?.length || 0;
+          if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+            return dbForm;
+          }
+          return prev;
+        });
+
         const all = getAllForms();
-        const idx = all.findIndex((f) => f.id === dbForm.id);
-        let updated: CustomForm[];
-        if (idx >= 0) {
-          updated = [...all];
-          updated[idx] = dbForm;
-        } else {
-          updated = [dbForm, ...all];
+        const existing = all.find((f) => f.id === dbForm.id);
+        const serverTime = new Date(dbForm.updatedAt || dbForm.createdAt || 0).getTime();
+        const localTime = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : 0;
+        const serverQ = dbForm.questions?.length || 0;
+        const localQ = existing?.questions?.length || 0;
+        if (!existing || (serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+          const idx = all.findIndex((f) => f.id === dbForm.id);
+          let updated: CustomForm[];
+          if (idx >= 0) {
+            updated = [...all];
+            updated[idx] = dbForm;
+          } else {
+            updated = [dbForm, ...all];
+          }
+          window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
         }
-        window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
       })
       .catch((err) => console.warn("Could not fetch form from DB API:", err));
 

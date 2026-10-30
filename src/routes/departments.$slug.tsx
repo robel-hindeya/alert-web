@@ -600,6 +600,9 @@ function DepartmentDashboard() {
           onOpenChange={setAddFormOpen}
           departmentSlug={slug}
           departmentLabel={label}
+          onSaved={() => {
+            window.dispatchEvent(new Event("alert-forms-updated"));
+          }}
         />
 
         {/* View / edit coordinator */}

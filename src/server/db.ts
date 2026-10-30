@@ -449,46 +449,94 @@ export function loadStoreFromDisk(): void {
 loadStoreFromDisk();
 
 // -----------------------------------------------------------------------------
+// Safe Supabase Execution with Fast Circuit Breaker
+// -----------------------------------------------------------------------------
+let supabaseOfflineUntil = 0;
+
+export async function safeSupabaseOperation<T>(
+  fn: (supabase: ReturnType<typeof getSupabaseServerClient>) => Promise<T>,
+  fallback?: T,
+  timeoutMs = 1500,
+): Promise<T | undefined> {
+  if (Date.now() < supabaseOfflineUntil) {
+    return fallback;
+  }
+  let timer: NodeJS.Timeout | null = null;
+  try {
+    const supabase = getSupabaseServerClient();
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Supabase operation timed out")), timeoutMs);
+      if (typeof timer.unref === "function") timer.unref();
+    });
+    const result = await Promise.race([fn(supabase), timeoutPromise]);
+    if (timer) clearTimeout(timer);
+    return result;
+  } catch (err: unknown) {
+    if (timer) clearTimeout(timer);
+    const msg = String(err);
+    if (
+      msg.includes("ENOTFOUND") ||
+      msg.includes("fetch failed") ||
+      msg.includes("timed out") ||
+      msg.includes("ECONNREFUSED")
+    ) {
+      // Back off for 30 seconds so all subsequent requests respond immediately
+      supabaseOfflineUntil = Date.now() + 30_000;
+    }
+    return fallback;
+  }
+}
+
+// -----------------------------------------------------------------------------
 // FORMS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
 export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm[]> {
   try {
-    const supabase = getSupabaseServerClient();
-    let query = supabase.from("forms").select("*").order("updated_at", { ascending: false });
-
-    if (departmentSlug) {
-      query = query.eq("department_slug", departmentSlug);
-    }
-
-    const { data, error } = await query;
-    if (!error && Array.isArray(data) && data.length > 0) {
-      const rows = data as FormDbRow[];
-      const dbForms = rows.map((r) => ({
-        id: r.id,
-        departmentSlug: r.department_slug,
-        departmentLabel: r.department_label,
-        title: r.title,
-        description: r.description || "",
-        bannerUrl: r.banner_url || undefined,
-        questions: parseJsonValue<FormQuestion[]>(r.questions_json, []),
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      }));
-
-      // Merge into inMemoryForms
-      const map = new Map<string, CustomForm>();
-      for (const f of inMemoryForms) map.set(f.id, f);
-      for (const f of dbForms) map.set(f.id, f);
-      inMemoryForms = Array.from(map.values());
-      persistStoreToDisk();
+    await safeSupabaseOperation(async (supabase) => {
+      let query = supabase.from("forms").select("*").order("updated_at", { ascending: false });
 
       if (departmentSlug) {
-        return inMemoryForms.filter((f) => f.departmentSlug === departmentSlug);
+        query = query.eq("department_slug", departmentSlug);
       }
-      return inMemoryForms;
-    }
+
+      const { data, error } = await query;
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const rows = data as FormDbRow[];
+        const dbForms = rows.map((r) => ({
+          id: r.id,
+          departmentSlug: r.department_slug,
+          departmentLabel: r.department_label,
+          title: r.title,
+          description: r.description || "",
+          bannerUrl: r.banner_url || undefined,
+          questions: parseJsonValue<FormQuestion[]>(r.questions_json, []),
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        }));
+
+        // Merge into inMemoryForms without discarding newer local edits
+        const map = new Map<string, CustomForm>();
+        for (const f of inMemoryForms) map.set(f.id, f);
+        for (const f of dbForms) {
+          const existing = map.get(f.id);
+          if (!existing) {
+            map.set(f.id, f);
+          } else {
+            const serverTime = new Date(f.updatedAt || f.createdAt || 0).getTime();
+            const localTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+            const serverQ = f.questions?.length || 0;
+            const localQ = existing.questions?.length || 0;
+            if ((serverTime >= localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+              map.set(f.id, f);
+            }
+          }
+        }
+        inMemoryForms = Array.from(map.values());
+        persistStoreToDisk();
+      }
+    });
   } catch (err) {
-    console.warn("[Database] Supabase forms query warning:", err);
+    console.warn("[Database] forms query warning:", err);
   }
 
   if (departmentSlug) {
@@ -499,30 +547,39 @@ export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm
 
 export async function dbGetFormById(id: string): Promise<CustomForm | null> {
   try {
-    const supabase = getSupabaseServerClient();
-    const { data, error } = await supabase.from("forms").select("*").eq("id", id).maybeSingle();
-    if (!error && data) {
-      const r = data as FormDbRow;
-      const parsed: CustomForm = {
-        id: r.id,
-        departmentSlug: r.department_slug,
-        departmentLabel: r.department_label,
-        title: r.title,
-        description: r.description || "",
-        bannerUrl: r.banner_url || undefined,
-        questions: parseJsonValue<FormQuestion[]>(r.questions_json, []),
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      };
-      // Keep in local store as well
-      const idx = inMemoryForms.findIndex((f) => f.id === parsed.id);
-      if (idx >= 0) inMemoryForms[idx] = parsed;
-      else inMemoryForms.unshift(parsed);
-      persistStoreToDisk();
-      return parsed;
-    }
+    await safeSupabaseOperation(async (supabase) => {
+      const { data, error } = await supabase.from("forms").select("*").eq("id", id).maybeSingle();
+      if (!error && data) {
+        const r = data as FormDbRow;
+        const parsed: CustomForm = {
+          id: r.id,
+          departmentSlug: r.department_slug,
+          departmentLabel: r.department_label,
+          title: r.title,
+          description: r.description || "",
+          bannerUrl: r.banner_url || undefined,
+          questions: parseJsonValue<FormQuestion[]>(r.questions_json, []),
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        };
+        const idx = inMemoryForms.findIndex((f) => f.id === parsed.id);
+        if (idx >= 0) {
+          const existing = inMemoryForms[idx];
+          const serverTime = new Date(parsed.updatedAt || 0).getTime();
+          const localTime = new Date(existing.updatedAt || 0).getTime();
+          const serverQ = parsed.questions?.length || 0;
+          const localQ = existing.questions?.length || 0;
+          if ((serverTime >= localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+            inMemoryForms[idx] = parsed;
+          }
+        } else {
+          inMemoryForms.unshift(parsed);
+        }
+        persistStoreToDisk();
+      }
+    });
   } catch (err) {
-    console.warn(`[Database] Supabase form ${id} query warning:`, err);
+    console.warn(`[Database] form ${id} query warning:`, err);
   }
 
   const inMem = inMemoryForms.find((f) => f.id === id);
@@ -532,12 +589,20 @@ export async function dbGetFormById(id: string): Promise<CustomForm | null> {
 export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
   const now = new Date().toISOString();
   const createdAt = form.createdAt || now;
-  const updatedAt = now;
+  const updatedAt = form.updatedAt || now;
 
   const prepared: CustomForm = {
     ...form,
     createdAt,
     updatedAt,
+    questions: (form.questions || []).map((q, idx) => ({
+      ...q,
+      id: q.id || `q-${idx + 1}-${Date.now().toString(36)}`,
+      title: q.title?.trim() || `Question ${idx + 1}`,
+      type: q.type || "text",
+      required: Boolean(q.required),
+      options: Array.isArray(q.options) ? q.options : [],
+    })),
   };
 
   const idx = inMemoryForms.findIndex((f) => f.id === prepared.id);
@@ -557,12 +622,10 @@ export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
     updated_at: updatedAt,
   };
 
-  try {
-    const supabase = getSupabaseServerClient();
+  // Perform background sync to Supabase without blocking the API response
+  safeSupabaseOperation(async (supabase) => {
     await supabase.from("forms").upsert(row, { onConflict: "id" });
-  } catch (err) {
-    console.warn("[Database] Supabase form upsert warning:", err);
-  }
+  }).catch(() => {});
 
   return prepared;
 }
@@ -2063,10 +2126,10 @@ export async function dbSyncData(payload: {
     for (const f of inMemoryForms) formMap.set(f.id, f);
     for (const f of payload.forms) {
       if (isLegacySeedRecord(f.id)) continue;
-      if (!formMap.has(f.id)) {
+      const existing = formMap.get(f.id);
+      if (!existing) {
         formMap.set(f.id, f);
-        try {
-          const supabase = getSupabaseServerClient();
+        safeSupabaseOperation(async (supabase) => {
           await supabase.from("forms").upsert({
             id: f.id,
             department_slug: f.departmentSlug,
@@ -2078,12 +2141,32 @@ export async function dbSyncData(payload: {
             created_at: f.createdAt || new Date().toISOString(),
             updated_at: f.updatedAt || new Date().toISOString(),
           }, { onConflict: "id" });
-        } catch {
-          // non-blocking
+        });
+      } else {
+        const incomingTime = new Date(f.updatedAt || f.createdAt || 0).getTime();
+        const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+        const incomingQ = f.questions?.length || 0;
+        const existingQ = existing.questions?.length || 0;
+        if (incomingTime >= existingTime || incomingQ > existingQ) {
+          formMap.set(f.id, f);
+          safeSupabaseOperation(async (supabase) => {
+            await supabase.from("forms").upsert({
+              id: f.id,
+              department_slug: f.departmentSlug,
+              department_label: f.departmentLabel,
+              title: f.title,
+              description: f.description || "",
+              banner_url: f.bannerUrl || null,
+              questions_json: f.questions || [],
+              created_at: f.createdAt || new Date().toISOString(),
+              updated_at: f.updatedAt || new Date().toISOString(),
+            }, { onConflict: "id" });
+          });
         }
       }
     }
     inMemoryForms = Array.from(formMap.values());
+    persistStoreToDisk();
   }
 
   // 3. Merge incoming responses

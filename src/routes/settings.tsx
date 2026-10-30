@@ -111,8 +111,10 @@ function SettingsPage() {
 
   // Protect Settings: only superadmin can access
   useEffect(() => {
-    if (ready && user) {
-      if (user.role === "admin") {
+    if (ready) {
+      if (!user) {
+        window.location.href = "/login";
+      } else if (user.role === "admin") {
         toast.error("Access restricted: Settings is reserved for Super Administrator.");
         const myDept = user.departmentSlug || "emergency-corridor";
         window.location.href = `/departments/${myDept}`;

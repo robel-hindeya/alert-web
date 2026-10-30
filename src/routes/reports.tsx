@@ -125,9 +125,13 @@ function ReportsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (ready && user && user.role === "admin") {
-      const myDept = user.departmentSlug || "emergency-corridor";
-      navigate({ to: "/departments/$slug", params: { slug: myDept } });
+    if (ready) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (user.role === "admin") {
+        const myDept = user.departmentSlug || "emergency-corridor";
+        navigate({ to: "/departments/$slug", params: { slug: myDept } });
+      }
     }
   }, [ready, user, navigate]);
 

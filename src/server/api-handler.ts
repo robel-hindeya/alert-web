@@ -759,7 +759,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           departmentLabel: deptLabel,
           title: rawTitle.slice(0, 300),
           description: typeof body.description === "string" ? body.description.slice(0, 2000) : "",
-          bannerUrl: body.bannerUrl ? String(body.bannerUrl).slice(0, 500) : undefined,
+          bannerUrl: body.bannerUrl ? String(body.bannerUrl).slice(0, 3_000_000) : undefined,
           questions: sanitizedQuestions,
           createdAt: typeof body.createdAt === "string" ? body.createdAt : new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -927,6 +927,13 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     // ADMIN PURGE / RESET: POST /api/admin/reset-data
     // -------------------------------------------------------------------------
     if (pathname === "/api/admin/reset-data") {
+      const body = (await request.json().catch(() => ({}))) as { confirm?: string };
+      if (body.confirm !== "SUPERADMIN_RESET") {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized: explicit superadmin confirmation token required." }),
+          { status: 403, headers: corsHeaders },
+        );
+      }
       dbResetAllData();
       return new Response(
         JSON.stringify({

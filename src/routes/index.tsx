@@ -108,10 +108,12 @@ export function Dashboard() {
     };
   }, []);
 
-  // Redirect non-superadmin users to their respective workspaces
+  // Redirect unauthenticated visitors or non-superadmin users
   useEffect(() => {
-    if (ready && user) {
-      if (user.role === "admin") {
+    if (ready) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (user.role === "admin") {
         const targetDept = user.departmentSlug || "emergency-corridor";
         navigate({ to: "/departments/$slug", params: { slug: targetDept } });
       } else if (user.role === "qmt" || user.role === "coordinator") {
