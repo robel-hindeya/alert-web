@@ -37,7 +37,7 @@ interface DepartmentFormBoxProps {
 }
 
 export function DepartmentFormBox({ departmentSlug, departmentLabel }: DepartmentFormBoxProps) {
-  const { forms, refresh } = useDepartmentForms(departmentSlug);
+  const { forms, refresh, loading } = useDepartmentForms(departmentSlug);
 
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
@@ -133,7 +133,14 @@ export function DepartmentFormBox({ departmentSlug, departmentLabel }: Departmen
       </div>
 
       {/* Forms Grid */}
-      {forms.length === 0 ? (
+      {loading && forms.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card/40 py-12 px-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <RefreshCw className="size-4 animate-spin text-primary" />
+            <span>Loading department forms...</span>
+          </div>
+        </div>
+      ) : forms.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-10 px-4 text-center">
           <p className="text-sm font-medium text-foreground">No forms created yet</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">

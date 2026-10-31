@@ -93,14 +93,12 @@ export const DEFAULT_DASHBOARD_STATS: DashboardStats = {
   topOfficers: [],
 };
 
+// Legacy mock cache purge: only removes stale mock dashboard stats cache, never touches forms or responses
 const LEGACY_PURGE_KEY = "alert_purged_seed_data_v4";
 if (typeof window !== "undefined") {
   try {
     if (!localStorage.getItem(LEGACY_PURGE_KEY)) {
       localStorage.removeItem(DASHBOARD_CACHE_KEY);
-      localStorage.removeItem("alert_hospital_forms");
-      localStorage.removeItem("alert_hospital_form_responses");
-      localStorage.removeItem("alert_qmt_officers_list");
       localStorage.setItem(LEGACY_PURGE_KEY, "true");
     }
   } catch {}

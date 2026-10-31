@@ -341,6 +341,15 @@ export function persistStoreToDisk(): void {
   }
 }
 
+export function normalizeDeptSlug(slug?: string | null): string {
+  if (!slug) return "";
+  return slug
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export const isLegacySeedRecord = (id: unknown): boolean => {
   if (typeof id !== "string") return false;
   const lower = id.toLowerCase();
@@ -493,12 +502,16 @@ export async function safeSupabaseOperation<T>(
 // FORMS CRUD (Supabase with graceful fallback)
 // -----------------------------------------------------------------------------
 export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm[]> {
+  if (inMemoryForms.length === 0) {
+    loadStoreFromDisk();
+  }
+
   try {
     await safeSupabaseOperation(async (supabase) => {
       let query = supabase.from("forms").select("*").order("updated_at", { ascending: false });
 
       if (departmentSlug) {
-        query = query.eq("department_slug", departmentSlug);
+        query = query.eq("department_slug", normalizeDeptSlug(departmentSlug));
       }
 
       const { data, error } = await query;
@@ -506,8 +519,8 @@ export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm
         const rows = data as FormDbRow[];
         const dbForms = rows.map((r) => ({
           id: r.id,
-          departmentSlug: r.department_slug,
-          departmentLabel: r.department_label,
+          departmentSlug: normalizeDeptSlug(r.department_slug) || "emergency-corridor",
+          departmentLabel: r.department_label || "ALERT Hospital",
           title: r.title,
           description: r.description || "",
           bannerUrl: r.banner_url || undefined,
@@ -542,12 +555,19 @@ export async function dbGetAllForms(departmentSlug?: string): Promise<CustomForm
   }
 
   if (departmentSlug) {
-    return inMemoryForms.filter((f) => f.departmentSlug === departmentSlug);
+    const target = normalizeDeptSlug(departmentSlug);
+    return inMemoryForms.filter((f) => {
+      const s = normalizeDeptSlug(f.departmentSlug);
+      return s === target || (!s && target === "emergency-corridor");
+    });
   }
   return inMemoryForms;
 }
 
 export async function dbGetFormById(id: string): Promise<CustomForm | null> {
+  if (inMemoryForms.length === 0) {
+    loadStoreFromDisk();
+  }
   try {
     await safeSupabaseOperation(async (supabase) => {
       const { data, error } = await supabase.from("forms").select("*").eq("id", id).maybeSingle();
@@ -589,12 +609,18 @@ export async function dbGetFormById(id: string): Promise<CustomForm | null> {
 }
 
 export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
+  if (inMemoryForms.length === 0) {
+    loadStoreFromDisk();
+  }
+
   const now = new Date().toISOString();
   const createdAt = form.createdAt || now;
   const updatedAt = form.updatedAt || now;
+  const normSlug = normalizeDeptSlug(form.departmentSlug) || "emergency-corridor";
 
   const prepared: CustomForm = {
     ...form,
+    departmentSlug: normSlug,
     createdAt,
     updatedAt,
     questions: (form.questions || []).map((q, idx) => ({
@@ -633,17 +659,17 @@ export async function dbUpsertForm(form: CustomForm): Promise<CustomForm> {
 }
 
 export async function dbDeleteForm(id: string): Promise<boolean> {
+  if (inMemoryForms.length === 0) {
+    loadStoreFromDisk();
+  }
   inMemoryForms = inMemoryForms.filter((f) => f.id !== id);
   inMemoryResponses = inMemoryResponses.filter((r) => r.form_id !== id);
   persistStoreToDisk();
 
-  try {
-    const supabase = getSupabaseServerClient();
+  safeSupabaseOperation(async (supabase) => {
     await supabase.from("form_responses").delete().eq("form_id", id);
     await supabase.from("forms").delete().eq("id", id);
-  } catch (err) {
-    console.warn("[Database] Supabase form delete warning:", err);
-  }
+  }).catch(() => {});
   return true;
 }
 

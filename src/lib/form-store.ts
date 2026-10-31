@@ -18,6 +18,15 @@ const DEPT_LABELS_MAP: Record<string, string> = {
   "postoperative-care": "Postoperative Care",
 };
 
+export function normalizeDeptSlug(slug?: string | null): string {
+  if (!slug) return "";
+  return slug
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export function generateQuestionsForType(
   title: string,
   type: string,
@@ -464,17 +473,18 @@ export function saveCustomDepartmentForm(data: {
 export const isLegacySeedId = (id: unknown): boolean => {
   if (typeof id !== "string") return false;
   const lower = id.toLowerCase();
-  // Only match well-known legacy/seed IDs, not user-created forms (which start with "frm-")
+  // Real user created forms start with frm-
   if (lower.startsWith("frm-")) return false;
   return (
     lower.includes("-seed-") ||
-    lower.startsWith("resp-179171493") ||
-    lower.startsWith("form-inpatient-") ||
-    lower.startsWith("form-surgical-") ||
-    lower.startsWith("form-mch-") ||
-    lower.startsWith("form-opd-") ||
-    lower.startsWith("form-emergency-") ||
-    lower.startsWith("form-chart-") ||
+    lower === "resp-179171493" ||
+    lower.startsWith("resp-seed") ||
+    lower.startsWith("form-inpatient-seed") ||
+    lower.startsWith("form-surgical-seed") ||
+    lower.startsWith("form-mch-seed") ||
+    lower.startsWith("form-opd-seed") ||
+    lower.startsWith("form-emergency-seed") ||
+    lower.startsWith("form-chart-seed") ||
     lower === "emergency-triage-assessment" ||
     lower === "corridor-handover-checklist"
   );
@@ -550,7 +560,11 @@ export function getAllForms(): CustomForm[] {
 
 export function getFormsForDepartment(deptSlug: string): CustomForm[] {
   const all = getAllForms();
-  return all.filter((f) => f.departmentSlug === deptSlug);
+  const target = normalizeDeptSlug(deptSlug);
+  return all.filter((f) => {
+    const s = normalizeDeptSlug(f.departmentSlug);
+    return s === target || (!s && target === "emergency-corridor");
+  });
 }
 
 export function getFormById(id: string, deptSlug?: string): CustomForm | undefined {
@@ -574,11 +588,14 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
   try {
     unmarkFormDeleted(form.id);
 
-    const all = getAllForms();
-    const existingIndex = all.findIndex((f) => f.id === form.id);
     const now = new Date().toISOString();
+    const normSlug = normalizeDeptSlug(form.departmentSlug) || "emergency-corridor";
+    const deptLabel = form.departmentLabel?.trim() || DEPT_LABELS_MAP[normSlug] || "Emergency Corridor";
+
     const prepared: CustomForm = {
       ...form,
+      departmentSlug: normSlug,
+      departmentLabel: deptLabel,
       createdAt: form.createdAt || now,
       updatedAt: now,
       questions: (form.questions || []).map((q, idx) => ({
@@ -591,6 +608,9 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
       })),
     };
 
+    // 1. Immediately store in local storage so UI displays immediately without delay
+    const all = getAllForms();
+    const existingIndex = all.findIndex((f) => f.id === prepared.id);
     let updated: CustomForm[];
     if (existingIndex >= 0) {
       updated = [...all];
@@ -601,7 +621,7 @@ export async function saveForm(form: CustomForm): Promise<CustomForm> {
     window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("alert-forms-updated"));
 
-    // Persist to database API
+    // 2. Persist to server & database API
     try {
       const res = await fetch("/api/forms", {
         method: "POST",
@@ -740,26 +760,16 @@ export function getFormResponses(formId: string): FormResponse[] {
 export function useDepartmentForms(deptSlug: string) {
   const [forms, setForms] = useState<CustomForm[]>(() => getFormsForDepartment(deptSlug));
   const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const sync = () => {
-      if (!isMounted) return;
-      setForms(getFormsForDepartment(deptSlug));
-      setReady(true);
-    };
-
-    sync();
-
-    // Fetch latest from database API without wiping locally saved forms
-    fetch(`/api/forms?dept=${encodeURIComponent(deptSlug)}`)
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return (await res.json()) as CustomForm[];
-      })
-      .then((dbForms) => {
-        if (!isMounted || !dbForms) return;
+  const fetchAndReconcile = useCallback(async () => {
+    try {
+      setError(null);
+      // Fetch latest from database API
+      const res = await fetch(`/api/forms?dept=${encodeURIComponent(deptSlug)}`);
+      if (res.ok) {
+        const dbForms = (await res.json()) as CustomForm[];
         if (Array.isArray(dbForms)) {
           const deletedIds = getDeletedFormIds();
           const cleaned = dbForms.filter(
@@ -770,6 +780,7 @@ export function useDepartmentForms(deptSlug: string) {
               !isLegacySeedId(f.id) &&
               !deletedIds.has(f.id),
           );
+
           const all = getAllForms();
           const map = new Map<string, CustomForm>();
           for (const f of all) {
@@ -781,60 +792,91 @@ export function useDepartmentForms(deptSlug: string) {
             if (!f || !f.id || STATIC_DEPRECATED_FORM_IDS.has(f.id) || deletedIds.has(f.id)) continue;
             const existing = map.get(f.id);
             if (!existing) {
-              if (f.departmentSlug === deptSlug) map.set(f.id, f);
+              map.set(f.id, f);
             } else {
               const serverTime = new Date(f.updatedAt || f.createdAt || 0).getTime();
               const localTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
               const serverQ = f.questions?.length || 0;
               const localQ = existing.questions?.length || 0;
-              if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+              if ((serverTime >= localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
                 map.set(f.id, f);
               }
             }
           }
-          const currentDeptForms = Array.from(map.values()).filter((f) => f.departmentSlug === deptSlug);
-          const otherDepts = Array.from(map.values()).filter((f) => f.departmentSlug !== deptSlug);
-          const merged = [...currentDeptForms, ...otherDepts];
+
+          const merged = Array.from(map.values());
           window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(merged));
+
+          const deptTarget = normalizeDeptSlug(deptSlug);
+          const currentDeptForms = merged.filter((f) => {
+            const s = normalizeDeptSlug(f.departmentSlug);
+            return s === deptTarget || (!s && deptTarget === "emergency-corridor");
+          });
           setForms(currentDeptForms);
         }
-      })
-      .catch((err) => console.warn("Could not fetch forms from DB API:", err));
+      }
+    } catch (err: unknown) {
+      console.warn("Notice: Operating in offline mode, using cached department forms:", err);
+      setError(err instanceof Error ? err.message : "Failed to load forms from database");
+    } finally {
+      setLoading(false);
+      setReady(true);
+    }
+  }, [deptSlug]);
 
-    window.addEventListener("alert-forms-updated", sync);
-    window.addEventListener("storage", sync);
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Immediately show cached forms on mount so refresh never causes forms to disappear
+    setForms(getFormsForDepartment(deptSlug));
+    setReady(true);
+
+    // 2. Fetch fresh forms from database
+    void fetchAndReconcile();
+
+    const handler = () => {
+      if (!isMounted) return;
+      setForms(getFormsForDepartment(deptSlug));
+    };
+
+    window.addEventListener("alert-forms-updated", handler);
+    window.addEventListener("storage", handler);
     return () => {
       isMounted = false;
-      window.removeEventListener("alert-forms-updated", sync);
-      window.removeEventListener("storage", sync);
+      window.removeEventListener("alert-forms-updated", handler);
+      window.removeEventListener("storage", handler);
     };
-  }, [deptSlug]);
+  }, [deptSlug, fetchAndReconcile]);
+
+  const refresh = useCallback(() => {
+    setForms(getFormsForDepartment(deptSlug));
+    void fetchAndReconcile();
+  }, [deptSlug, fetchAndReconcile]);
 
   return {
     forms,
     ready,
+    loading,
+    error,
     save: saveForm,
     remove: deleteForm,
-    refresh: () => {
-      setForms(getFormsForDepartment(deptSlug));
-    },
+    refresh,
   };
 }
 
 export function useForm(formId: string, deptSlug?: string) {
   const [form, setForm] = useState<CustomForm | undefined>(() => getFormById(formId, deptSlug));
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => Boolean(getFormById(formId, deptSlug)));
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const sync = () => {
-      if (!isMounted) return;
-      setForm(getFormById(formId, deptSlug));
+    const existing = getFormById(formId, deptSlug);
+    if (existing) {
+      setForm(existing);
       setReady(true);
-    };
-
-    sync();
+    }
 
     // Fetch directly from real database API
     fetch(`/api/forms/${encodeURIComponent(formId)}`)
@@ -844,37 +886,36 @@ export function useForm(formId: string, deptSlug?: string) {
       })
       .then((dbForm) => {
         if (!isMounted || !dbForm) return;
-        setForm((prev) => {
-          if (!prev) return dbForm;
-          const serverTime = new Date(dbForm.updatedAt || dbForm.createdAt || 0).getTime();
-          const localTime = new Date(prev.updatedAt || prev.createdAt || 0).getTime();
-          const serverQ = dbForm.questions?.length || 0;
-          const localQ = prev.questions?.length || 0;
-          if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
-            return dbForm;
-          }
-          return prev;
-        });
+        setForm(dbForm);
+        setReady(true);
 
         const all = getAllForms();
-        const existing = all.find((f) => f.id === dbForm.id);
-        const serverTime = new Date(dbForm.updatedAt || dbForm.createdAt || 0).getTime();
-        const localTime = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : 0;
-        const serverQ = dbForm.questions?.length || 0;
-        const localQ = existing?.questions?.length || 0;
-        if (!existing || (serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
-          const idx = all.findIndex((f) => f.id === dbForm.id);
-          let updated: CustomForm[];
-          if (idx >= 0) {
-            updated = [...all];
-            updated[idx] = dbForm;
-          } else {
-            updated = [dbForm, ...all];
-          }
-          window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
+        const idx = all.findIndex((f) => f.id === dbForm.id);
+        let updated: CustomForm[];
+        if (idx >= 0) {
+          updated = [...all];
+          updated[idx] = dbForm;
+        } else {
+          updated = [dbForm, ...all];
         }
+        window.localStorage.setItem(FORMS_STORAGE_KEY, JSON.stringify(updated));
       })
-      .catch((err) => console.warn("Could not fetch form from DB API:", err));
+      .catch((err) => console.warn("Could not fetch form from DB API:", err))
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+          setReady(true);
+        }
+      });
+
+    const sync = () => {
+      if (!isMounted) return;
+      const found = getFormById(formId, deptSlug);
+      if (found) {
+        setForm(found);
+        setReady(true);
+      }
+    };
 
     window.addEventListener("alert-forms-updated", sync);
     window.addEventListener("storage", sync);
@@ -885,7 +926,7 @@ export function useForm(formId: string, deptSlug?: string) {
     };
   }, [formId, deptSlug]);
 
-  return { form, ready, refresh: () => setForm(getFormById(formId, deptSlug)) };
+  return { form, ready, loading, refresh: () => setForm(getFormById(formId, deptSlug)) };
 }
 
 export function useFormResponses(formId: string) {

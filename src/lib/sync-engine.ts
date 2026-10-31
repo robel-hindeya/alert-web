@@ -89,7 +89,7 @@ export async function syncAllDevicesNow(): Promise<SyncResult> {
           const serverQ = f.questions?.length || 0;
           const localQ = local.questions?.length || 0;
           // Only overwrite local if server is newer and has at least as many questions, or if local has no questions
-          if ((serverTime > localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
+          if ((serverTime >= localTime && serverQ >= localQ) || (localQ === 0 && serverQ > 0)) {
             formMap.set(f.id, f);
           }
         }

@@ -342,7 +342,7 @@ export function FormBuilderDialog({
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "") || "form"
-      }-${Date.now().toString(36)}`;
+      }-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
     return {
       id: formId,
