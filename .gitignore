@@ -21,8 +21,9 @@ dist-ssr
 
 # Wrangler / Cloudflare
 .wrangler/
-# Data directory
-data/
+
+# Data directory — keep hospital_data.json committed so forms persist across deploys
+# Only exclude temp files
 data/*.tmp
 
 # Editor directories and files

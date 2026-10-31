@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+﻿import { useEffect, useState, useCallback } from "react";
 export * from "./form-types";
 import { CustomForm, FormResponse, INITIAL_DEFAULT_FORMS, FormQuestion } from "./form-types";
 
@@ -564,10 +564,9 @@ export function getFormById(id: string, deptSlug?: string): CustomForm | undefin
   const inDefault = INITIAL_DEFAULT_FORMS.find((f) => f.id === id);
   if (inDefault) return inDefault;
 
-  // Dynamically synthesize and save the form so it is never missing if accessed directly
-  const synthesized = createDefaultFormForId(id, deptSlug);
-  saveForm(synthesized);
-  return synthesized;
+  // Do NOT synthesize or save fake forms - return undefined so the caller
+  // knows the form was not found, rather than silently polluting localStorage.
+  return undefined;
 }
 
 export async function saveForm(form: CustomForm): Promise<CustomForm> {

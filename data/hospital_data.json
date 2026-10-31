@@ -1,0 +1,76 @@
+{
+  "users": [
+    {
+      "id": "usr-superadmin-habtamu",
+      "username": "habtamu",
+      "email": "habtamu@alert.gov.et",
+      "password": "scrypt:536660f5c7dca7738d3b4c69b4a402a1:df8769ea270dfe28051ed24f22449a3f31ebc03a7ac61e71c2f15d3ea9e28d201b47a52b7cab5c6971a71f886915820545f0401e2902b457fa68211b946c9c2b",
+      "displayPassword": "Habtamu5645",
+      "role": "superadmin",
+      "name": "Habtamu (Super Administrator)",
+      "departmentSlug": null,
+      "departmentLabel": null,
+      "status": "active",
+      "createdAt": "2026-10-11T09:21:03.998Z",
+      "updatedAt": "2026-10-11T09:21:03.998Z"
+    }
+  ],
+  "forms": [
+    {
+      "id": "frm-verify-test",
+      "title": "Emergency Quality Audit Form",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "updatedAt": "2026-10-30T07:30:20.632Z",
+      "questions": [
+        {
+          "id": "q-1",
+          "title": "Triage Category",
+          "type": "multiple_choice",
+          "required": true,
+          "options": [
+            "Red",
+            "Yellow",
+            "Green"
+          ]
+        },
+        {
+          "id": "q-2",
+          "title": "Blood Pressure Systolic",
+          "type": "number",
+          "required": false
+        },
+        {
+          "id": "q-3",
+          "title": "Physician Signature",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "frm-test-123",
+      "departmentSlug": "emergency-corridor",
+      "departmentLabel": "Emergency Corridor",
+      "title": "Test Form Title",
+      "description": "Desc",
+      "questions": [
+        {
+          "id": "q-1",
+          "title": "What is your blood pressure?",
+          "type": "text",
+          "required": true,
+          "options": []
+        }
+      ],
+      "createdAt": "2026-10-30T07:17:42.924Z",
+      "updatedAt": "2026-10-30T07:17:42.924Z"
+    }
+  ],
+  "responses": [],
+  "patients": [],
+  "appointments": [],
+  "reports": [],
+  "activities": [],
+  "updatedAt": "2026-10-30T07:30:19.633Z"
+}

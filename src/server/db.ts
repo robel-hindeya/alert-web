@@ -1,4 +1,6 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
+import { createRequire } from "node:module";
+const _require = createRequire(import.meta.url);
 import { getSupabaseServerClient, getSupabaseUrl } from "../lib/supabase.ts";
 import type { CustomForm, FormQuestion, FormResponse } from "../lib/form-types.ts";
 
@@ -300,15 +302,15 @@ let inMemoryActivities: ActivityItem[] = [];
 
 function getStorageFilePath(): string {
   try {
-    const fs = require("node:fs");
-    const path = require("node:path");
+    const fs = _require("node:fs");
+    const path = _require("node:path");
     const dir = path.resolve(process.cwd(), "data");
     if (!fs.existsSync(dir)) {
       try {
         fs.mkdirSync(dir, { recursive: true });
         return path.resolve(dir, "hospital_data.json");
       } catch {
-        const os = require("node:os");
+        const os = _require("node:os");
         return path.resolve(os.tmpdir(), "hospital_data.json");
       }
     }
@@ -320,7 +322,7 @@ function getStorageFilePath(): string {
 
 export function persistStoreToDisk(): void {
   try {
-    const fs = require("node:fs");
+    const fs = _require("node:fs");
     const filePath = getStorageFilePath();
     if (!filePath) return;
     const payload = {
@@ -334,8 +336,8 @@ export function persistStoreToDisk(): void {
       updatedAt: new Date().toISOString(),
     };
     fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf-8");
-  } catch {
-    // Non-blocking
+  } catch (diskErr) {
+    console.error("[Database] persistStoreToDisk failed:", diskErr);
   }
 }
 
@@ -374,7 +376,7 @@ export function dbResetAllData(): void {
 
 export function loadStoreFromDisk(): void {
   try {
-    const fs = require("node:fs");
+    const fs = _require("node:fs");
     const filePath = getStorageFilePath();
     if (!filePath || !fs.existsSync(filePath)) {
       persistStoreToDisk();
